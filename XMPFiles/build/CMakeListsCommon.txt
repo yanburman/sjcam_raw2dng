@@ -254,6 +254,7 @@ else(WIN32)
 		target_link_libraries(
 			${TARGET_NAME}
 			${LIB_ADOBEXMP}
+			dl
 		)
 	endif()
 endif()
