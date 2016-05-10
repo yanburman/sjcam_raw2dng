@@ -36,7 +36,7 @@
 #include "RawEnvironment.h"
 #endif
 
-#if !defined(qMacOS) || !defined(qWinOS)
+#if !defined(qMacOS) && !defined(qWinOS) && !defined(qLinux)
 #error Unable to figure out platform
 #endif
 
