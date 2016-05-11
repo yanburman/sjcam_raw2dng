@@ -9,7 +9,7 @@ XMP_RELEASE= $(XMP_PUB_DIR)/libraries/i80386linux_x64/release/
 
 SRC_DIR = ../../source
 
-CXXFLAGS  := -pipe -I$(XMP_PUB_DIR)/include -I$(SRC_DIR) -I$(CURDIR) -O0 -ggdb
+CXXFLAGS  := -pipe -I$(XMP_PUB_DIR)/include -I$(SRC_DIR) -O0 -ggdb
 LDFLAGS   := -ljpeg -lz -lpthread -ldl $(XMP_RELEASE)/staticXMPFiles.ar $(XMP_RELEASE)/staticXMPCore.ar -ldl
 ARFLAGS   := crus
 MAKEFLAGS := --no-print-directory
