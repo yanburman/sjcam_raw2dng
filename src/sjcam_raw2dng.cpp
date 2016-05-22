@@ -188,11 +188,11 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
 
     // Set pixel area
     // Remarks: Tag [DefaultCropOrigin] / [50719]
-    oNegative->SetDefaultCropOrigin(0, 0);
+    oNegative->SetDefaultCropOrigin(2, 2);
 
     // Set pixel area
     // Remarks: Tag [DefaultCropSize] / [50720]
-    oNegative->SetDefaultCropSize(m_ulWidth, m_ulHeight);
+    oNegative->SetDefaultCropSize(m_ulWidth - 4, m_ulHeight - 4);
 
     // Set base orientation
     // Remarks: See Restriction / Extension tags chapter
