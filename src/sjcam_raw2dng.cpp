@@ -228,6 +228,14 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
     // Remarks: Tag [Model] / [EXIF]
     poExif->fModel.Set_ASCII(m_szCameraModel.c_str());
 
+    // Set Lens Model
+    // Remarks: Tag [LensName] / [EXIF]
+    poExif->fLensName.Set_ASCII("GP43520");
+
+    // Set Lens Make
+    // Remarks: Tag [LensMake] / [EXIF]
+    poExif->fLensMake.Set_ASCII(m_szMake.c_str());
+
     // Set ISO speed
     // Remarks: Tag [ISOSpeed] / [EXIF]
     poExif->fISOSpeedRatings[0] = m_unISO;
