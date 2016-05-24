@@ -212,7 +212,11 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
 
     // Set baseline sharpness
     // Remarks: Tag [BaselineSharpness] / [50732]
-    oNegative->SetBaselineSharpness(1);
+    oNegative->SetBaselineSharpness(0.1); // we don't have AA filter
+
+    // Set anti-alias filter strength
+    // Remarks: Tag [AntiAliasStrength] / [50738]
+    oNegative->SetAntiAliasStrength(dng_urational(0, 1)); // we don't have AA filter
 
     // -------------------------------------------------------------
     // DNG EXIF Settings
@@ -248,7 +252,7 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
 
     // Set metering mode
     // Remarks: Tag [MeteringMode] / [EXIF]
-    poExif->fMeteringMode = 2;
+    poExif->fMeteringMode = mmCenterWeightedAverage;
 
     // Set metering mode
     // Remarks: Tag [ExposureBiasValue] / [EXIF]
