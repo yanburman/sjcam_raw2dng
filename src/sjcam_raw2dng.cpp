@@ -272,6 +272,10 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
     // Remarks: Tag [FocalLength] / [EXIF]
     poExif->fFocalLength.Set_real64(m_dFocalLength, 1000);
 
+    // Set 35mm equivalent focal length
+    // Remarks: Tag [FocalLengthIn35mmFilm] / [EXIF]
+    poExif->fFocalLengthIn35mmFilm = m_dFocalLength * 5.64;
+
     // Set lens info
     // Remarks: Tag [LensInfo] / [EXIF]
     poExif->fLensInfo[0].Set_real64(m_dFocalLength, 10);
