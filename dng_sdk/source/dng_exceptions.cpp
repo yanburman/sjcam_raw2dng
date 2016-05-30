@@ -22,7 +22,7 @@
 
 #ifndef qDNGReportErrors
 // assuming this isn't enable on Win, because it's using printf, but an app can redirect that to console
-#define qDNGReportErrors ((qDNGDebug && qMacOS) || qDNGValidate)
+#define qDNGReportErrors ((qDNGDebug && (qMacOS || qLinux)) || qDNGValidate)
 #endif
 
 /*****************************************************************************/

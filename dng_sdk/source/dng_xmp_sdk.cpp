@@ -39,6 +39,12 @@
 #endif
 #endif
 
+#if qLinux
+#ifndef UNIX_ENV
+#define UNIX_ENV 1
+#endif
+#endif
+
 #include <new>
 #include <string>
 
