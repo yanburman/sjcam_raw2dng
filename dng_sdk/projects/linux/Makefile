@@ -3,7 +3,7 @@
 LIBDNG     = libdng_sdk.a
 
 # The XMP SDK build directory if we don't want to install it system-wide.
-XMP_PUB_DIR= ../../../../xmp_sdk/public
+XMP_PUB_DIR= ../../../xmp_sdk/public
 
 XMP_RELEASE= $(XMP_PUB_DIR)/libraries/i80386linux_x64/release/
 
