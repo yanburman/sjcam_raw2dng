@@ -386,8 +386,7 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
 
     // Write DNG file to disk
     AutoPtr<dng_image_writer> oWriter(new dng_image_writer());
-    oWriter->WriteDNG(oDNGHost, oDNGStream, *oNegative.Get(), NULL,
-                      ccUncompressed);
+    oWriter->WriteDNG(oDNGHost, oDNGStream, *oNegative.Get());
 #if 0
     // -------------------------------------------------------------
     // Write TIFF file
