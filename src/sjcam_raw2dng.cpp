@@ -8,6 +8,8 @@
 #include <dng_image.h>
 #include <dng_negative.h>
 #include <dng_rational.h>
+#include <dng_lens_correction.h>
+#include <dng_opcodes.h>
 #include <dng_exif.h>
 #include <dng_image_writer.h>
 #include <dng_host.h>
@@ -339,6 +341,22 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
 
     // Add camera profile to negative
     oNegative->AddProfile(oProfile);
+
+    // -------------------------------------------------------------
+    // Lens corrections
+    // -------------------------------------------------------------
+
+    const dng_point_real64 oCenter(0.5, 0.5);
+    std::vector<real64> oVignetteGainParams(dng_vignette_radial_params::kNumTerms);
+    oVignetteGainParams[0] = 0.2;
+    oVignetteGainParams[1] = 0.2;
+    oVignetteGainParams[2] = 0.2;
+    oVignetteGainParams[3] = 0.2;
+    oVignetteGainParams[4] = 0.2;
+
+    dng_vignette_radial_params oVignetteParams(oVignetteGainParams, oCenter);
+    AutoPtr<dng_opcode> oFixVignetteOpcode(new dng_opcode_FixVignetteRadial(oVignetteParams, dng_opcode::kFlag_None));
+    oNegative->OpcodeList3().Append(oFixVignetteOpcode);
 
     // -------------------------------------------------------------
     // Write DNG file
