@@ -162,6 +162,7 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
     // Remarks: Tag [CFAPlaneColor] / [50710] and [CFALayout] / [50711]
     oNegative->SetColorChannels(m_unColorPlanes);
 
+#if 0
     // Set linearization table
     // Remarks: Tag [LinearizationTable] / [50712]
     AutoPtr<dng_memory_block> oCurve(
@@ -171,6 +172,7 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
       *pulItem = (uint16)(i);
     }
     oNegative->SetLinearization(oCurve);
+#endif
 
     // Set black level to auto black level of sensor
     // Remarks: Tag [BlackLevel] / [50714]
@@ -252,6 +254,27 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
     // Remarks: Tag [WhiteBalance] / [EXIF]
     poExif->fWhiteBalance = 0;
 
+    // Set light source
+    // Remarks: Tag [LightSource] / [EXIF]
+    poExif->fLightSource = lsUnknown;
+
+    // Set exposure program
+    // Remarks: Tag [ExposureProgram] / [EXIF]
+    poExif->fExposureProgram = epProgramNormal;
+
+    // Set sensor type
+    // Remarks: Tag [SensingMethod] / [EXIF]
+    poExif->fSensingMethod = 2;
+
+    // Set digital zoom
+    // Remarks: Tag [DigitalZoomRatio] / [EXIF]
+    poExif->fDigitalZoomRatio = dng_urational(0, 100);
+
+    // Set flash modes
+    // Remarks: Tag [Flash] / [EXIF]
+    poExif->fFlash = 0;
+    poExif->fFlashMask = 0x1;
+
     // Set metering mode
     // Remarks: Tag [MeteringMode] / [EXIF]
     poExif->fMeteringMode = mmCenterWeightedAverage;
@@ -274,7 +297,7 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
 
     // Set 35mm equivalent focal length
     // Remarks: Tag [FocalLengthIn35mmFilm] / [EXIF]
-    poExif->fFocalLengthIn35mmFilm = m_dFocalLength * 5.64;
+    poExif->fFocalLengthIn35mmFilm = round(m_dFocalLength * 5.64);
 
     // Set lens info
     // Remarks: Tag [LensInfo] / [EXIF]
