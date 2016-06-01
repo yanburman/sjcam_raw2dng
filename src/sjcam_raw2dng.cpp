@@ -22,7 +22,7 @@
 
 #include "CFAReader.h"
 
-static dng_error_code ConvertToDNG(std::string m_szInputFile)
+static dng_error_code ConvertToDNG(std::string m_szInputFile, bool m_bTiff)
 {
   // Sample BAYER image at ISO100 and tEXP 1/10 on f/1.7 and focal length 2.99mm
   uint16 m_unISO = 100;
@@ -76,11 +76,9 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
     // -------------------------------------------------------------
 
     printf("\n");
-    printf("==================================================================="
-           "============\n");
+    printf("===============================================================================\n");
     printf("Simple DNG converter\n");
-    printf("==================================================================="
-           "============\n\n");
+    printf("===============================================================================\n\n");
     printf("\n");
     printf("BAYER:\n");
     printf("%s\n", m_szInputFile.c_str());
@@ -166,8 +164,7 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
 #if 0
     // Set linearization table
     // Remarks: Tag [LinearizationTable] / [50712]
-    AutoPtr<dng_memory_block> oCurve(
-        oDNGHost.Allocate(sizeof(uint16) * m_unBitLimit));
+    AutoPtr<dng_memory_block> oCurve(oDNGHost.Allocate(sizeof(uint16) * m_unBitLimit));
     for (int64 i = 0; i < m_unBitLimit; i++) {
       uint16 *pulItem = oCurve->Buffer_uint16() + i;
       *pulItem = (uint16)(i);
@@ -409,31 +406,37 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
     // Write DNG file to disk
     AutoPtr<dng_image_writer> oWriter(new dng_image_writer());
     oWriter->WriteDNG(oDNGHost, oDNGStream, *oNegative.Get());
-#if 0
-    // -------------------------------------------------------------
-    // Write TIFF file
-    // -------------------------------------------------------------
 
-    // Create stream writer for output file
-    dng_file_stream oTIFFStream(m_szRenderFile.c_str(), true);
+    if (m_bTiff) {
+      // -------------------------------------------------------------
+      // Write TIFF file
+      // -------------------------------------------------------------
 
-    // Create render object
-    dng_render oRender(oDNGHost, *oNegative);
+      // Create stream writer for output file
+      dng_file_stream oTIFFStream(m_szRenderFile.c_str(), true);
 
-    // Set exposure compensation
-    oRender.SetExposure(0.0);
+      // Create render object
+      dng_render oRender(oDNGHost, *oNegative);
 
-    // Create final image
-    AutoPtr<dng_image> oFinalImage;
+      // Set exposure compensation
+      oRender.SetExposure(0.0);
 
-    // Render image
-    oFinalImage.Reset(oRender.Render());
-    oFinalImage->Rotate(oNegative->Orientation());
+      // Create final image
+      AutoPtr<dng_image> oFinalImage;
 
-    // Write TIFF file to disk
-    oWriter->WriteTIFF(oDNGHost, oTIFFStream, *oFinalImage.Get(), piRGB,
-                       ccUncompressed, oNegative.Get(), &oRender.FinalSpace());
-#endif
+      // Render image
+      oFinalImage.Reset(oRender.Render());
+      oFinalImage->Rotate(oNegative->Orientation());
+
+      // Write TIFF file to disk
+      oWriter->WriteTIFF(oDNGHost,
+                         oTIFFStream,
+                         *oFinalImage.Get(),
+                         piRGB,
+                         ccUncompressed,
+                         oNegative.Get(),
+                         &oRender.FinalSpace());
+    }
   } catch (const dng_exception &except) {
     return except.ErrorCode();
   } catch (...) {
@@ -445,23 +448,61 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
   return dng_error_none;
 }
 
-static void usage(const char *app)
+static void usage(const char *prog)
 {
-  fprintf(stderr, "Usage: %s <input file>\n", app);
+  fprintf(stderr,
+          "Usage:  %s [options] file1 file2 ...\n"
+          "\n"
+          "Valid options:\n"
+          "\t-v            Verbose mode\n"
+          "\t-h            Help\n"
+          "\t-tiff         Write TIFF image to \"<file>.tiff\"\n",
+          prog);
 }
 
 int main(int argc, char *argv[])
 {
-  if (argc != 2) {
+  bool m_bTiff = false;
+
+  if (argc == 1) {
     usage(argv[0]);
     return EXIT_FAILURE;
   }
 
-  dng_xmp_sdk::InitializeSDK();
-  dng_error_code rc = ConvertToDNG(argv[1]);
-  dng_xmp_sdk::TerminateSDK();
-  if (rc != dng_error_none)
+  int index;
+
+  gVerbose = false;
+  for (index = 1; index < argc && argv[index][0] == '-'; index++) {
+    dng_string option;
+
+    option.Set(&argv[index][1]);
+
+    if (option.Matches("v", true)) {
+      gVerbose = true;
+    } else if (option.Matches("h", true)) {
+      usage(argv[0]);
+      return EXIT_SUCCESS;
+    } else if (option.Matches("tiff", true)) {
+      m_bTiff = true;
+    } else {
+      fprintf(stderr, "Error: Unknown option \"-%s\"\n", option.Get());
+      return EXIT_FAILURE;
+    }
+  }
+
+  if (index == argc) {
+    fprintf(stderr, "Error: No file specified\n");
     return EXIT_FAILURE;
+  }
+
+  dng_xmp_sdk::InitializeSDK();
+  dng_error_code rc;
+  while (index < argc) {
+    rc = ConvertToDNG(argv[index++], m_bTiff);
+    if (rc != dng_error_none)
+      return EXIT_FAILURE;
+  }
+  dng_xmp_sdk::TerminateSDK();
 
   return EXIT_SUCCESS;
 }
