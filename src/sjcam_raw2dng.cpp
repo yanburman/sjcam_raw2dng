@@ -1,3 +1,5 @@
+/* vim: set shiftwidth=2 tabstop=2 softtabstop=2 expandtab: */
+
 #include <stdio.h>
 #include <string>
 
@@ -96,9 +98,9 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
 
     AutoPtr<dng_memory_block> oBayerData(oDNGHost.Allocate(m_ulWidth * m_ulHeight * TagTypeSize(ttShort)));
 
-    uint8_t *buf = (uint8_t*)oBayerData->Buffer();
+    uint8_t *buf = (uint8_t *)oBayerData->Buffer();
     for (unsigned int i = 0; i < m_ulWidth * m_ulHeight; ++i, buf += 2) {
-        reader.read(buf);
+      reader.read(buf);
     }
 
     // -------------------------------------------------------------
@@ -119,8 +121,7 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
 
     dng_rect vImageBounds(m_ulHeight, m_ulWidth);
 
-    AutoPtr<dng_image> oImage(
-        oDNGHost.Make_dng_image(vImageBounds, m_unColorPlanes, ttShort));
+    AutoPtr<dng_image> oImage(oDNGHost.Make_dng_image(vImageBounds, m_unColorPlanes, ttShort));
 
     dng_pixel_buffer oBuffer;
 
@@ -314,16 +315,14 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
     // Remarks: Derived from MATLAB using least square linear regression with
     //          MacBeth ColorChecker classic
     dng_matrix_3by3 oCameraRGB_to_XYZ_D65 =
-        dng_matrix_3by3(2.3150, 0.0711, 0.1455, 0.9861, 0.7815, -0.2192, 0.2082,
-                        -0.3349, 1.6432);
+      dng_matrix_3by3(2.3150, 0.0711, 0.1455, 0.9861, 0.7815, -0.2192, 0.2082, -0.3349, 1.6432);
     uint32 ulCalibrationIlluminant1 = lsD65;
 
     // Camera space RGB to XYZ matrix with StdA illumination
     // Remarks: Derived from MATLAB using least square linear regression with
     //          MacBeth ColorChecker classic
     dng_matrix_3by3 oCameraRGB_to_XYZ_A =
-        dng_matrix_3by3(1.6335, 0.4718, -0.0656, 0.5227, 1.0298, -0.3416,
-                        0.0475, -0.2020, 1.2522);
+      dng_matrix_3by3(1.6335, 0.4718, -0.0656, 0.5227, 1.0298, -0.3416, 0.0475, -0.2020, 1.2522);
 
     uint32 ulCalibrationIlluminant2 = lsStandardLightA;
 
@@ -435,11 +434,9 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
     oWriter->WriteTIFF(oDNGHost, oTIFFStream, *oFinalImage.Get(), piRGB,
                        ccUncompressed, oNegative.Get(), &oRender.FinalSpace());
 #endif
-  }
-  catch (const dng_exception &except) {
+  } catch (const dng_exception &except) {
     return except.ErrorCode();
-  }
-  catch (...) {
+  } catch (...) {
     return dng_error_unknown;
   }
 
@@ -448,24 +445,23 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile)
   return dng_error_none;
 }
 
-static void usage(const char* app)
+static void usage(const char *app)
 {
-	fprintf(stderr, "Usage: %s <input file>\n", app);
+  fprintf(stderr, "Usage: %s <input file>\n", app);
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
-	if (argc != 2) {
-                usage(argv[0]);
-		return EXIT_FAILURE;
-	}
+  if (argc != 2) {
+    usage(argv[0]);
+    return EXIT_FAILURE;
+  }
 
-	dng_xmp_sdk::InitializeSDK();
-        dng_error_code rc = ConvertToDNG(argv[1]);
-	dng_xmp_sdk::TerminateSDK();
-        if (rc != dng_error_none)
-		return EXIT_FAILURE;
+  dng_xmp_sdk::InitializeSDK();
+  dng_error_code rc = ConvertToDNG(argv[1]);
+  dng_xmp_sdk::TerminateSDK();
+  if (rc != dng_error_none)
+    return EXIT_FAILURE;
 
-	return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }
-
