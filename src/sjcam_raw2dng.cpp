@@ -22,14 +22,28 @@
 
 #include "CFAReader.h"
 
-static dng_error_code ConvertToDNG(std::string m_szInputFile, bool m_bTiff)
-{
-  // Sample BAYER image at ISO100 and tEXP 1/10 on f/1.7 and focal length 2.99mm
-  uint16 m_unISO = 100;
-  double m_dExposureTime = 0.1;
-  double m_dLensAperture = 1.7;
-  double m_dFocalLength = 2.99;
+struct Config {
+  Config() : m_bTiff(false), m_bLensCorrections(true)
+  {
+  }
 
+  bool m_bTiff;
+  bool m_bLensCorrections;
+};
+
+struct Exif {
+  Exif() : m_unISO(100), m_dExposureTime(0.1), m_dLensAperture(1.7), m_dFocalLength(2.99)
+  {
+  }
+
+  uint16 m_unISO;
+  double m_dExposureTime;
+  double m_dLensAperture;
+  double m_dFocalLength;
+};
+
+static dng_error_code ConvertToDNG(std::string m_szInputFile, Config &conf, Exif &exif)
+{
   // SETTINGS: 12-Bit RGGB BAYER PATTERN
   uint8 m_unColorPlanes = 3;
   uint16 m_unBayerType = 1; // RGGB
@@ -244,7 +258,7 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile, bool m_bTiff)
 
     // Set ISO speed
     // Remarks: Tag [ISOSpeed] / [EXIF]
-    poExif->fISOSpeedRatings[0] = m_unISO;
+    poExif->fISOSpeedRatings[0] = exif.m_unISO;
     poExif->fISOSpeedRatings[1] = 0;
     poExif->fISOSpeedRatings[2] = 0;
 
@@ -283,26 +297,26 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile, bool m_bTiff)
 
     // Set aperture value
     // Remarks: Tag [ApertureValue] / [EXIF]
-    poExif->SetFNumber(m_dLensAperture);
+    poExif->SetFNumber(exif.m_dLensAperture);
 
     // Set exposure time
     // Remarks: Tag [ExposureTime] / [EXIF]
-    poExif->SetExposureTime(m_dExposureTime);
+    poExif->SetExposureTime(exif.m_dExposureTime);
 
     // Set focal length
     // Remarks: Tag [FocalLength] / [EXIF]
-    poExif->fFocalLength.Set_real64(m_dFocalLength, 1000);
+    poExif->fFocalLength.Set_real64(exif.m_dFocalLength, 1000);
 
     // Set 35mm equivalent focal length
     // Remarks: Tag [FocalLengthIn35mmFilm] / [EXIF]
-    poExif->fFocalLengthIn35mmFilm = round(m_dFocalLength * 5.64);
+    poExif->fFocalLengthIn35mmFilm = round(exif.m_dFocalLength * 5.64);
 
     // Set lens info
     // Remarks: Tag [LensInfo] / [EXIF]
-    poExif->fLensInfo[0].Set_real64(m_dFocalLength, 10);
-    poExif->fLensInfo[1].Set_real64(m_dFocalLength, 10);
-    poExif->fLensInfo[2].Set_real64(m_dLensAperture, 10);
-    poExif->fLensInfo[3].Set_real64(m_dLensAperture, 10);
+    poExif->fLensInfo[0].Set_real64(exif.m_dFocalLength, 10);
+    poExif->fLensInfo[1].Set_real64(exif.m_dFocalLength, 10);
+    poExif->fLensInfo[2].Set_real64(exif.m_dLensAperture, 10);
+    poExif->fLensInfo[3].Set_real64(exif.m_dLensAperture, 10);
 
     // -------------------------------------------------------------
     // DNG Profile Settings: Simple color calibration
@@ -368,18 +382,19 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile, bool m_bTiff)
     // -------------------------------------------------------------
     // Lens corrections
     // -------------------------------------------------------------
+    if (conf.m_bLensCorrections) {
+      const dng_point_real64 oCenter(0.5, 0.5);
+      std::vector<real64> oVignetteGainParams(dng_vignette_radial_params::kNumTerms);
+      oVignetteGainParams[0] = 0.2;
+      oVignetteGainParams[1] = 0.2;
+      oVignetteGainParams[2] = 0.2;
+      oVignetteGainParams[3] = 0.2;
+      oVignetteGainParams[4] = 0.2;
 
-    const dng_point_real64 oCenter(0.5, 0.5);
-    std::vector<real64> oVignetteGainParams(dng_vignette_radial_params::kNumTerms);
-    oVignetteGainParams[0] = 0.2;
-    oVignetteGainParams[1] = 0.2;
-    oVignetteGainParams[2] = 0.2;
-    oVignetteGainParams[3] = 0.2;
-    oVignetteGainParams[4] = 0.2;
-
-    dng_vignette_radial_params oVignetteParams(oVignetteGainParams, oCenter);
-    AutoPtr<dng_opcode> oFixVignetteOpcode(new dng_opcode_FixVignetteRadial(oVignetteParams, dng_opcode::kFlag_None));
-    oNegative->OpcodeList3().Append(oFixVignetteOpcode);
+      dng_vignette_radial_params oVignetteParams(oVignetteGainParams, oCenter);
+      AutoPtr<dng_opcode> oFixVignetteOpcode(new dng_opcode_FixVignetteRadial(oVignetteParams, dng_opcode::kFlag_None));
+      oNegative->OpcodeList3().Append(oFixVignetteOpcode);
+    }
 
     // -------------------------------------------------------------
     // Write DNG file
@@ -407,7 +422,7 @@ static dng_error_code ConvertToDNG(std::string m_szInputFile, bool m_bTiff)
     AutoPtr<dng_image_writer> oWriter(new dng_image_writer());
     oWriter->WriteDNG(oDNGHost, oDNGStream, *oNegative.Get());
 
-    if (m_bTiff) {
+    if (conf.m_bTiff) {
       // -------------------------------------------------------------
       // Write TIFF file
       // -------------------------------------------------------------
@@ -456,13 +471,15 @@ static void usage(const char *prog)
           "Valid options:\n"
           "\t-v            Verbose mode\n"
           "\t-h            Help\n"
+          "\t-no-lens      Do not apply lens corrections\n"
           "\t-tiff         Write TIFF image to \"<file>.tiff\"\n",
           prog);
 }
 
 int main(int argc, char *argv[])
 {
-  bool m_bTiff = false;
+  Config conf;
+  Exif exif;
 
   if (argc == 1) {
     usage(argv[0]);
@@ -483,7 +500,9 @@ int main(int argc, char *argv[])
       usage(argv[0]);
       return EXIT_SUCCESS;
     } else if (option.Matches("tiff", true)) {
-      m_bTiff = true;
+      conf.m_bTiff = true;
+    } else if (option.Matches("no-lens", true)) {
+      conf.m_bLensCorrections = false;
     } else {
       fprintf(stderr, "Error: Unknown option \"-%s\"\n", option.Get());
       return EXIT_FAILURE;
@@ -498,7 +517,7 @@ int main(int argc, char *argv[])
   dng_xmp_sdk::InitializeSDK();
   dng_error_code rc;
   while (index < argc) {
-    rc = ConvertToDNG(argv[index++], m_bTiff);
+    rc = ConvertToDNG(argv[index++], conf, exif);
     if (rc != dng_error_none)
       return EXIT_FAILURE;
   }
