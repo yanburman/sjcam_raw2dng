@@ -11,7 +11,8 @@ DNG_BIN_DIR=$(DNG_PUB_DIR)/projects/linux
 LIB= $(DNG_BIN_DIR)/libdng_sdk.a -ljpeg -lz -lpthread -ldl $(XMP_RELEASE)/staticXMPFiles.ar $(XMP_RELEASE)/staticXMPCore.ar -ldl
 
 CPP_FILES := sjcam_raw2dng.cpp \
-	CFAReader.cpp
+	CFAReader.cpp \
+	DNGConverter.cpp
 OBJ_FILES := $(CPP_FILES:.cpp=.o)
 
 
