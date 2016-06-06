@@ -7,6 +7,7 @@
 #include <dng_exceptions.h>
 #include <dng_rational.h>
 #include <dng_tag_values.h>
+#include <dng_date_time.h>
 
 struct Config {
   Config() : m_bTiff(false), m_bLensCorrections(true)
@@ -30,6 +31,8 @@ struct Exif {
   double m_dFocalLength;
   uint32 m_uLightSource;
   dng_srational m_oExposureBias;
+  std::string m_szCreatorTool;
+  dng_date_time_info m_oOrigDate;
 };
 
 class DNGConverter
@@ -38,7 +41,9 @@ class DNGConverter
   DNGConverter(Config &config);
   ~DNGConverter();
 
-  dng_error_code ConvertToDNG(std::string &m_szInputFile, const Exif &exif = m_oDefaultExif);
+  dng_error_code ConvertToDNG(const std::string &m_szInputFile, const Exif &exif = m_oDefaultExif);
+
+  int ParseMetadata(const std::string &metadata, Exif &oExif);
 
   protected:
   Config m_oConfig;

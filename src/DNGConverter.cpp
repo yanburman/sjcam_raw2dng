@@ -1,6 +1,34 @@
 /* vim: set shiftwidth=2 tabstop=2 softtabstop=2 expandtab: */
 
 #include <stdio.h>
+#include <string>
+#include <dng_flags.h>
+
+#if qMacOS
+#ifndef MAC_ENV
+#define MAC_ENV 1
+#endif
+#endif
+
+#if qWinOS
+#ifndef WIN_ENV
+#define WIN_ENV 1
+#endif
+#endif
+
+#if qLinux
+#ifndef UNIX_ENV
+#define UNIX_ENV 1
+#endif
+#endif
+
+// Must be defined to instantiate template classes
+#define TXMP_STRING_TYPE std::string
+
+// Must be defined to give access to XMPFiles
+#define XMP_INCLUDE_XMPFILES 1
+
+#include <XMP.incl_cpp>
 
 #include <dng_orientation.h>
 #include <dng_xy_coord.h>
@@ -17,6 +45,8 @@
 #include <dng_render.h>
 #include <dng_xmp_sdk.h>
 #include <dng_globals.h>
+
+#include <assert.h>
 
 #include "DNGConverter.h"
 
@@ -35,7 +65,89 @@ DNGConverter::~DNGConverter()
   dng_xmp_sdk::TerminateSDK();
 }
 
-dng_error_code DNGConverter::ConvertToDNG(std::string &m_szInputFile, const Exif &exif)
+template <typename T> void str2rational(const std::string &val, T &result)
+{
+  result.n = atoi(val.c_str());
+
+  std::size_t idx = val.find_first_of('/');
+  assert(idx != std::string::npos);
+
+  result.d = atoi(&val.c_str()[idx + 1]);
+}
+
+static void XMPdate2DNGdate(const XMP_DateTime &xmp_date, dng_date_time_info &oDNGDate)
+{
+  dng_date_time dt(xmp_date.year, xmp_date.month, xmp_date.day, xmp_date.hour, xmp_date.minute, xmp_date.second);
+
+  oDNGDate.SetDateTime(dt);
+
+  char buff[32];
+
+  snprintf(buff, sizeof(buff), "%d", xmp_date.nanoSecond);
+
+  dng_string sub_seconds;
+  sub_seconds.Set(buff);
+  oDNGDate.SetSubseconds(sub_seconds);
+}
+
+int DNGConverter::ParseMetadata(const std::string &metadata, Exif &oExif)
+{
+  bool ok, exists;
+  SXMPFiles myFile;
+  ok = myFile.OpenFile(metadata, kXMP_JPEGFile, kXMPFiles_OpenForRead);
+  if (!ok) {
+    return -1;
+  }
+
+  // Create the xmp object and get the xmp data
+  SXMPMeta meta;
+  myFile.GetXMP(&meta);
+
+  exists = meta.GetProperty(kXMP_NS_XMP, "CreatorTool", &oExif.m_szCreatorTool, NULL);
+  if (!exists)
+    return -1;
+
+  std::string propValue;
+  exists = meta.GetArrayItem(kXMP_NS_EXIF, "ISOSpeedRatings", 1, &propValue, 0);
+  if (!exists)
+    return -1;
+
+  oExif.m_unISO = atoi(propValue.c_str());
+
+  XMP_DateTime myDate;
+  exists = meta.GetProperty_Date(kXMP_NS_EXIF, "DateTimeOriginal", &myDate, NULL);
+  if (!exists)
+    return -1;
+
+  XMPdate2DNGdate(myDate, oExif.m_oOrigDate);
+
+  exists = meta.GetProperty(kXMP_NS_EXIF, "ExposureTime", &propValue, NULL);
+  if (!exists)
+    return -1;
+
+  str2rational(propValue, oExif.m_oExposureTime);
+
+  exists = meta.GetProperty(kXMP_NS_EXIF, "ExposureBiasValue", &propValue, NULL);
+  if (!exists)
+    return -1;
+
+  str2rational(propValue, oExif.m_oExposureBias);
+
+  XMP_Int32 ls;
+  exists = meta.GetProperty_Int(kXMP_NS_EXIF, "LightSource", &ls, NULL);
+  if (!exists)
+    return -1;
+
+  oExif.m_uLightSource = ls;
+
+  // Close the SXMPFile.  The resource file is already closed if it was
+  // opened as read only but this call must still be made.
+  myFile.CloseFile();
+
+  return 0;
+}
+
+dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, const Exif &exif)
 {
   // SETTINGS: 12-Bit RGGB BAYER PATTERN
   uint8 m_unColorPlanes = 3;
@@ -61,7 +173,6 @@ dng_error_code DNGConverter::ConvertToDNG(std::string &m_szInputFile, const Exif
   std::string szBaseFilename = "";
   std::string m_szOutputFile = "";
   std::string m_szRenderFile = "";
-  std::string m_szPathPrefixInput = "";
   std::string m_szPathPrefixOutput = "";
   std::string m_szPathPrefixProfiles = "";
   size_t unIndex = m_szInputFile.find_last_of(".");
@@ -70,7 +181,6 @@ dng_error_code DNGConverter::ConvertToDNG(std::string &m_szInputFile, const Exif
   } else {
     szBaseFilename = m_szInputFile.substr(0, unIndex);
   }
-  m_szInputFile = m_szPathPrefixInput + m_szInputFile;
   m_szOutputFile = m_szPathPrefixOutput + szBaseFilename + ".dng";
   m_szRenderFile = m_szPathPrefixOutput + szBaseFilename + ".tiff";
 
@@ -82,13 +192,7 @@ dng_error_code DNGConverter::ConvertToDNG(std::string &m_szInputFile, const Exif
     // Print settings
     // -------------------------------------------------------------
 
-    printf("\n");
-    printf("===============================================================================\n");
-    printf("Simple DNG converter\n");
-    printf("===============================================================================\n\n");
-    printf("\n");
-    printf("BAYER:\n");
-    printf("%s\n", m_szInputFile.c_str());
+    printf("RAW: %s\n", m_szInputFile.c_str());
 
     printf("\nConverting...\n");
 
@@ -236,6 +340,11 @@ dng_error_code DNGConverter::ConvertToDNG(std::string &m_szInputFile, const Exif
     // Set Camera Make
     // Remarks: Tag [Make] / [EXIF]
     poExif->fMake.Set_ASCII(m_szMake.c_str());
+
+    // Set creator tool
+    // Remarks: Tag [CreatorTool]
+    if (!exif.m_szCreatorTool.empty())
+      poExif->fSoftware.Set_ASCII(exif.m_szCreatorTool.c_str());
 
     // Set Camera Model
     // Remarks: Tag [Model] / [EXIF]
