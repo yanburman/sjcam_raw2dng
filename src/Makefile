@@ -25,6 +25,7 @@ $(APP): $(OBJ_FILES)
 
 # Compilation
 %.o: %.cpp
+	-@clang-format-3.6 -i $^
 	g++ -c -O0 -ggdb -Wall $(INCL) $^
 
 clean:
