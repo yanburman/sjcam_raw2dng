@@ -420,6 +420,24 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     poExif->fLensInfo[2].Set_real64(exif.m_dLensAperture, 10);
     poExif->fLensInfo[3].Set_real64(exif.m_dLensAperture, 10);
 
+    // Set file source
+    // Remarks: Tag [FileSource] / [EXIF]
+    poExif->fFileSource = 3;
+
+    // Set scene type
+    // Remarks: Tag [SceneType] / [EXIF]
+    poExif->fSceneType = 1;
+
+    // Set custom rendered
+    // Remarks: Tag [CustomRendered] / [EXIF]
+    poExif->fCustomRendered = 0;
+
+    // Update date from original file
+    if (exif.m_oOrigDate.IsValid()) {
+      poExif->fDateTimeOriginal = exif.m_oOrigDate;
+      poExif->fDateTimeDigitized = exif.m_oOrigDate;
+    }
+
     // -------------------------------------------------------------
     // DNG Profile Settings: Simple color calibration
     // -------------------------------------------------------------
