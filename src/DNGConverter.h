@@ -6,16 +6,18 @@
 #include <string>
 #include <dng_exceptions.h>
 #include <dng_rational.h>
+#include <dng_matrix.h>
 #include <dng_tag_values.h>
 #include <dng_date_time.h>
 
 struct Config {
-  Config() : m_bTiff(false), m_bLensCorrections(true)
+  Config() : m_bTiff(false), m_bLensCorrections(true), m_bNoCalibration(false)
   {
   }
 
   bool m_bTiff;
   bool m_bLensCorrections;
+  bool m_bNoCalibration;
 };
 
 struct Exif {
@@ -49,6 +51,9 @@ class DNGConverter
   Config m_oConfig;
   static const dng_urational m_oZeroURational;
   static const Exif m_oDefaultExif;
+  static const dng_matrix_3by3 m_oIdentityMatrix;
+  static const dng_matrix_3by3 m_olsD65Matrix;
+  static const dng_matrix_3by3 m_olsAMatrix;
 };
 
 #endif // __CONVERTER_H__

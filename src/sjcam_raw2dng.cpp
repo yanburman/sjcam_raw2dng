@@ -200,6 +200,7 @@ static void usage(const char *prog)
           "\t-v            Verbose mode\n"
           "\t-h            Help\n"
           "\t-no-lens      Do not apply lens corrections\n"
+          "\t-no-color     Do not apply color calibration (for color calibration)\n"
           "\t-tiff         Write TIFF image to \"<file>.tiff\"\n",
           prog);
 }
@@ -230,8 +231,11 @@ int main(int argc, char *argv[])
       conf.m_bTiff = true;
     } else if (option.Matches("no-lens", true)) {
       conf.m_bLensCorrections = false;
+    } else if (option.Matches("no-color", true)) {
+      conf.m_bNoCalibration = true;
     } else {
       fprintf(stderr, "Error: Unknown option \"-%s\"\n", option.Get());
+      usage(argv[0]);
       return EXIT_FAILURE;
     }
   }

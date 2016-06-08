@@ -54,6 +54,30 @@
 
 const dng_urational DNGConverter::m_oZeroURational(0, 100);
 const Exif DNGConverter::m_oDefaultExif;
+const dng_matrix_3by3 DNGConverter::m_oIdentityMatrix(1, 0, 0, 0, 1, 0, 0, 0, 1);
+
+// Derived from MATLAB using least square linear regression with
+//          MacBeth ColorChecker classic
+const dng_matrix_3by3 DNGConverter::m_olsD65Matrix(2.3150,
+                                                   0.0711,
+                                                   0.1455,
+                                                   0.9861,
+                                                   0.7815,
+                                                   -0.2192,
+                                                   0.2082,
+                                                   -0.3349,
+                                                   1.6432);
+// Derived from MATLAB using least square linear regression with
+//          MacBeth ColorChecker classic
+const dng_matrix_3by3 DNGConverter::m_olsAMatrix(1.6335,
+                                                 0.4718,
+                                                 -0.0656,
+                                                 0.5227,
+                                                 1.0298,
+                                                 -0.3416,
+                                                 0.0475,
+                                                 -0.2020,
+                                                 1.2522);
 
 DNGConverter::DNGConverter(Config &config) : m_oConfig(config)
 {
@@ -443,17 +467,19 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // -------------------------------------------------------------
 
     // Camera space RGB to XYZ matrix with D65 illumination
-    // Remarks: Derived from MATLAB using least square linear regression with
-    //          MacBeth ColorChecker classic
-    dng_matrix_3by3 oCameraRGB_to_XYZ_D65 =
-      dng_matrix_3by3(2.3150, 0.0711, 0.1455, 0.9861, 0.7815, -0.2192, 0.2082, -0.3349, 1.6432);
+    dng_matrix_3by3 oCameraRGB_to_XYZ_D65;
+    if (m_oConfig.m_bNoCalibration)
+      oCameraRGB_to_XYZ_D65 = m_oIdentityMatrix;
+    else
+      oCameraRGB_to_XYZ_D65 = m_olsD65Matrix;
     uint32 ulCalibrationIlluminant1 = lsD65;
 
     // Camera space RGB to XYZ matrix with StdA illumination
-    // Remarks: Derived from MATLAB using least square linear regression with
-    //          MacBeth ColorChecker classic
-    dng_matrix_3by3 oCameraRGB_to_XYZ_A =
-      dng_matrix_3by3(1.6335, 0.4718, -0.0656, 0.5227, 1.0298, -0.3416, 0.0475, -0.2020, 1.2522);
+    dng_matrix_3by3 oCameraRGB_to_XYZ_A;
+    if (m_oConfig.m_bNoCalibration)
+      oCameraRGB_to_XYZ_A = m_oIdentityMatrix;
+    else
+      oCameraRGB_to_XYZ_A = m_olsAMatrix;
 
     uint32 ulCalibrationIlluminant2 = lsStandardLightA;
 
