@@ -208,12 +208,7 @@ SetOutputPath(${OUTPUT_DIR} 0)
 # ==============================================================================
 if(UNIX)
 	if (NOT APPLE)
-		if (${XMP_BUILD_STATIC})
-			add_custom_command (TARGET ${TARGET_NAME}
-				POST_BUILD
-				COMMAND  mv ${OUTPUT_DIR}/lib${XMPCORE_LIB}.a  ${OUTPUT_DIR}/${XMPCORE_LIB}.ar
-			)
-		else()
+		if (NOT ${XMP_BUILD_STATIC})
 			if((${CMAKE_BUILD_TYPE} MATCHES "Debug") OR (${CMAKE_BUILD_TYPE} MATCHES "debug") )
 				add_custom_command (TARGET ${TARGET_NAME}
 					POST_BUILD
