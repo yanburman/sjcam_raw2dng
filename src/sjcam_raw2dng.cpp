@@ -197,7 +197,9 @@ static void usage(const char *prog)
           "Usage:  %s [options] file1 file2 ...\n"
           "\n"
           "Valid options:\n"
+#if qDNGValidate
           "\t-v            Verbose mode\n"
+#endif
           "\t-h            Help\n"
           "\t-no-lens      Do not apply lens corrections\n"
           "\t-no-color     Do not apply color calibration (for color calibration)\n"
@@ -216,17 +218,22 @@ int main(int argc, char *argv[])
 
   int index;
 
+#if qDNGValidate
   gVerbose = false;
+#endif
+
   for (index = 1; index < argc && argv[index][0] == '-'; index++) {
     dng_string option;
 
     option.Set(&argv[index][1]);
 
-    if (option.Matches("v", true)) {
-      gVerbose = true;
-    } else if (option.Matches("h", true)) {
+    if (option.Matches("h", true)) {
       usage(argv[0]);
       return EXIT_SUCCESS;
+#if qDNGValidate
+    } else if (option.Matches("v", true)) {
+      gVerbose = true;
+#endif
     } else if (option.Matches("tiff", true)) {
       conf.m_bTiff = true;
     } else if (option.Matches("no-lens", true)) {
