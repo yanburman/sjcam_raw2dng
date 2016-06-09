@@ -26,3 +26,23 @@
 *.exe
 *.out
 *.app
+
+# vi
+*.swp
+
+# cmake
+CMakeFiles
+Makefile
+CMakeCache.txt
+cmake_install.cmake
+
+# binaries
+dng_sdk/projects/linux/dng_validate
+sjcam_raw2dng
+xmp_sdk/public/libraries
+
+# diff
+*.orig
+*.rej
+*.diff
+*.patch

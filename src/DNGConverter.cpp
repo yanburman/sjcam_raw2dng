@@ -435,7 +435,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set 35mm equivalent focal length
     // Remarks: Tag [FocalLengthIn35mmFilm] / [EXIF]
-    poExif->fFocalLengthIn35mmFilm = round(exif.m_dFocalLength * 5.64);
+    poExif->fFocalLengthIn35mmFilm = (uint32)round(exif.m_dFocalLength * 5.64);
 
     // Set lens info
     // Remarks: Tag [LensInfo] / [EXIF]
