@@ -9,7 +9,18 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
+# Our project
 project(sjcam_raw2dng)
+
+# import XMP SDK
+set(XMPROOT "xmp_sdk")
+set(XMP_BUILD_STATIC "On")
+set(CMAKE_CL_64 "On")
+set(CMAKE_TOOLCHAIN_FILE "${XMPROOT}/build/shared/ToolchangGCC.cmake")
+
+add_subdirectory(${XMPROOT}/build)
+
+
 
 set(SRC_DIR src)
 
@@ -33,22 +44,14 @@ if (UNIX)
                                -D_FORTIFY_SOURCE=2")
 
     set(CMAKE_CXX_FLAGS_RELEASE "${warning_flags} \
-                                 -O3 \
+                                 -O2 \
                                  -flto \
                                  -DNDEBUG \
                                  -U_FORTIFY_SOURCE")
-    set(XMP_RELEASE xmp_sdk/public/libraries/i80386linux_x64/release)
-
     set(DNG_BIN_DIR dng_sdk/projects/linux)
-
-    add_library(XMPFiles STATIC IMPORTED)
-    set_target_properties(XMPFiles PROPERTIES IMPORTED_LOCATION ${XMP_RELEASE}/staticXMPFiles.ar)
 
     add_library(dng_sdk STATIC IMPORTED)
     set_target_properties(dng_sdk PROPERTIES IMPORTED_LOCATION ${DNG_BIN_DIR}/libdng_sdk.a)
-
-    add_library(XMPCore STATIC IMPORTED)
-    set_target_properties(XMPCore PROPERTIES IMPORTED_LOCATION ${XMP_RELEASE}/staticXMPCore.ar)
 endif()
 
 
@@ -65,7 +68,7 @@ add_executable(${target} ${SRC_DIR}/CFAReader.cpp
 
 target_include_directories(${target} PUBLIC ${SRC_DIR}
                                             dng_sdk/source
-                                            xmp_sdk/public/include)
+                                            ${XMPROOT}/public/include)
 
 target_link_libraries(${target}
                                 dng_sdk
@@ -73,8 +76,8 @@ target_link_libraries(${target}
                                 -lz
                                 -lpthread
                                 -ldl
-                                XMPFiles
-                                XMPCore
+                                XMPFilesStatic
+                                XMPCoreStatic
                                 -ldl
                                 )
 
