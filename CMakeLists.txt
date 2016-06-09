@@ -14,12 +14,9 @@ project(sjcam_raw2dng)
 
 # import XMP SDK
 set(XMPROOT "xmp_sdk")
-set(XMP_BUILD_STATIC "On")
-set(CMAKE_CL_64 "On")
-set(CMAKE_TOOLCHAIN_FILE "${XMPROOT}/build/shared/ToolchangGCC.cmake")
 
-add_subdirectory(${XMPROOT}/build)
-
+# import DNG SDK
+add_subdirectory(dng_sdk/projects/cmake)
 
 
 set(SRC_DIR src)
@@ -48,10 +45,6 @@ if (UNIX)
                                  -flto \
                                  -DNDEBUG \
                                  -U_FORTIFY_SOURCE")
-    set(DNG_BIN_DIR dng_sdk/projects/linux)
-
-    add_library(dng_sdk STATIC IMPORTED)
-    set_target_properties(dng_sdk PROPERTIES IMPORTED_LOCATION ${DNG_BIN_DIR}/libdng_sdk.a)
 endif()
 
 
