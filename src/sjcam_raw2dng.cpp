@@ -5,10 +5,15 @@
 
 #include <stdio.h>
 #include <sys/types.h>
-#include <dirent.h>
 #include <errno.h>
 #include <sys/stat.h>
+
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#else
+#include <dirent.h>
 #include <unistd.h>
+#endif
 
 #include "DNGConverter.h"
 
@@ -30,12 +35,36 @@ static dng_error_code handle_file(DNGConverter &converter, const std::string &fn
   return converter.ConvertToDNG(fname);
 }
 
-static bool has_suffix(const std::string &str, const std::string &suffix)
-{
-  return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
-}
-
 static int list_dir(const std::string &dir, std::list<std::string> &files)
+#if defined(_WIN32) || defined(_WIN64)
+{
+  WIN32_FIND_DATA ffd;
+  HANDLE hFind = INVALID_HANDLE_VALUE;
+  DWORD dwError = 0;
+
+  // Find the first file in the directory.
+
+  hFind = FindFirstFile(dir.c_str(), &ffd);
+
+  if (INVALID_HANDLE_VALUE == hFind)
+    return GetLastError();
+
+  // List all the files in the directory with some info about them.
+
+  do {
+    if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && !strstr(ffd.cFileName, ".dng") &&
+        !strstr(ffd.cFileName, ".DNG"))
+      files.push_back(std::string(ffd.cFileName));
+  } while (FindNextFile(hFind, &ffd) != 0);
+
+  dwError = GetLastError();
+  if (dwError == ERROR_NO_MORE_FILES)
+    dwError = 0;
+
+  FindClose(hFind);
+  return dwError;
+}
+#else
 {
   DIR *dp;
   struct dirent *dirp;
@@ -54,6 +83,12 @@ static int list_dir(const std::string &dir, std::list<std::string> &files)
   files.sort();
 
   return 0;
+}
+#endif
+
+static bool has_suffix(const std::string &str, const std::string &suffix)
+{
+  return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
 static dng_error_code find_files(DNGConverter &converter, std::string &dir)
