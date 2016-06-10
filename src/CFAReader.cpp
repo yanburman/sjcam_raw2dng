@@ -61,7 +61,7 @@ int CFAReader::open(const char *fname, size_t expected_size)
   m_map_handle = CreateFileMapping(m_fd, NULL, PAGE_READONLY, 0, m_filesz, NULL);
   if (NULL == m_map_handle)
     return GetLastError();
-  m_buf = (uint8_t *)MapViewOfFile(map_handle, FILE_MAP_READ, 0, 0, 0);
+  m_buf = (uint8_t *)MapViewOfFile(m_map_handle, FILE_MAP_READ, 0, 0, 0);
   if (NULL == m_buf)
     return GetLastError();
 #else
