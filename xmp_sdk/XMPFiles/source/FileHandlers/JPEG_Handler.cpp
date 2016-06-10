@@ -26,6 +26,8 @@
 
 using namespace std;
 
+#include <algorithm>
+
 // =================================================================================================
 /// \file JPEG_Handler.cpp
 /// \brief File format handler for JPEG.
