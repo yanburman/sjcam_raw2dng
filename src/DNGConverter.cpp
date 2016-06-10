@@ -30,8 +30,6 @@
 
 #include <XMP.incl_cpp>
 
-#include <dng_orientation.h>
-#include <dng_xy_coord.h>
 #include <dng_camera_profile.h>
 #include <dng_image.h>
 #include <dng_negative.h>
@@ -79,9 +77,31 @@ const dng_matrix_3by3 DNGConverter::m_olsAMatrix(1.6335,
                                                  -0.2020,
                                                  1.2522);
 
-DNGConverter::DNGConverter(Config &config) : m_oConfig(config)
+// SETTINGS: 12-Bit RGGB BAYER PATTERN
+uint8 DNGConverter::m_unColorPlanes = 3;
+uint16 DNGConverter::m_unBayerType = 1; // RGGB
+uint32 DNGConverter::m_ulWidth = 4000;
+uint32 DNGConverter::m_ulHeight = 3000;
+uint32 DNGConverter::m_ulBlackLevel = 0;
+
+// SETTINGS: Names
+const std::string DNGConverter::m_szMake = "SJCAM";
+const std::string DNGConverter::m_szCameraModel = "SJ5000X";
+
+// Calculate bit limit
+uint32_t DNGConverter::m_unBitLimit = 0x01 << 12;
+
+DNGConverter::DNGConverter(Config &config)
 {
+  m_oConfig = config;
+
   dng_xmp_sdk::InitializeSDK();
+
+  // SETTINGS: Whitebalance D65, Orientation "normal"
+  m_oOrientation = dng_orientation::Normal();
+  m_oWhitebalanceDetectedXY = D65_xy_coord();
+
+  m_szPathPrefixOutput = "";
 }
 
 DNGConverter::~DNGConverter()
@@ -173,32 +193,14 @@ int DNGConverter::ParseMetadata(const std::string &metadata, Exif &oExif)
 
 dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, const Exif &exif)
 {
-  // SETTINGS: 12-Bit RGGB BAYER PATTERN
-  uint8 m_unColorPlanes = 3;
-  uint16 m_unBayerType = 1; // RGGB
-  uint32 m_ulWidth = 4000;
-  uint32 m_ulHeight = 3000;
-  uint32 m_ulBlackLevel = 0;
-
-  // SETTINGS: Whitebalance D65, Orientation "normal"
-  dng_orientation m_oOrientation = dng_orientation::Normal();
-  dng_xy_coord m_oWhitebalanceDetectedXY = D65_xy_coord();
-
   // SETTINGS: Names
-  std::string m_szMake = "SJCAM";
-  std::string m_szCameraModel = "SJ5000X";
-  std::string szProfileName = m_szCameraModel;
-  std::string szProfileCopyright = m_szMake;
-
-  // Calculate bit limit
-  uint32 m_unBitLimit = 0x01 << 12;
+  const std::string &szProfileName = m_szCameraModel;
+  const std::string &szProfileCopyright = m_szMake;
 
   // Form output filenames
   std::string szBaseFilename = "";
   std::string m_szOutputFile = "";
   std::string m_szRenderFile = "";
-  std::string m_szPathPrefixOutput = "";
-  std::string m_szPathPrefixProfiles = "";
   size_t unIndex = m_szInputFile.find_last_of(".");
   if (unIndex == std::string::npos) {
     szBaseFilename = m_szInputFile;

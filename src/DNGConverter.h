@@ -9,6 +9,8 @@
 #include <dng_matrix.h>
 #include <dng_tag_values.h>
 #include <dng_date_time.h>
+#include <dng_xy_coord.h>
+#include <dng_orientation.h>
 
 struct Config {
   Config() : m_bTiff(false), m_bLensCorrections(true), m_bNoCalibration(false)
@@ -49,6 +51,22 @@ class DNGConverter
 
   protected:
   Config m_oConfig;
+
+  dng_orientation m_oOrientation;
+  dng_xy_coord m_oWhitebalanceDetectedXY;
+  std::string m_szPathPrefixOutput;
+
+  static uint8 m_unColorPlanes;
+  static uint16 m_unBayerType;
+  static uint32 m_ulWidth;
+  static uint32 m_ulHeight;
+  static uint32 m_ulBlackLevel;
+
+  static const std::string m_szMake;
+  static const std::string m_szCameraModel;
+
+  static uint32 m_unBitLimit;
+
   static const dng_urational m_oZeroURational;
   static const Exif m_oDefaultExif;
   static const dng_matrix_3by3 m_oIdentityMatrix;
