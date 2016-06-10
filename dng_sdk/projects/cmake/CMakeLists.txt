@@ -112,7 +112,7 @@ if (UNIX)
                                  -U_FORTIFY_SOURCE")
 else (UNIX)
     if (MSVC)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqDNG64Bit /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0 /D_CRT_NO_TIME_T=1")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqDNG64Bit /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0")
     endif (MSVC)
 endif(UNIX)
 
