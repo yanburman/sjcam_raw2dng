@@ -38,6 +38,7 @@ cmake_install.cmake
 
 # binaries
 dng_sdk/projects/linux/dng_validate
+dng_sdk/projects/cmake/dng_validate
 sjcam_raw2dng
 xmp_sdk/public/libraries
 
@@ -46,3 +47,17 @@ xmp_sdk/public/libraries
 *.rej
 *.diff
 *.patch
+
+# VC
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
+*.VC.db
+*.VC.VC.opendb
+*.log
+*.tlog
+*.lastbuildstate
+*.suo
+*.pdb
+*.cache
