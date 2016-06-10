@@ -11,6 +11,11 @@ endif()
 
 project(dng_sdk)
 
+
+if (MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DNOMINMAX")
+endif (MSVC)
+
 # import XMP SDK
 set(XMPROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../xmp_sdk")
 set(XMP_BUILD_STATIC "On")
@@ -92,7 +97,7 @@ set(LIB_SRC
    )
 
 if (UNIX)
-   set(DNG_FLAGS "-DqDNG64Bit")
+    set(DNG_FLAGS "-DqDNG64Bit")
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack")
     set(CMAKE_CXX_FLAGS_DEBUG "${DNG_FLAGS} \
@@ -105,14 +110,18 @@ if (UNIX)
                                  -flto \
                                  -DNDEBUG \
                                  -U_FORTIFY_SOURCE")
-endif()
+else (UNIX)
+    if (MSVC)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqDNG64Bit /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0 /D_CRT_NO_TIME_T=1")
+    endif (MSVC)
+endif(UNIX)
 
 
 # cmake adds -rdynamic to all links which effectively disables lto
 set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
 set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
-include_directories(${SRC_DIR} ${XMPROOT}/public/include)
+include_directories(${SRC_DIR} ${XMPROOT}/public/include ${XMPROOT}/third-party/zlib)
 
 # dng_validate binary
 set(target dng_validate)
@@ -121,8 +130,15 @@ add_executable(${target}
 		${LIB_SRC}
 		${SRC_DIR}/dng_validate.cpp)
 
-target_compile_options(${target} PUBLIC
-                       "-DqDNGValidateTarget")
+if (UNIX)
+    target_compile_options(${target} PUBLIC
+                           "-DqDNGValidateTarget=1")
+else (UNIX)
+    if (MSVC)
+        target_compile_options(${target} PUBLIC
+                               "/DqDNGValidateTarget=1")
+    endif (MSVC)
+endif (UNIX)
 
 
 target_link_libraries(${target}
