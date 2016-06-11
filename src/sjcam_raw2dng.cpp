@@ -35,6 +35,14 @@ static dng_error_code handle_file(DNGConverter &converter, const std::string &fn
   return converter.ConvertToDNG(fname);
 }
 
+static bool has_suffix(const std::string &str, const std::string &suffix)
+{
+  return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+const static std::string jpeg_suffix(".JPG");
+const static std::string raw_suffix(".RAW");
+
 static int list_dir(const std::string &dir, std::list<std::string> &files)
 #if defined(_WIN32) || defined(_WIN64)
 {
@@ -52,9 +60,12 @@ static int list_dir(const std::string &dir, std::list<std::string> &files)
   // List all the files in the directory with some info about them.
 
   do {
-    if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && !strstr(ffd.cFileName, ".dng") &&
-        !strstr(ffd.cFileName, ".DNG"))
-      files.push_back(std::string(ffd.cFileName));
+    if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+      std::string fname(ffd.cFileName);
+
+      if (has_suffix(fname, raw_suffix) || has_suffix(fname, jpeg_suffix))
+        files.push_back(fname);
+    }
   } while (FindNextFile(hFind, &ffd) != 0);
 
   dwError = GetLastError();
@@ -78,8 +89,12 @@ static int list_dir(const std::string &dir, std::list<std::string> &files)
   }
 
   while ((dirp = readdir(dp)) != NULL) {
-    if (dirp->d_type == DT_REG && !strstr(dirp->d_name, ".dng") && !strstr(dirp->d_name, ".DNG"))
-      files.push_back(std::string(dirp->d_name));
+    if (dirp->d_type == DT_REG) {
+      std::string fname(dirp->d_name);
+
+      if (has_suffix(fname, raw_suffix) || has_suffix(fname, jpeg_suffix))
+        files.push_back(fname);
+    }
   }
   closedir(dp);
 
@@ -88,11 +103,6 @@ static int list_dir(const std::string &dir, std::list<std::string> &files)
   return 0;
 }
 #endif
-
-static bool has_suffix(const std::string &str, const std::string &suffix)
-{
-  return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
-}
 
 static dng_error_code find_files(DNGConverter &converter, std::string &dir)
 {
@@ -103,7 +113,6 @@ static dng_error_code find_files(DNGConverter &converter, std::string &dir)
 
   std::list<std::string>::iterator it, found_it = files.begin();
   bool found = false;
-  const std::string raw_suffix = ".RAW";
   char buffer[16];
   std::string jpg_suffix;
   std::string res;
