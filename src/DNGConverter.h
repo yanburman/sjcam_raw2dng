@@ -25,7 +25,7 @@ struct Config {
 struct Exif {
   Exif()
           : m_unISO(100), m_oExposureTime(1, 16), m_dLensAperture(1.7), m_dFocalLength(2.99), m_uLightSource(lsUnknown),
-            m_oExposureBias(0, 0)
+            m_oExposureBias(0, 0), m_ulWidth(4000), m_ulHeight(3000), m_szCameraModel("SJ5000X")
   {
   }
 
@@ -37,6 +37,9 @@ struct Exif {
   dng_srational m_oExposureBias;
   std::string m_szCreatorTool;
   dng_date_time_info m_oOrigDate;
+  uint32 m_ulWidth;
+  uint32 m_ulHeight;
+  std::string m_szCameraModel;
 };
 
 class DNGConverter
@@ -58,12 +61,9 @@ class DNGConverter
 
   static uint8 m_unColorPlanes;
   static uint16 m_unBayerType;
-  static uint32 m_ulWidth;
-  static uint32 m_ulHeight;
   static uint32 m_ulBlackLevel;
 
   static const std::string m_szMake;
-  static const std::string m_szCameraModel;
 
   static uint32 m_unBitLimit;
 

@@ -80,13 +80,10 @@ const dng_matrix_3by3 DNGConverter::m_olsAMatrix(1.6335,
 // SETTINGS: 12-Bit RGGB BAYER PATTERN
 uint8 DNGConverter::m_unColorPlanes = 3;
 uint16 DNGConverter::m_unBayerType = 1; // RGGB
-uint32 DNGConverter::m_ulWidth = 4000;
-uint32 DNGConverter::m_ulHeight = 3000;
 uint32 DNGConverter::m_ulBlackLevel = 0;
 
 // SETTINGS: Names
 const std::string DNGConverter::m_szMake = "SJCAM";
-const std::string DNGConverter::m_szCameraModel = "SJ5000X";
 
 // Calculate bit limit
 uint32_t DNGConverter::m_unBitLimit = 0x01 << 12;
@@ -194,7 +191,7 @@ int DNGConverter::ParseMetadata(const std::string &metadata, Exif &oExif)
 dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, const Exif &exif)
 {
   // SETTINGS: Names
-  const std::string &szProfileName = m_szCameraModel;
+  const std::string &szProfileName = exif.m_szCameraModel;
   const std::string &szProfileCopyright = m_szMake;
 
   // Form output filenames
@@ -227,14 +224,14 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // -------------------------------------------------------------
 
     CFAReader reader;
-    int ret = reader.open(m_szInputFile.c_str(), (m_ulWidth * m_ulHeight * 12) / 8);
+    int ret = reader.open(m_szInputFile.c_str(), (exif.m_ulWidth * exif.m_ulHeight * 12) / 8);
     if (ret)
       return dng_error_unknown;
 
-    AutoPtr<dng_memory_block> oBayerData(oDNGHost.Allocate(m_ulWidth * m_ulHeight * TagTypeSize(ttShort)));
+    AutoPtr<dng_memory_block> oBayerData(oDNGHost.Allocate(exif.m_ulWidth * exif.m_ulHeight * TagTypeSize(ttShort)));
 
     uint8_t *buf = (uint8_t *)oBayerData->Buffer();
-    for (unsigned int i = 0; i < m_ulWidth * m_ulHeight; ++i, buf += 2) {
+    for (unsigned int i = 0; i < exif.m_ulWidth * exif.m_ulHeight; ++i, buf += 2) {
       reader.read(buf);
     }
 
@@ -254,7 +251,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // DNG Image Settings
     // -------------------------------------------------------------
 
-    dng_rect vImageBounds(m_ulHeight, m_ulWidth);
+    dng_rect vImageBounds(exif.m_ulHeight, exif.m_ulWidth);
 
     AutoPtr<dng_image> oImage(oDNGHost.Make_dng_image(vImageBounds, m_unColorPlanes, ttShort));
 
@@ -263,7 +260,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     oBuffer.fArea = vImageBounds;
     oBuffer.fPlane = 0;
     oBuffer.fPlanes = 1;
-    oBuffer.fRowStep = oBuffer.fPlanes * m_ulWidth;
+    oBuffer.fRowStep = oBuffer.fPlanes * exif.m_ulWidth;
     oBuffer.fColStep = oBuffer.fPlanes;
     oBuffer.fPlaneStep = 1;
     oBuffer.fPixelType = ttShort;
@@ -280,11 +277,11 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set camera model
     // Remarks: Tag [UniqueCameraModel] / [50708]
-    oNegative->SetModelName(m_szCameraModel.c_str());
+    oNegative->SetModelName(exif.m_szCameraModel.c_str());
 
     // Set localized camera model
     // Remarks: Tag [UniqueCameraModel] / [50709]
-    oNegative->SetLocalName(m_szCameraModel.c_str());
+    oNegative->SetLocalName(exif.m_szCameraModel.c_str());
 
     // Set bayer pattern information
     // Remarks: Tag [CFAPlaneColor] / [50710] and [CFALayout] / [50711]
@@ -331,7 +328,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set pixel area
     // Remarks: Tag [DefaultCropSize] / [50720]
-    oNegative->SetDefaultCropSize(m_ulWidth - 4, m_ulHeight - 4);
+    oNegative->SetDefaultCropSize(exif.m_ulWidth - 4, exif.m_ulHeight - 4);
 
     // Set base orientation
     // Remarks: See Restriction / Extension tags chapter
@@ -374,7 +371,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set Camera Model
     // Remarks: Tag [Model] / [EXIF]
-    poExif->fModel.Set_ASCII(m_szCameraModel.c_str());
+    poExif->fModel.Set_ASCII(exif.m_szCameraModel.c_str());
 
     // Set Lens Model
     // Remarks: Tag [LensName] / [EXIF]
