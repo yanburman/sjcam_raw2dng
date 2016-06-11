@@ -62,6 +62,9 @@ static int list_dir(const std::string &dir, std::list<std::string> &files)
     dwError = 0;
 
   FindClose(hFind);
+
+  files.sort();
+
   return dwError;
 }
 #else
