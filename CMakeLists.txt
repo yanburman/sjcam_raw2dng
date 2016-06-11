@@ -47,6 +47,9 @@ if (UNIX)
                                  -U_FORTIFY_SOURCE")
 endif()
 
+if (MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqDNG64Bit /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0")
+endif(MSVC)
 
 # cmake adds -rdynamic to all links which effectively disables lto
 set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
@@ -63,14 +66,23 @@ target_include_directories(${target} PUBLIC ${SRC_DIR}
                                             dng_sdk/source
                                             ${XMPROOT}/public/include)
 
-target_link_libraries(${target}
-                                dng_sdk
-                                -ljpeg
-                                -lz
-                                -lpthread
-                                -ldl
-                                XMPFilesStatic
-                                XMPCoreStatic
-                                -ldl
-                                )
+if (UNIX)
+    target_link_libraries(${target}
+                          dng_sdk
+                          -ljpeg
+                          -lz
+                          -lpthread
+                          -ldl
+                          XMPFilesStatic
+                          XMPCoreStatic
+                          -ldl
+                          )
+endif(UNIX)
 
+if (MSVC)
+    target_link_libraries(${target}
+                          dng_sdk
+                          XMPFilesStatic
+                          XMPCoreStatic
+                          )
+endif(MSVC)
