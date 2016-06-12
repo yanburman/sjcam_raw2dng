@@ -10,9 +10,13 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
+#define DELIM "\\"
+#define DIR_DELIM '\\'
 #else
 #include <dirent.h>
 #include <unistd.h>
+#define DELIM "/"
+#define DIR_DELIM '/'
 #endif
 
 #include "DNGConverter.h"
@@ -162,7 +166,7 @@ static dng_error_code find_files(DNGConverter &converter, std::string &dir)
   std::string res;
   struct stat sb;
 
-  dir += "/";
+  dir += DELIM;
 
   for (it = files.begin(); it != files.end(); ++it) {
     if (found) {
@@ -242,7 +246,7 @@ static dng_error_code find_file(DNGConverter &converter, std::string &fname, uin
   std::string file_name;
   std::string res;
 
-  size_t idx = fname.find_last_of('/');
+  size_t idx = fname.find_last_of(DIR_DELIM);
   if (idx == std::string::npos) {
     dir_name = ".";
     file_name = fname;
@@ -268,13 +272,15 @@ static dng_error_code find_file(DNGConverter &converter, std::string &fname, uin
   char buffer[16];
   snprintf(buffer, sizeof(buffer), "_%03u.JPG", pic_num + 1);
 
+  dir_name += DELIM;
+
   const std::string jpg_suffix(buffer);
   std::list<std::string>::iterator it, found_it = files.begin();
   bool found = false;
   for (it = files.begin(); it != files.end(); ++it) {
     if (found) {
       if (has_suffix(*it, jpg_suffix)) {
-        res = dir_name + "/" + *it;
+        res = dir_name + *it;
       }
       handle_file(converter, fname, res, sz);
       found = false;
@@ -288,7 +294,7 @@ static dng_error_code find_file(DNGConverter &converter, std::string &fname, uin
   }
 
   if (found) {
-    res = dir_name + "/" + *found_it;
+    res = dir_name + *found_it;
     handle_file(converter, res, "", sz);
   }
 
