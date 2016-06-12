@@ -241,16 +241,16 @@ static dng_error_code handle_arg(DNGConverter &converter, const char *arg)
 static void usage(const char *prog)
 {
   fprintf(stderr,
-          "Usage:  %s [options] file1 file2 ...\n"
+          "Usage:  %s [options] file1|dir1 file2|dir2 ...\n"
           "\n"
           "Valid options:\n"
 #if qDNGValidate
-          "\t-v            Verbose mode\n"
+          "\t-verbose      Verbose mode\n"
 #endif
-          "\t-h            Help\n"
-          "\t-no-lens      Do not apply lens corrections\n"
-          "\t-no-color     Do not apply color calibration (for color calibration)\n"
-          "\t-tiff         Write TIFF image to \"<file>.tiff\"\n",
+          "\t-h, --help        Help\n"
+          "\t-l, --no-lens     Do not apply lens corrections\n"
+          "\t-c, --no-color    Do not apply color calibration (for color calibration)\n"
+          "\t-t, --tiff        Write TIFF image to \"<file>.tiff\"\n",
           prog);
 }
 
@@ -274,18 +274,18 @@ int main(int argc, char *argv[])
 
     option.Set(&argv[index][1]);
 
-    if (option.Matches("h", true)) {
+    if (option.Matches("h", true) || option.Matches("-help", true)) {
       usage(argv[0]);
       return EXIT_SUCCESS;
 #if qDNGValidate
-    } else if (option.Matches("v", true)) {
+    } else if (option.Matches("verbose", true)) {
       gVerbose = true;
 #endif
-    } else if (option.Matches("tiff", true)) {
+    } else if (option.Matches("t", true) || option.Matches("-tiff", true)) {
       conf.m_bTiff = true;
-    } else if (option.Matches("no-lens", true)) {
+    } else if (option.Matches("l", true) || option.Matches("-no-lens", true)) {
       conf.m_bLensCorrections = false;
-    } else if (option.Matches("no-color", true)) {
+    } else if (option.Matches("c", true) || option.Matches("-no-color", true)) {
       conf.m_bNoCalibration = true;
     } else {
       fprintf(stderr, "Error: Unknown option \"-%s\"\n", option.Get());

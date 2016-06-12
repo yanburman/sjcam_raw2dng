@@ -1,4 +1,3 @@
-* Add support for long and short cmdline options
 * Improve color calibration
 * Add support for m20
 * Fix vignette lens correction
