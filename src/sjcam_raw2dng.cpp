@@ -194,6 +194,7 @@ static dng_error_code find_files(DNGConverter &converter, std::string &dir)
         }
 
         handle_file(converter, fname, res, sb.st_size);
+        found = false;
         res.clear();
         continue;
       }
@@ -209,6 +210,7 @@ static dng_error_code find_files(DNGConverter &converter, std::string &dir)
         }
 
         handle_file(converter, fname, res, sb.st_size);
+        found = false;
         res.clear();
         continue;
       }
@@ -219,6 +221,16 @@ static dng_error_code find_files(DNGConverter &converter, std::string &dir)
       found_it = it;
       found = true;
     }
+  }
+
+  if (found) {
+    std::string fname = dir + *found_it;
+    ret = stat(fname.c_str(), &sb);
+    if (ret) {
+      perror("stat");
+      return dng_error_unknown;
+    }
+    handle_file(converter, fname, "", sb.st_size);
   }
 
   return dng_error_none;
@@ -265,6 +277,7 @@ static dng_error_code find_file(DNGConverter &converter, std::string &fname, uin
         res = dir_name + "/" + *it;
       }
       handle_file(converter, fname, res, sz);
+      found = false;
       break;
     }
 
@@ -272,6 +285,11 @@ static dng_error_code find_file(DNGConverter &converter, std::string &fname, uin
       found_it = it;
       found = true;
     }
+  }
+
+  if (found) {
+    res = dir_name + "/" + *found_it;
+    handle_file(converter, res, "", sz);
   }
 
   return dng_error_none;
