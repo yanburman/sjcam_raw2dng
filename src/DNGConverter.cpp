@@ -334,9 +334,17 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // Remarks: See Restriction / Extension tags chapter
     oNegative->SetBaseOrientation(m_oOrientation);
 
-    // Set camera white XY coordinates
-    // Remarks: Tag [AsShotWhiteXY] / [50729]
-    oNegative->SetCameraWhiteXY(m_oWhitebalanceDetectedXY);
+    if (m_oConfig.m_bNoCalibration) {
+      dng_vector oNeutralWB(3);
+      oNeutralWB.SetIdentity(3);
+      // Set camera neutral coordinates
+      // Remarks: Tag [AsShotNeutral] / [50728]
+      oNegative->SetCameraNeutral(oNeutralWB);
+    } else {
+      // Set camera white XY coordinates
+      // Remarks: Tag [AsShotWhiteXY] / [50729]
+      oNegative->SetCameraWhiteXY(m_oWhitebalanceDetectedXY);
+    }
 
     // Set baseline exposure
     // Remarks: Tag [BaselineExposure] / [50730]
