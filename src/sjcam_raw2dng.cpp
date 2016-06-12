@@ -20,6 +20,8 @@
 #include <dng_globals.h>
 #include <dng_string.h>
 
+#define VERSION_STR "v0.9.0"
+
 static dng_error_code handle_file(DNGConverter &converter, const std::string &fname, const std::string &metadata)
 {
   if (!metadata.empty()) {
@@ -248,6 +250,7 @@ static void usage(const char *prog)
           "\t-verbose      Verbose mode\n"
 #endif
           "\t-h, --help        Help\n"
+          "\t-v, --version     Print version info and exit\n"
           "\t-l, --no-lens     Do not apply lens corrections\n"
           "\t-c, --no-color    Do not apply color calibration (for color calibration)\n"
           "\t-t, --tiff        Write TIFF image to \"<file>.tiff\"\n",
@@ -283,6 +286,9 @@ int main(int argc, char *argv[])
 #endif
     } else if (option.Matches("t", true) || option.Matches("-tiff", true)) {
       conf.m_bTiff = true;
+    } else if (option.Matches("v", true) || option.Matches("-version", true)) {
+      printf("Version: %s\n", VERSION_STR);
+      return EXIT_SUCCESS;
     } else if (option.Matches("l", true) || option.Matches("-no-lens", true)) {
       conf.m_bLensCorrections = false;
     } else if (option.Matches("c", true) || option.Matches("-no-color", true)) {

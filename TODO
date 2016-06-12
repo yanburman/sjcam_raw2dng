@@ -3,4 +3,3 @@
 * Fix vignette lens correction
 * Add fisheye lens correction
 * Add parallel conversion in case of multiple files (thread per CPU)
-* Add version number
