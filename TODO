@@ -1,5 +1,5 @@
 * Improve color calibration
-* Add support for m20
+* Fix bug when there is single raw file in directory (and no jpegs as well)
 * Fix vignette lens correction
 * Add fisheye lens correction
 * Add parallel conversion in case of multiple files (thread per CPU)

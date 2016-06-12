@@ -51,7 +51,6 @@
 #include "CFAReader.h"
 
 const dng_urational DNGConverter::m_oZeroURational(0, 100);
-const Exif DNGConverter::m_oDefaultExif;
 const dng_matrix_3by3 DNGConverter::m_oIdentityMatrix(1, 0, 0, 0, 1, 0, 0, 0, 1);
 
 // Derived from MATLAB using least square linear regression with
