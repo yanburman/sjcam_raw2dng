@@ -96,7 +96,9 @@ static int list_dir(const std::string &dir, std::list<std::string> &files)
 
   // Find the first file in the directory.
 
-  hFind = FindFirstFile(dir.c_str(), &ffd);
+  const std::string files_to_list = dir + "\\*";
+
+  hFind = FindFirstFile(files_to_list.c_str(), &ffd);
 
   if (INVALID_HANDLE_VALUE == hFind)
     return GetLastError();
