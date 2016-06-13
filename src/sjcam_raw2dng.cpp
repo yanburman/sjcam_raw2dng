@@ -10,6 +10,9 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
+#ifndef S_ISDIR
+#define S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
+#endif
 #else
 #include <dirent.h>
 #include <unistd.h>
