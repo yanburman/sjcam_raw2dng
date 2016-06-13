@@ -20,6 +20,7 @@ struct Config {
   bool m_bTiff;
   bool m_bLensCorrections;
   bool m_bNoCalibration;
+  std::string m_szPathPrefixOutput;
 };
 
 struct Exif {
@@ -56,7 +57,6 @@ class DNGConverter
   Config m_oConfig;
 
   dng_orientation m_oOrientation;
-  std::string m_szPathPrefixOutput;
 
   static uint8 m_unColorPlanes;
   static uint16 m_unBayerType;

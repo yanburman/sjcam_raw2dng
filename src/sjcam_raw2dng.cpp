@@ -10,15 +10,12 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
-#define DELIM "\\"
-#define DIR_DELIM '\\'
 #else
 #include <dirent.h>
 #include <unistd.h>
-#define DELIM "/"
-#define DIR_DELIM '/'
 #endif
 
+#include "helpers.h"
 #include "DNGConverter.h"
 
 #include <dng_globals.h>
@@ -26,12 +23,8 @@
 
 #define VERSION_STR "v0.9.0"
 
-struct CameraProfile
-{
-  CameraProfile(uint32 w, uint32 h, const char *name)
-  : m_ulWidth(w),
-  m_ulHeight(h),
-  m_szCameraModel(name)
+struct CameraProfile {
+  CameraProfile(uint32 w, uint32 h, const char *name) : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name)
   {
     m_ulFileSize = (m_ulWidth * m_ulHeight * 12) / 8;
   }
@@ -42,10 +35,7 @@ struct CameraProfile
   uint32 m_ulFileSize;
 };
 
-const static CameraProfile gRawSizes[] = {
-  CameraProfile(4000, 3000, "SJ5000X"),
-  CameraProfile(4608, 3456, "M20")
-};
+const static CameraProfile gRawSizes[] = {CameraProfile(4000, 3000, "SJ5000X"), CameraProfile(4608, 3456, "M20")};
 
 static const CameraProfile *get_CameraProfile(uint32 sz)
 {
@@ -61,7 +51,10 @@ static const CameraProfile *get_CameraProfile(uint32 sz)
   return oResult;
 }
 
-static dng_error_code handle_file(DNGConverter &converter, const std::string &fname, const std::string &metadata, uint32 sz)
+static dng_error_code handle_file(DNGConverter &converter,
+                                  const std::string &fname,
+                                  const std::string &metadata,
+                                  uint32 sz)
 {
   const CameraProfile *oProfile = get_CameraProfile(sz);
   if (NULL == oProfile) {
@@ -338,15 +331,16 @@ static void usage(const char *prog)
           "\n"
           "Valid options:\n"
 #if qDNGValidate
-          "\t-verbose      Verbose mode\n"
+          "\t-verbose            Verbose mode\n"
 #endif
-          "\t-h, --help        Help\n"
-          "\t-v, --version     Print version info and exit\n"
+          "\t-h, --help          Help\n"
+          "\t-v, --version       Print version info and exit\n"
 #if 0
-          "\t-l, --no-lens     Do not apply lens corrections\n"
+          "\t-l, --no-lens       Do not apply lens corrections\n"
 #endif
-          "\t-c, --no-color    Do not apply color calibration (for color calibration)\n"
-          "\t-t, --tiff        Write TIFF image to \"<file>.tiff\"\n",
+          "\t-c, --no-color      Do not apply color calibration (for color calibration)\n"
+          "\t-o, --output <DIR>  Output dir (must exist)\n"
+          "\t-t, --tiff          Write TIFF image to \"<file>.tiff\"\n",
           prog);
 }
 
@@ -388,6 +382,26 @@ int main(int argc, char *argv[])
 #endif
     } else if (option.Matches("c", true) || option.Matches("-no-color", true)) {
       conf.m_bNoCalibration = true;
+    } else if (option.Matches("o", true) || option.Matches("-output", true)) {
+      if (index + 1 < argc) {
+        conf.m_szPathPrefixOutput = argv[++index];
+        struct stat sb;
+        int ret = stat(conf.m_szPathPrefixOutput.c_str(), &sb);
+        if (ret) {
+          perror("stat");
+          return EXIT_FAILURE;
+        }
+
+        if (!S_ISDIR(sb.st_mode)) {
+          fprintf(stderr, "Output directory not a directory\n");
+          return EXIT_FAILURE;
+        }
+
+        conf.m_szPathPrefixOutput += DELIM;
+      } else {
+        fprintf(stderr, "Error: Missing directory name\n");
+        return EXIT_FAILURE;
+      }
     } else {
       fprintf(stderr, "Error: Unknown option \"-%s\"\n", option.Get());
       usage(argv[0]);

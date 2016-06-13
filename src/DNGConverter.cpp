@@ -47,7 +47,7 @@
 #include <assert.h>
 
 #include "DNGConverter.h"
-
+#include "helpers.h"
 #include "CFAReader.h"
 
 const dng_urational DNGConverter::m_oZeroURational(0, 100);
@@ -79,8 +79,6 @@ DNGConverter::DNGConverter(Config &config)
 
   // SETTINGS: Whitebalance D65, Orientation "normal"
   m_oOrientation = dng_orientation::Normal();
-
-  m_szPathPrefixOutput = "";
 }
 
 DNGConverter::~DNGConverter()
@@ -177,17 +175,21 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
   const std::string &szProfileCopyright = m_szMake;
 
   // Form output filenames
-  std::string szBaseFilename = "";
-  std::string m_szOutputFile = "";
-  std::string m_szRenderFile = "";
+  std::string szBaseFilename;
   size_t unIndex = m_szInputFile.find_last_of(".");
   if (unIndex == std::string::npos) {
     szBaseFilename = m_szInputFile;
   } else {
     szBaseFilename = m_szInputFile.substr(0, unIndex);
   }
-  m_szOutputFile = m_szPathPrefixOutput + szBaseFilename + ".dng";
-  m_szRenderFile = m_szPathPrefixOutput + szBaseFilename + ".tiff";
+
+  if (!m_oConfig.m_szPathPrefixOutput.empty()) {
+    unIndex = m_szInputFile.find_last_of(DIR_DELIM);
+    if (unIndex != std::string::npos)
+      szBaseFilename = m_szInputFile.substr(unIndex + 1, m_szInputFile.length());
+  }
+
+  std::string m_szOutputFile = m_oConfig.m_szPathPrefixOutput + szBaseFilename + ".dng";
 
   // Create DNG
   try {
@@ -563,6 +565,8 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
       // -------------------------------------------------------------
       // Write TIFF file
       // -------------------------------------------------------------
+
+      std::string m_szRenderFile = m_oConfig.m_szPathPrefixOutput + szBaseFilename + ".tiff";
 
       // Create stream writer for output file
       dng_file_stream oTIFFStream(m_szRenderFile.c_str(), true);
