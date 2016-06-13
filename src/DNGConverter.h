@@ -56,7 +56,6 @@ class DNGConverter
   Config m_oConfig;
 
   dng_orientation m_oOrientation;
-  dng_xy_coord m_oWhitebalanceDetectedXY;
   std::string m_szPathPrefixOutput;
 
   static uint8 m_unColorPlanes;

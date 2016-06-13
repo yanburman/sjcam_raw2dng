@@ -53,28 +53,12 @@
 const dng_urational DNGConverter::m_oZeroURational(0, 100);
 const dng_matrix_3by3 DNGConverter::m_oIdentityMatrix(1, 0, 0, 0, 1, 0, 0, 0, 1);
 
-// Derived from MATLAB using least square linear regression with
-//          MacBeth ColorChecker classic
-const dng_matrix_3by3 DNGConverter::m_olsD65Matrix(2.3150,
-                                                   0.0711,
-                                                   0.1455,
-                                                   0.9861,
-                                                   0.7815,
-                                                   -0.2192,
-                                                   0.2082,
-                                                   -0.3349,
-                                                   1.6432);
-// Derived from MATLAB using least square linear regression with
-//          MacBeth ColorChecker classic
-const dng_matrix_3by3 DNGConverter::m_olsAMatrix(1.6335,
-                                                 0.4718,
-                                                 -0.0656,
-                                                 0.5227,
-                                                 1.0298,
-                                                 -0.3416,
-                                                 0.0475,
-                                                 -0.2020,
-                                                 1.2522);
+const static dng_matrix_3by3 g_olsD65Matrix(0.8391, 0.1327, 0.0705, 0.4219, 0.4622, -0.1067, 0.0684, -0.0648, 0.8437);
+
+const static dng_matrix_3by3 g_olsAMatrix(0.8535, 0.2414, -0.0780, 0.4064, 0.6032, -0.2464, 0.0280, -0.0436, 0.8861);
+
+const dng_matrix_3by3 DNGConverter::m_olsD65Matrix(Invert(g_olsD65Matrix));
+const dng_matrix_3by3 DNGConverter::m_olsAMatrix(Invert(g_olsAMatrix));
 
 // SETTINGS: 12-Bit RGGB BAYER PATTERN
 uint8 DNGConverter::m_unColorPlanes = 3;
@@ -95,7 +79,6 @@ DNGConverter::DNGConverter(Config &config)
 
   // SETTINGS: Whitebalance D65, Orientation "normal"
   m_oOrientation = dng_orientation::Normal();
-  m_oWhitebalanceDetectedXY = D65_xy_coord();
 
   m_szPathPrefixOutput = "";
 }
@@ -333,17 +316,17 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // Remarks: See Restriction / Extension tags chapter
     oNegative->SetBaseOrientation(m_oOrientation);
 
+    dng_vector oNeutralWB(3);
     if (m_oConfig.m_bNoCalibration) {
-      dng_vector oNeutralWB(3);
       oNeutralWB.SetIdentity(3);
-      // Set camera neutral coordinates
-      // Remarks: Tag [AsShotNeutral] / [50728]
-      oNegative->SetCameraNeutral(oNeutralWB);
     } else {
-      // Set camera white XY coordinates
-      // Remarks: Tag [AsShotWhiteXY] / [50729]
-      oNegative->SetCameraWhiteXY(m_oWhitebalanceDetectedXY);
+      oNeutralWB[0] = 0.634635;
+      oNeutralWB[1] = 1.0;
+      oNeutralWB[2] = 0.768769;
     }
+    // Set camera neutral coordinates
+    // Remarks: Tag [AsShotNeutral] / [50728]
+    oNegative->SetCameraNeutral(oNeutralWB);
 
     // Set baseline exposure
     // Remarks: Tag [BaselineExposure] / [50730]
@@ -499,7 +482,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
       // Set color matrix 1
       // Remarks: Tag [ColorMatrix1] / [50721]
-      oProfile->SetColorMatrix1(Invert(oCameraRGB_to_XYZ_D65));
+      oProfile->SetColorMatrix1(oCameraRGB_to_XYZ_D65);
     }
 
     // Set second illuminant color calibration if available
@@ -510,7 +493,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
       // Set color matrix 1
       // Remarks: Tag [ColorMatrix2] / [50722]
-      oProfile->SetColorMatrix2(Invert(oCameraRGB_to_XYZ_A));
+      oProfile->SetColorMatrix2(oCameraRGB_to_XYZ_A);
     }
 
     // Set name of profile
