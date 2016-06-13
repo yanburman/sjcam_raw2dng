@@ -1,0 +1,10 @@
+v0.9.0
+* Support SJ5000x Elite and M20
+* Get EXIF metadata from JPEGs that correlate to the raw files
+* Adobe SDK for maximum compatibility and extendability
+* Support for output directory
+* Convert to DNG or RAW
+* Ability to disable color calibration for manual calibration
+* Support for Windows and Linux
+* Take into account lack of AA filter
+* Allow list of individual files and folders as input
