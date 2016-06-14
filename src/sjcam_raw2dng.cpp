@@ -27,10 +27,13 @@
 #define VERSION_STR "v0.9.0"
 
 struct CameraProfile {
-  CameraProfile(uint32 w, uint32 h, uint32 black_level, const char *name)
-          : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name), m_ulBlackLevel(black_level)
+  CameraProfile(uint32 w, uint32 h, uint32 black_level, double r, double g, double b, const char *name)
+          : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name), m_ulBlackLevel(black_level), m_oNeutralWB(3)
   {
     m_ulFileSize = (m_ulWidth * m_ulHeight * 12) / 8;
+    m_oNeutralWB[0] = r;
+    m_oNeutralWB[1] = g;
+    m_oNeutralWB[2] = b;
   }
 
   uint32 m_ulWidth;
@@ -38,10 +41,11 @@ struct CameraProfile {
   std::string m_szCameraModel;
   uint32 m_ulBlackLevel;
   uint32 m_ulFileSize;
+  dng_vector m_oNeutralWB;
 };
 
-const static CameraProfile gRawSizes[] = {CameraProfile(4000, 3000, 0, "SJ5000X"),
-                                          CameraProfile(4608, 3456, 200, "M20")};
+const static CameraProfile gRawSizes[] = {CameraProfile(4000, 3000, 0, 0.634635, 1, 0.768769, "SJ5000X"),
+                                          CameraProfile(4608, 3456, 200, 0.51, 1, 0.64, "M20")};
 
 static const CameraProfile *get_CameraProfile(uint32 sz)
 {
@@ -68,7 +72,11 @@ static dng_error_code handle_file(DNGConverter &converter,
     return dng_error_bad_format;
   }
 
-  Exif exif(oProfile->m_ulWidth, oProfile->m_ulHeight, oProfile->m_ulBlackLevel, oProfile->m_szCameraModel);
+  Exif exif(oProfile->m_ulWidth,
+            oProfile->m_ulHeight,
+            oProfile->m_ulBlackLevel,
+            oProfile->m_oNeutralWB,
+            oProfile->m_szCameraModel);
 
   if (!metadata.empty()) {
     printf("Found metadata in file: %s\n", metadata.c_str());

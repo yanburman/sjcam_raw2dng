@@ -318,16 +318,17 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     oNegative->SetBaseOrientation(m_oOrientation);
 
     dng_vector oNeutralWB(3);
+    const dng_vector *pNeutral;
     if (m_oConfig.m_bNoCalibration) {
       oNeutralWB.SetIdentity(3);
+      pNeutral = &oNeutralWB;
     } else {
-      oNeutralWB[0] = 0.634635;
-      oNeutralWB[1] = 1.0;
-      oNeutralWB[2] = 0.768769;
+      oNeutralWB = exif.m_oNeutralWB;
+      pNeutral = &exif.m_oNeutralWB;
     }
     // Set camera neutral coordinates
     // Remarks: Tag [AsShotNeutral] / [50728]
-    oNegative->SetCameraNeutral(oNeutralWB);
+    oNegative->SetCameraNeutral(*pNeutral);
 
     // Set baseline exposure
     // Remarks: Tag [BaselineExposure] / [50730]
