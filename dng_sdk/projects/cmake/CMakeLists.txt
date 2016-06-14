@@ -107,7 +107,6 @@ if (UNIX)
 
     set(CMAKE_CXX_FLAGS_RELEASE "${DNG_FLAGS} \
                                  -O2 \
-                                 -flto \
                                  -DNDEBUG \
                                  -U_FORTIFY_SOURCE")
 else (UNIX)
