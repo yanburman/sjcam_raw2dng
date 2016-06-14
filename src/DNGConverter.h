@@ -24,9 +24,9 @@ struct Config {
 };
 
 struct Exif {
-  Exif(uint32 w, uint32 h, const std::string &szName)
+  Exif(uint32 w, uint32 h, uint32 blackLevel, const std::string &szName)
           : m_unISO(100), m_oExposureTime(1, 16), m_dLensAperture(1.7), m_dFocalLength(2.99), m_uLightSource(lsUnknown),
-            m_oExposureBias(0, 0), m_ulWidth(w), m_ulHeight(h), m_szCameraModel(szName)
+            m_oExposureBias(0, 0), m_ulWidth(w), m_ulHeight(h), m_szCameraModel(szName), m_ulBlackLevel(blackLevel)
   {
   }
 
@@ -41,6 +41,7 @@ struct Exif {
   uint32 m_ulWidth;
   uint32 m_ulHeight;
   const std::string &m_szCameraModel;
+  uint32 m_ulBlackLevel;
 };
 
 class DNGConverter
@@ -60,7 +61,6 @@ class DNGConverter
 
   static uint8 m_unColorPlanes;
   static uint16 m_unBayerType;
-  static uint32 m_ulBlackLevel;
 
   static const std::string m_szMake;
 

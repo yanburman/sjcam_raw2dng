@@ -11,7 +11,7 @@
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #ifndef S_ISDIR
-#define S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
+#define S_ISDIR(mode) (((mode)&S_IFMT) == S_IFDIR)
 #endif
 #else
 #include <dirent.h>
@@ -27,7 +27,8 @@
 #define VERSION_STR "v0.9.0"
 
 struct CameraProfile {
-  CameraProfile(uint32 w, uint32 h, const char *name) : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name)
+  CameraProfile(uint32 w, uint32 h, uint32 black_level, const char *name)
+          : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name), m_ulBlackLevel(black_level)
   {
     m_ulFileSize = (m_ulWidth * m_ulHeight * 12) / 8;
   }
@@ -35,10 +36,12 @@ struct CameraProfile {
   uint32 m_ulWidth;
   uint32 m_ulHeight;
   std::string m_szCameraModel;
+  uint32 m_ulBlackLevel;
   uint32 m_ulFileSize;
 };
 
-const static CameraProfile gRawSizes[] = {CameraProfile(4000, 3000, "SJ5000X"), CameraProfile(4608, 3456, "M20")};
+const static CameraProfile gRawSizes[] = {CameraProfile(4000, 3000, 0, "SJ5000X"),
+                                          CameraProfile(4608, 3456, 200, "M20")};
 
 static const CameraProfile *get_CameraProfile(uint32 sz)
 {
@@ -65,7 +68,7 @@ static dng_error_code handle_file(DNGConverter &converter,
     return dng_error_bad_format;
   }
 
-  Exif exif(oProfile->m_ulWidth, oProfile->m_ulHeight, oProfile->m_szCameraModel);
+  Exif exif(oProfile->m_ulWidth, oProfile->m_ulHeight, oProfile->m_ulBlackLevel, oProfile->m_szCameraModel);
 
   if (!metadata.empty()) {
     printf("Found metadata in file: %s\n", metadata.c_str());

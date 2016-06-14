@@ -63,7 +63,6 @@ const dng_matrix_3by3 DNGConverter::m_olsAMatrix(Invert(g_olsAMatrix));
 // SETTINGS: 12-Bit RGGB BAYER PATTERN
 uint8 DNGConverter::m_unColorPlanes = 3;
 uint16 DNGConverter::m_unBayerType = 1; // RGGB
-uint32 DNGConverter::m_ulBlackLevel = 0;
 
 // SETTINGS: Names
 const std::string DNGConverter::m_szMake = "SJCAM";
@@ -292,7 +291,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set black level to auto black level of sensor
     // Remarks: Tag [BlackLevel] / [50714]
-    oNegative->SetBlackLevel(m_ulBlackLevel);
+    oNegative->SetBlackLevel(exif.m_ulBlackLevel);
 
     // Set white level
     // Remarks: Tag [WhiteLevel] / [50717]
@@ -519,6 +518,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // -------------------------------------------------------------
     // Lens corrections
     // -------------------------------------------------------------
+
 #if 0
     if (m_oConfig.m_bLensCorrections) {
       const dng_point_real64 oCenter(0.5, 0.5);
