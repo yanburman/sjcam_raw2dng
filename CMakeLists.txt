@@ -42,7 +42,6 @@ if (UNIX)
 
     set(CMAKE_CXX_FLAGS_RELEASE "${warning_flags} \
                                  -O2 \
-                                 -flto \
                                  -DNDEBUG \
                                  -U_FORTIFY_SOURCE")
 endif()
