@@ -99,16 +99,20 @@ set(LIB_SRC
 if (UNIX)
     set(DNG_FLAGS "-DqDNG64Bit")
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack")
-    set(CMAKE_CXX_FLAGS_DEBUG "${DNG_FLAGS} \
-                               -O0 \
-                               -ggdb \
-                               -D_FORTIFY_SOURCE=2")
+    if (APPLE)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DNG_FLAGS} -DqMacOS=1 -DqDNGXMPDocOps=0")
+    else ()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack")
+        set(CMAKE_CXX_FLAGS_DEBUG "${DNG_FLAGS} \
+                                   -O0 \
+                                   -ggdb \
+                                   -D_FORTIFY_SOURCE=2")
 
-    set(CMAKE_CXX_FLAGS_RELEASE "${DNG_FLAGS} \
-                                 -O2 \
-                                 -DNDEBUG \
-                                 -U_FORTIFY_SOURCE")
+        set(CMAKE_CXX_FLAGS_RELEASE "${DNG_FLAGS} \
+                                     -O2 \
+                                     -DNDEBUG \
+                                     -U_FORTIFY_SOURCE")
+    endif (APPLE)
 else (UNIX)
     if (MSVC)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqDNG64Bit /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0")
