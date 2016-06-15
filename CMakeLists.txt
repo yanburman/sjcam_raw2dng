@@ -22,28 +22,32 @@ add_subdirectory(dng_sdk/projects/cmake)
 set(SRC_DIR src)
 
 if (UNIX)
-    set(warning_flags "-Wall \
-                       -Wsign-compare \
-                       -Wclobbered \
-                       -Wempty-body \
-                       -Wignored-qualifiers \
-                       -Wsign-compare \
-                       -Wtype-limits \
-                       -Wunused-but-set-parameter \
-                       -Wconversion \
-                       -Winit-self \
-                       -Wno-unused-function")
+    if (APPLE)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMAC_ENV=1")
+    else()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack")
+        set(warning_flags "-Wall \
+                           -Wsign-compare \
+                           -Wclobbered \
+                           -Wempty-body \
+                           -Wignored-qualifiers \
+                           -Wsign-compare \
+                           -Wtype-limits \
+                           -Wunused-but-set-parameter \
+                           -Wconversion \
+                           -Winit-self \
+                           -Wno-unused-function")
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack")
-    set(CMAKE_CXX_FLAGS_DEBUG "${warning_flags} \
-                               -O0 \
-                               -ggdb \
-                               -D_FORTIFY_SOURCE=2")
+        set(CMAKE_CXX_FLAGS_DEBUG "${warning_flags} \
+                                   -O0 \
+                                   -ggdb \
+                                   -D_FORTIFY_SOURCE=2")
 
-    set(CMAKE_CXX_FLAGS_RELEASE "${warning_flags} \
-                                 -O2 \
-                                 -DNDEBUG \
-                                 -U_FORTIFY_SOURCE")
+        set(CMAKE_CXX_FLAGS_RELEASE "${warning_flags} \
+                                     -O2 \
+                                     -DNDEBUG \
+                                     -U_FORTIFY_SOURCE")
+    endif (APPLE)
 endif()
 
 if (MSVC)
