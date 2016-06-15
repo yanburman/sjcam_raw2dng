@@ -123,7 +123,7 @@ class MainFrame(wx.Frame):
 
         self.thr = Thread(target=subprocess_thread, args=(self, args))
         self.thr.daemon = True
-        self.thr.run()
+        self.thr.start()
 
         event.Skip()
 
