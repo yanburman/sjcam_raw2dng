@@ -24,7 +24,7 @@
 #include <dng_globals.h>
 #include <dng_string.h>
 
-#define VERSION_STR "v0.9.0"
+#define VERSION_STR "v0.9.1"
 
 struct CameraProfile {
   CameraProfile(uint32 w, uint32 h, uint32 black_level, double r, double g, double b, const char *name)
