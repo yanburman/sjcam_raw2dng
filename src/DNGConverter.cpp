@@ -188,8 +188,8 @@ struct CameraProfile {
   dng_vector m_oNeutralWB;
 };
 
-const static CameraProfile gRawSizes[] = {CameraProfile(4000, 3000, 0, 0.85, 1.2, 0.768769, "SJ5000X"),
-                                          CameraProfile(2640, 1980, 0, 0.85, 1.2, 0.768769, "SJ5000X"),
+const static CameraProfile gRawSizes[] = {CameraProfile(4000, 3000, 0, 0.87, 1.3, 0.72, "SJ5000X"),
+                                          CameraProfile(2640, 1980, 0, 0.87, 1.3, 0.72, "SJ5000X"),
                                           CameraProfile(4608, 3456, 200, 0.51, 1, 0.64, "M20")};
 
 static const CameraProfile *get_CameraProfile(uint32 sz)
