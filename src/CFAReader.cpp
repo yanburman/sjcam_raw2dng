@@ -1,7 +1,6 @@
 
 #if !defined(_WIN32) && !defined(_WIN64)
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -69,14 +68,7 @@ int CFAReader::open(const char *fname, size_t expected_size)
   if (-1 == m_fd)
     return errno;
 
-  struct stat stat;
-  int rc = ::fstat(m_fd, &stat);
-  if (-1 == rc)
-    return errno;
-
-  m_filesz = stat.st_size;
-  if (m_filesz != expected_size)
-    return EINVAL;
+  m_filesz = expected_size;
 
   m_buf = (uint8_t *)::mmap(NULL, m_filesz, PROT_READ, MAP_PRIVATE | MAP_POPULATE, m_fd, 0);
   if (MAP_FAILED == m_buf)

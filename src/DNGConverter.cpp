@@ -45,6 +45,9 @@
 #include <dng_globals.h>
 
 #include <assert.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <sys/stat.h>
 
 #include "DNGConverter.h"
 #include "helpers.h"
@@ -167,10 +170,66 @@ int DNGConverter::ParseMetadata(const std::string &metadata, Exif &oExif)
   return 0;
 }
 
-dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, const Exif &exif)
+struct CameraProfile {
+  CameraProfile(uint32 w, uint32 h, uint32 black_level, double r, double g, double b, const char *name)
+          : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name), m_ulBlackLevel(black_level), m_oNeutralWB(3)
+  {
+    m_ulFileSize = (m_ulWidth * m_ulHeight * 12) / 8;
+    m_oNeutralWB[0] = r;
+    m_oNeutralWB[1] = g;
+    m_oNeutralWB[2] = b;
+  }
+
+  uint32 m_ulWidth;
+  uint32 m_ulHeight;
+  std::string m_szCameraModel;
+  uint32 m_ulBlackLevel;
+  uint32 m_ulFileSize;
+  dng_vector m_oNeutralWB;
+};
+
+const static CameraProfile gRawSizes[] = {CameraProfile(4000, 3000, 0, 0.85, 1.2, 0.768769, "SJ5000X"),
+                                          CameraProfile(4608, 3456, 200, 0.51, 1, 0.64, "M20")};
+
+static const CameraProfile *get_CameraProfile(uint32 sz)
 {
+  const CameraProfile *oResult = NULL;
+
+  for (unsigned int i = 0; i < sizeof(gRawSizes) / sizeof(gRawSizes[0]); ++i) {
+    if (gRawSizes[i].m_ulFileSize == sz) {
+      oResult = &gRawSizes[i];
+      break;
+    }
+  }
+
+  return oResult;
+}
+
+dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, const std::string &m_szMetadataFile)
+{
+  struct stat sb;
+  int ret = stat(m_szInputFile.c_str(), &sb);
+  if (ret) {
+    perror("stat");
+    return dng_error_unknown;
+  }
+
+  const CameraProfile *oCamProfile = get_CameraProfile(sb.st_size);
+  if (NULL == oCamProfile) {
+    fprintf(stderr, "%s: Unsupported format\n", m_szInputFile.c_str());
+    return dng_error_bad_format;
+  }
+
+  Exif exif;
+
+  if (!m_szMetadataFile.empty()) {
+    ret = ParseMetadata(m_szMetadataFile, exif);
+    if (ret)
+      return dng_error_unknown;
+  }
+
   // SETTINGS: Names
-  const std::string &szProfileName = exif.m_szCameraModel;
+  const std::string &szProfileName = oCamProfile->m_szCameraModel;
   const std::string &szProfileCopyright = m_szMake;
 
   // Form output filenames
@@ -207,14 +266,15 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // -------------------------------------------------------------
 
     CFAReader reader;
-    int ret = reader.open(m_szInputFile.c_str(), (exif.m_ulWidth * exif.m_ulHeight * 12) / 8);
+    ret = reader.open(m_szInputFile.c_str(), oCamProfile->m_ulFileSize);
     if (ret)
       return dng_error_unknown;
 
-    AutoPtr<dng_memory_block> oBayerData(oDNGHost.Allocate(exif.m_ulWidth * exif.m_ulHeight * TagTypeSize(ttShort)));
+    unsigned int ulNumPixels = oCamProfile->m_ulWidth * oCamProfile->m_ulHeight;
+    AutoPtr<dng_memory_block> oBayerData(oDNGHost.Allocate(ulNumPixels * TagTypeSize(ttShort)));
 
     uint8_t *buf = (uint8_t *)oBayerData->Buffer();
-    for (unsigned int i = 0; i < exif.m_ulWidth * exif.m_ulHeight; ++i, buf += 2) {
+    for (unsigned int i = 0; i < ulNumPixels; ++i, buf += 2) {
       reader.read(buf);
     }
 
@@ -234,7 +294,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // DNG Image Settings
     // -------------------------------------------------------------
 
-    dng_rect vImageBounds(exif.m_ulHeight, exif.m_ulWidth);
+    dng_rect vImageBounds(oCamProfile->m_ulHeight, oCamProfile->m_ulWidth);
 
     AutoPtr<dng_image> oImage(oDNGHost.Make_dng_image(vImageBounds, m_unColorPlanes, ttShort));
 
@@ -243,7 +303,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     oBuffer.fArea = vImageBounds;
     oBuffer.fPlane = 0;
     oBuffer.fPlanes = 1;
-    oBuffer.fRowStep = oBuffer.fPlanes * exif.m_ulWidth;
+    oBuffer.fRowStep = oBuffer.fPlanes * oCamProfile->m_ulWidth;
     oBuffer.fColStep = oBuffer.fPlanes;
     oBuffer.fPlaneStep = 1;
     oBuffer.fPixelType = ttShort;
@@ -260,11 +320,11 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set camera model
     // Remarks: Tag [UniqueCameraModel] / [50708]
-    oNegative->SetModelName(exif.m_szCameraModel.c_str());
+    oNegative->SetModelName(oCamProfile->m_szCameraModel.c_str());
 
     // Set localized camera model
     // Remarks: Tag [UniqueCameraModel] / [50709]
-    oNegative->SetLocalName(exif.m_szCameraModel.c_str());
+    oNegative->SetLocalName(oCamProfile->m_szCameraModel.c_str());
 
     // Set bayer pattern information
     // Remarks: Tag [CFAPlaneColor] / [50710] and [CFALayout] / [50711]
@@ -291,7 +351,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set black level to auto black level of sensor
     // Remarks: Tag [BlackLevel] / [50714]
-    oNegative->SetBlackLevel(exif.m_ulBlackLevel);
+    oNegative->SetBlackLevel(oCamProfile->m_ulBlackLevel);
 
     // Set white level
     // Remarks: Tag [WhiteLevel] / [50717]
@@ -311,7 +371,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set pixel area
     // Remarks: Tag [DefaultCropSize] / [50720]
-    oNegative->SetDefaultCropSize(exif.m_ulWidth - 4, exif.m_ulHeight - 4);
+    oNegative->SetDefaultCropSize(oCamProfile->m_ulWidth - 4, oCamProfile->m_ulHeight - 4);
 
     // Set base orientation
     // Remarks: See Restriction / Extension tags chapter
@@ -323,8 +383,8 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
       oNeutralWB.SetIdentity(3);
       pNeutral = &oNeutralWB;
     } else {
-      oNeutralWB = exif.m_oNeutralWB;
-      pNeutral = &exif.m_oNeutralWB;
+      oNeutralWB = oCamProfile->m_oNeutralWB;
+      pNeutral = &oCamProfile->m_oNeutralWB;
     }
     // Set camera neutral coordinates
     // Remarks: Tag [AsShotNeutral] / [50728]
@@ -363,7 +423,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set Camera Model
     // Remarks: Tag [Model] / [EXIF]
-    poExif->fModel.Set_ASCII(exif.m_szCameraModel.c_str());
+    poExif->fModel.Set_ASCII(oCamProfile->m_szCameraModel.c_str());
 
     // Set Lens Model
     // Remarks: Tag [LensName] / [EXIF]

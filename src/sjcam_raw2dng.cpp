@@ -8,158 +8,14 @@
 #include <errno.h>
 #include <sys/stat.h>
 
-#if defined(_WIN32) || defined(_WIN64)
-#include <windows.h>
-#ifndef S_ISDIR
-#define S_ISDIR(mode) (((mode)&S_IFMT) == S_IFDIR)
-#endif
-#else
-#include <dirent.h>
-#include <unistd.h>
-#endif
-
-#include "helpers.h"
 #include "DNGConverter.h"
+#include "helpers.h"
+#include "utils.h"
 
 #include <dng_globals.h>
 #include <dng_string.h>
 
 #define VERSION_STR "v0.9.1"
-
-struct CameraProfile {
-  CameraProfile(uint32 w, uint32 h, uint32 black_level, double r, double g, double b, const char *name)
-          : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name), m_ulBlackLevel(black_level), m_oNeutralWB(3)
-  {
-    m_ulFileSize = (m_ulWidth * m_ulHeight * 12) / 8;
-    m_oNeutralWB[0] = r;
-    m_oNeutralWB[1] = g;
-    m_oNeutralWB[2] = b;
-  }
-
-  uint32 m_ulWidth;
-  uint32 m_ulHeight;
-  std::string m_szCameraModel;
-  uint32 m_ulBlackLevel;
-  uint32 m_ulFileSize;
-  dng_vector m_oNeutralWB;
-};
-
-const static CameraProfile gRawSizes[] = {CameraProfile(4000, 3000, 0, 0.85, 1.2, 0.768769, "SJ5000X"),
-                                          CameraProfile(4608, 3456, 200, 0.51, 1, 0.64, "M20")};
-
-static const CameraProfile *get_CameraProfile(uint32 sz)
-{
-  const CameraProfile *oResult = NULL;
-
-  for (unsigned int i = 0; i < sizeof(gRawSizes) / sizeof(gRawSizes[0]); ++i) {
-    if (gRawSizes[i].m_ulFileSize == sz) {
-      oResult = &gRawSizes[i];
-      break;
-    }
-  }
-
-  return oResult;
-}
-
-static dng_error_code handle_file(DNGConverter &converter,
-                                  const std::string &fname,
-                                  const std::string &metadata,
-                                  uint32 sz)
-{
-  const CameraProfile *oProfile = get_CameraProfile(sz);
-  if (NULL == oProfile) {
-    fprintf(stderr, "%s: Unsupported format\n", fname.c_str());
-    return dng_error_bad_format;
-  }
-
-  Exif exif(oProfile->m_ulWidth,
-            oProfile->m_ulHeight,
-            oProfile->m_ulBlackLevel,
-            oProfile->m_oNeutralWB,
-            oProfile->m_szCameraModel);
-
-  if (!metadata.empty()) {
-    printf("Found metadata in file: %s\n", metadata.c_str());
-    int res = converter.ParseMetadata(metadata, exif);
-    if (res)
-      return dng_error_unknown;
-
-    return converter.ConvertToDNG(fname, exif);
-  }
-
-  return converter.ConvertToDNG(fname, exif);
-}
-
-static bool has_suffix(const std::string &str, const std::string &suffix)
-{
-  return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
-}
-
-const static std::string jpeg_suffix(".JPG");
-const static std::string raw_suffix(".RAW");
-
-static int list_dir(const std::string &dir, std::list<std::string> &files)
-#if defined(_WIN32) || defined(_WIN64)
-{
-  WIN32_FIND_DATA ffd;
-  HANDLE hFind = INVALID_HANDLE_VALUE;
-  DWORD dwError = 0;
-
-  // Find the first file in the directory.
-
-  const std::string files_to_list = dir + "\\*";
-
-  hFind = FindFirstFile(files_to_list.c_str(), &ffd);
-
-  if (INVALID_HANDLE_VALUE == hFind)
-    return GetLastError();
-
-  // List all the files in the directory with some info about them.
-
-  do {
-    if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-      std::string fname(ffd.cFileName);
-
-      if (has_suffix(fname, raw_suffix) || has_suffix(fname, jpeg_suffix))
-        files.push_back(fname);
-    }
-  } while (FindNextFile(hFind, &ffd) != 0);
-
-  dwError = GetLastError();
-  if (dwError == ERROR_NO_MORE_FILES)
-    dwError = 0;
-
-  FindClose(hFind);
-
-  files.sort();
-
-  return dwError;
-}
-#else
-{
-  DIR *dp;
-  struct dirent *dirp;
-
-  if ((dp = opendir(dir.c_str())) == NULL) {
-    perror("opendir");
-    return errno;
-  }
-
-  while ((dirp = readdir(dp)) != NULL) {
-    if (dirp->d_type == DT_REG) {
-      std::string fname(dirp->d_name);
-
-      if (has_suffix(fname, raw_suffix) || has_suffix(fname, jpeg_suffix))
-        files.push_back(fname);
-    }
-  }
-  closedir(dp);
-
-  files.sort();
-
-  return 0;
-}
-#endif
 
 static dng_error_code find_files(DNGConverter &converter, std::string &dir)
 {
@@ -173,7 +29,6 @@ static dng_error_code find_files(DNGConverter &converter, std::string &dir)
   char buffer[16];
   std::string jpg_suffix;
   std::string res;
-  struct stat sb;
 
   dir += DELIM;
 
@@ -184,13 +39,8 @@ static dng_error_code find_files(DNGConverter &converter, std::string &dir)
       }
 
       std::string fname = dir + *found_it;
-      ret = stat(fname.c_str(), &sb);
-      if (ret) {
-        perror("stat");
-        return dng_error_unknown;
-      }
 
-      handle_file(converter, fname, res, sb.st_size);
+      converter.ConvertToDNG(fname, res);
       found = false;
       res.clear();
       continue;
@@ -200,13 +50,8 @@ static dng_error_code find_files(DNGConverter &converter, std::string &dir)
       size_t suffix_idx = it->find_last_of('_');
       if (suffix_idx == std::string::npos) {
         std::string fname = dir + *it;
-        ret = stat(fname.c_str(), &sb);
-        if (ret) {
-          perror("stat");
-          return dng_error_unknown;
-        }
 
-        handle_file(converter, fname, res, sb.st_size);
+        converter.ConvertToDNG(fname, res);
         found = false;
         res.clear();
         continue;
@@ -216,13 +61,8 @@ static dng_error_code find_files(DNGConverter &converter, std::string &dir)
       int pic_num = atoi(suffix.c_str());
       if (pic_num < 1) {
         std::string fname = dir + *it;
-        ret = stat(fname.c_str(), &sb);
-        if (ret) {
-          perror("stat");
-          return dng_error_unknown;
-        }
 
-        handle_file(converter, fname, res, sb.st_size);
+        converter.ConvertToDNG(fname, res);
         found = false;
         res.clear();
         continue;
@@ -238,18 +78,13 @@ static dng_error_code find_files(DNGConverter &converter, std::string &dir)
 
   if (found) {
     std::string fname = dir + *found_it;
-    ret = stat(fname.c_str(), &sb);
-    if (ret) {
-      perror("stat");
-      return dng_error_unknown;
-    }
-    handle_file(converter, fname, "", sb.st_size);
+    converter.ConvertToDNG(fname, "");
   }
 
   return dng_error_none;
 }
 
-static dng_error_code find_file(DNGConverter &converter, std::string &fname, uint32 sz)
+static dng_error_code find_file(DNGConverter &converter, std::string &fname)
 {
   std::string dir_name;
   std::string file_name;
@@ -266,12 +101,12 @@ static dng_error_code find_file(DNGConverter &converter, std::string &fname, uin
 
   size_t suffix_idx = file_name.find_last_of('_');
   if (suffix_idx == std::string::npos)
-    return handle_file(converter, fname, res, sz);
+    return converter.ConvertToDNG(fname, res);
 
   std::string suffix = file_name.substr(suffix_idx + 1, file_name.length());
   int pic_num = atoi(suffix.c_str());
   if (pic_num < 1)
-    return handle_file(converter, fname, res, sz);
+    return converter.ConvertToDNG(fname, res);
 
   std::list<std::string> files;
   int ret = list_dir(dir_name, files);
@@ -291,7 +126,7 @@ static dng_error_code find_file(DNGConverter &converter, std::string &fname, uin
       if (has_suffix(*it, jpg_suffix)) {
         res = dir_name + *it;
       }
-      handle_file(converter, fname, res, sz);
+      converter.ConvertToDNG(fname, res);
       found = false;
       break;
     }
@@ -304,7 +139,7 @@ static dng_error_code find_file(DNGConverter &converter, std::string &fname, uin
 
   if (found) {
     res = dir_name + *found_it;
-    handle_file(converter, res, "", sz);
+    converter.ConvertToDNG(res, "");
   }
 
   return dng_error_none;
@@ -329,7 +164,7 @@ static dng_error_code handle_arg(DNGConverter &converter, const char *arg)
     break;
 
   case S_IFREG:
-    rc = find_file(converter, str_arg, sb.st_size);
+    rc = find_file(converter, str_arg);
     break;
 
   default:

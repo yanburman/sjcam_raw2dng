@@ -24,10 +24,9 @@ struct Config {
 };
 
 struct Exif {
-  Exif(uint32 w, uint32 h, uint32 blackLevel, const dng_vector &oNeutralWB, const std::string &szName)
+  Exif()
           : m_unISO(100), m_oExposureTime(1, 16), m_dLensAperture(1.7), m_dFocalLength(2.99), m_uLightSource(lsUnknown),
-            m_oExposureBias(0, 0), m_ulWidth(w), m_ulHeight(h), m_szCameraModel(szName), m_ulBlackLevel(blackLevel),
-            m_oNeutralWB(oNeutralWB)
+            m_oExposureBias(0, 0)
   {
   }
 
@@ -39,11 +38,6 @@ struct Exif {
   dng_srational m_oExposureBias;
   std::string m_szCreatorTool;
   dng_date_time_info m_oOrigDate;
-  uint32 m_ulWidth;
-  uint32 m_ulHeight;
-  const std::string &m_szCameraModel;
-  uint32 m_ulBlackLevel;
-  const dng_vector &m_oNeutralWB;
 };
 
 class DNGConverter
@@ -52,7 +46,7 @@ class DNGConverter
   DNGConverter(Config &config);
   ~DNGConverter();
 
-  dng_error_code ConvertToDNG(const std::string &m_szInputFile, const Exif &exif);
+  dng_error_code ConvertToDNG(const std::string &m_szInputFile, const std::string &m_szMetadataFile);
 
   int ParseMetadata(const std::string &metadata, Exif &oExif);
 
