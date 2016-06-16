@@ -70,7 +70,11 @@ int CFAReader::open(const char *fname, size_t expected_size)
 
   m_filesz = expected_size;
 
+#ifdef MAP_POPULATE
   m_buf = (uint8_t *)::mmap(NULL, m_filesz, PROT_READ, MAP_PRIVATE | MAP_POPULATE, m_fd, 0);
+#else
+  m_buf = (uint8_t *)::mmap(NULL, m_filesz, PROT_READ, MAP_PRIVATE, m_fd, 0);
+#endif
   if (MAP_FAILED == m_buf)
     return errno;
 
