@@ -1,3 +1,5 @@
+* Added smallest FOV resulution to SJ5000x support
+
 v0.9.1
 * Improved color calibration for both SJ5000x and M20
 * Added SJ5000x Adobe camera profile using colorchecker
