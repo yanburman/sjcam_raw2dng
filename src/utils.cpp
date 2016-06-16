@@ -84,4 +84,30 @@ int list_dir(const std::string &dir, std::list<std::string> &files)
 }
 #endif
 
+size_t get_num_cpus(void)
+#if defined(_WIN32) || defined(_WIN64)
+{
+  SYSTEM_INFO siSysInfo;
+  GetSystemInfo(&siSysInfo);
+
+  return siSysInfo.dwNumberOfProcessors;
+}
+#else
+{
+  return sysconf(_SC_NPROCESSORS_ONLN);
+}
+#endif
+
+void set_thread_prio_low(void)
+#if defined(_WIN32) || defined(_WIN64)
+{
+  SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+}
+#else
+{
+  struct sched_param param;
+  param.sched_priority = 20;
+  pthread_setschedparam(pthread_self(), SCHED_OTHER, &param);
+}
+#endif
 

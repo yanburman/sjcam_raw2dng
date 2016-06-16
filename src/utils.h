@@ -15,4 +15,8 @@ int list_dir(const std::string &dir, std::list<std::string> &files);
 
 extern const std::string raw_suffix;
 
+size_t get_num_cpus(void);
+
+void set_thread_prio_low(void);
+
 #endif // __UTILS_H__
