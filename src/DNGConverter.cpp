@@ -258,7 +258,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // Print settings
     // -------------------------------------------------------------
 
-    printf("RAW: %s\n", m_szInputFile.c_str());
+    printf("RAW: %s [%s]\n", m_szInputFile.c_str(), m_szMetadataFile.c_str());
 
     printf("\nConverting...\n");
 

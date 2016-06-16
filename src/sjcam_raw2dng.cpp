@@ -2,6 +2,7 @@
 
 #include <string>
 #include <list>
+#include <vector>
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -17,7 +18,37 @@
 
 #define VERSION_STR "v0.9.1"
 
-static dng_error_code find_files(DNGConverter &converter, std::string &dir)
+struct RawWorkItem {
+  RawWorkItem(const std::string &szRawFile, const std::string &szMetadataFile)
+          : m_szRawFile(szRawFile), m_szMetadataFile(szMetadataFile)
+  {
+  }
+
+  const std::string m_szRawFile;
+  const std::string m_szMetadataFile;
+};
+
+static std::vector<RawWorkItem *> g_WorkItems;
+
+static void cleanup_work_items(void)
+{
+  std::vector<RawWorkItem *>::const_iterator it;
+
+  for (it = g_WorkItems.begin(); it != g_WorkItems.end(); ++it)
+    delete *it;
+
+  g_WorkItems.clear();
+}
+
+static void add_work_item(const std::string &szRawFile, const std::string &szMetadataFile)
+{
+  RawWorkItem *wi = new RawWorkItem(szRawFile, szMetadataFile);
+  g_WorkItems.push_back(wi);
+}
+
+static const std::string empty_string;
+
+static dng_error_code find_files(std::string &dir)
 {
   std::list<std::string> files;
   int ret = list_dir(dir, files);
@@ -40,7 +71,7 @@ static dng_error_code find_files(DNGConverter &converter, std::string &dir)
 
       std::string fname = dir + *found_it;
 
-      converter.ConvertToDNG(fname, res);
+      add_work_item(fname, res);
       found = false;
       res.clear();
       continue;
@@ -51,7 +82,7 @@ static dng_error_code find_files(DNGConverter &converter, std::string &dir)
       if (suffix_idx == std::string::npos) {
         std::string fname = dir + *it;
 
-        converter.ConvertToDNG(fname, res);
+        add_work_item(fname, res);
         found = false;
         res.clear();
         continue;
@@ -62,7 +93,7 @@ static dng_error_code find_files(DNGConverter &converter, std::string &dir)
       if (pic_num < 1) {
         std::string fname = dir + *it;
 
-        converter.ConvertToDNG(fname, res);
+        add_work_item(fname, res);
         found = false;
         res.clear();
         continue;
@@ -78,13 +109,13 @@ static dng_error_code find_files(DNGConverter &converter, std::string &dir)
 
   if (found) {
     std::string fname = dir + *found_it;
-    converter.ConvertToDNG(fname, "");
+    add_work_item(fname, empty_string);
   }
 
   return dng_error_none;
 }
 
-static dng_error_code find_file(DNGConverter &converter, std::string &fname)
+static dng_error_code find_file(std::string &fname)
 {
   std::string dir_name;
   std::string file_name;
@@ -100,13 +131,17 @@ static dng_error_code find_file(DNGConverter &converter, std::string &fname)
   }
 
   size_t suffix_idx = file_name.find_last_of('_');
-  if (suffix_idx == std::string::npos)
-    return converter.ConvertToDNG(fname, res);
+  if (suffix_idx == std::string::npos) {
+    add_work_item(fname, res);
+    return dng_error_none;
+  }
 
   std::string suffix = file_name.substr(suffix_idx + 1, file_name.length());
   int pic_num = atoi(suffix.c_str());
-  if (pic_num < 1)
-    return converter.ConvertToDNG(fname, res);
+  if (pic_num < 1) {
+    add_work_item(fname, res);
+    return dng_error_none;
+  }
 
   std::list<std::string> files;
   int ret = list_dir(dir_name, files);
@@ -126,7 +161,7 @@ static dng_error_code find_file(DNGConverter &converter, std::string &fname)
       if (has_suffix(*it, jpg_suffix)) {
         res = dir_name + *it;
       }
-      converter.ConvertToDNG(fname, res);
+      add_work_item(fname, res);
       found = false;
       break;
     }
@@ -139,13 +174,13 @@ static dng_error_code find_file(DNGConverter &converter, std::string &fname)
 
   if (found) {
     res = dir_name + *found_it;
-    converter.ConvertToDNG(res, "");
+    add_work_item(fname, empty_string);
   }
 
   return dng_error_none;
 }
 
-static dng_error_code handle_arg(DNGConverter &converter, const char *arg)
+static dng_error_code handle_arg(const char *arg)
 {
   dng_error_code rc;
   struct stat sb;
@@ -160,11 +195,11 @@ static dng_error_code handle_arg(DNGConverter &converter, const char *arg)
 
   switch (sb.st_mode & S_IFMT) {
   case S_IFDIR:
-    rc = find_files(converter, str_arg);
+    rc = find_files(str_arg);
     break;
 
   case S_IFREG:
-    rc = find_file(converter, str_arg);
+    rc = find_file(str_arg);
     break;
 
   default:
@@ -265,13 +300,21 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  DNGConverter converter(conf);
   dng_error_code rc;
   while (index < argc) {
-    rc = handle_arg(converter, argv[index++]);
-    if (rc != dng_error_none)
+    rc = handle_arg(argv[index++]);
+    if (rc != dng_error_none) {
+      cleanup_work_items();
       return EXIT_FAILURE;
+    }
   }
+
+  DNGConverter converter(conf);
+  std::vector<RawWorkItem *>::const_iterator it;
+  for (it = g_WorkItems.begin(); it != g_WorkItems.end(); ++it)
+    converter.ConvertToDNG((*it)->m_szRawFile, (*it)->m_szMetadataFile);
+
+  cleanup_work_items();
 
   return EXIT_SUCCESS;
 }
