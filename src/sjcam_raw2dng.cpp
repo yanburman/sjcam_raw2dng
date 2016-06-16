@@ -15,6 +15,7 @@
 
 #include <dng_globals.h>
 #include <dng_string.h>
+#include <dng_pthread.h>
 
 #define VERSION_STR "v0.9.1"
 
@@ -27,6 +28,23 @@ struct RawWorkItem {
   const std::string m_szRawFile;
   const std::string m_szMetadataFile;
 };
+
+struct ThreadWork {
+  DNGConverter *oConverter;
+  const std::vector<RawWorkItem *> *oWorks;
+  size_t m_ulStart;
+  size_t m_ulEnd;
+};
+
+static void *thread_worker(void *arg)
+{
+  ThreadWork *work = (ThreadWork *)arg;
+
+  for (size_t i = work->m_ulStart; i < work->m_ulEnd; ++i)
+    work->oConverter->ConvertToDNG((*(work->oWorks))[i]->m_szRawFile, (*(work->oWorks))[i]->m_szMetadataFile);
+
+  return NULL;
+}
 
 static std::vector<RawWorkItem *> g_WorkItems;
 
@@ -203,7 +221,7 @@ static dng_error_code handle_arg(const char *arg)
     break;
 
   default:
-    fprintf(stderr, "Only files/directories are supported");
+    fprintf(stderr, "Only files/directories are supported\n");
     rc = dng_error_unknown;
   }
 
@@ -310,9 +328,68 @@ int main(int argc, char *argv[])
   }
 
   DNGConverter converter(conf);
-  std::vector<RawWorkItem *>::const_iterator it;
-  for (it = g_WorkItems.begin(); it != g_WorkItems.end(); ++it)
-    converter.ConvertToDNG((*it)->m_szRawFile, (*it)->m_szMetadataFile);
+
+  size_t n_cpus = get_num_cpus();
+  if (n_cpus >= g_WorkItems.size()) {
+    ThreadWork work;
+    work.oConverter = &converter;
+    work.m_ulStart = 0;
+    work.m_ulEnd = g_WorkItems.size();
+    work.oWorks = &g_WorkItems;
+    thread_worker(&work);
+  } else {
+    ThreadWork *works = new ThreadWork[n_cpus];
+    pthread_t *threads = new pthread_t[n_cpus];
+
+    unsigned int i;
+    int res;
+
+    size_t ulStart = 0;
+    size_t ulTotal = 0;
+    const size_t ulQuota = g_WorkItems.size() / n_cpus;
+    const size_t ulLeft = g_WorkItems.size() - ulQuota * n_cpus;
+
+    printf("Starting %u threads to process files\n", n_cpus);
+
+    for (i = 0; i < n_cpus; ++i) {
+      works[i].oConverter = &converter;
+      works[i].oWorks = &g_WorkItems;
+      works[i].m_ulStart = ulStart;
+      works[i].m_ulEnd = ulStart + ulQuota;
+
+      ulTotal += ulQuota;
+
+      if (i < ulLeft) {
+        ++works[i].m_ulEnd;
+        ++ulTotal;
+      }
+
+      ulStart = works[i].m_ulEnd;
+
+      res = pthread_create(&threads[i], NULL, thread_worker, &works[i]);
+      if (res) {
+        fprintf(stderr, "Error: Unable to start thread: %u\n", i);
+      }
+    }
+
+    if (ulTotal != g_WorkItems.size()) {
+      fprintf(stderr,
+              "Error: Not all items consumed (total:%u, consumed: %u, n_cpus:%u)\n",
+              g_WorkItems.size(),
+              ulTotal,
+              n_cpus);
+    }
+
+    void *result;
+    for (i = 0; i < n_cpus; ++i) {
+      pthread_join(threads[i], &result);
+    }
+
+    delete[] works;
+    delete[] threads;
+  }
+
+  printf("Conversion complete\n");
 
   cleanup_work_items();
 

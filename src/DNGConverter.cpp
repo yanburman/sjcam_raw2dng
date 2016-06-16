@@ -260,8 +260,6 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     printf("RAW: %s [%s]\n", m_szInputFile.c_str(), m_szMetadataFile.c_str());
 
-    printf("\nConverting...\n");
-
     // -------------------------------------------------------------
     // BAYER input file settings
     // -------------------------------------------------------------
@@ -660,8 +658,6 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
   } catch (...) {
     return dng_error_unknown;
   }
-
-  printf("Conversion complete\n");
 
   return dng_error_none;
 }

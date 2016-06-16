@@ -23,9 +23,9 @@ set(SRC_DIR src)
 
 if (UNIX)
     if (APPLE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMAC_ENV=1")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMAC_ENV=1 -DqDNGThreadSafe")
     else()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack -DqDNGThreadSafe")
         set(warning_flags "-Wall \
                            -Wsign-compare \
                            -Wclobbered \
@@ -51,7 +51,7 @@ if (UNIX)
 endif()
 
 if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqDNG64Bit /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqDNG64Bit /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0 /DqDNGThreadSafe")
 endif(MSVC)
 
 # cmake adds -rdynamic to all links which effectively disables lto
