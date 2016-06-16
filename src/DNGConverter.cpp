@@ -368,11 +368,11 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set pixel area
     // Remarks: Tag [DefaultCropOrigin] / [50719]
-    oNegative->SetDefaultCropOrigin(2, 2);
+    oNegative->SetDefaultCropOrigin(0, 0);
 
     // Set pixel area
     // Remarks: Tag [DefaultCropSize] / [50720]
-    oNegative->SetDefaultCropSize(oCamProfile->m_ulWidth - 4, oCamProfile->m_ulHeight - 4);
+    oNegative->SetDefaultCropSize(oCamProfile->m_ulWidth, oCamProfile->m_ulHeight);
 
     // Set base orientation
     // Remarks: See Restriction / Extension tags chapter
