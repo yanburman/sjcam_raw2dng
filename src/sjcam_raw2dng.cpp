@@ -92,7 +92,6 @@ static dng_error_code find_files(std::string &dir)
       add_work_item(fname, res);
       found = false;
       res.clear();
-      continue;
     }
 
     if (has_suffix(*it, raw_suffix)) {
