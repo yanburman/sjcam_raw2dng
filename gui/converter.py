@@ -16,7 +16,7 @@ import subprocess
 import os
 
 def subprocess_thread(main, args):
-    wx.CallAfter(main.status_text_ctrl.AppendText, 'Starting conversion')
+    wx.CallAfter(main.status_text_ctrl.AppendText, 'Starting conversion\n')
     # The following is true only on Windows.
     if hasattr(subprocess, 'STARTUPINFO'):
         # On Windows, subprocess calls will pop up a command window by default
@@ -36,13 +36,12 @@ def subprocess_thread(main, args):
         while main.proc.poll() is None:
             line = main.proc.stdout.readline()
             if line != '':
-                wx.CallAfter(main.status_text_ctrl.AppendText, line)
+                wx.CallAfter(main.status_text_ctrl.AppendText, line + '\n')
         main.proc.wait()
         main.proc = None
     except BaseException as exc:
         wx.CallAfter(main.status_text_ctrl.AppendText, str(exc))
     finally:
-        wx.CallAfter(main.status_text_ctrl.AppendText, 'Done')
         main.convert_button.Enable()
         main.abort_button.Disable()
 # end wxGlade
