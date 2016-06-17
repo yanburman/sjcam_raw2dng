@@ -348,7 +348,7 @@ int main(int argc, char *argv[])
     const size_t ulQuota = g_WorkItems.size() / n_cpus;
     const size_t ulLeft = g_WorkItems.size() - ulQuota * n_cpus;
 
-    printf("Starting %u threads to process files\n", n_cpus);
+    printf("Starting %zu threads to process files\n", n_cpus);
 
     for (i = 0; i < n_cpus; ++i) {
       works[i].oConverter = &converter;
@@ -373,7 +373,7 @@ int main(int argc, char *argv[])
 
     if (ulTotal != g_WorkItems.size()) {
       fprintf(stderr,
-              "Error: Not all items consumed (total:%u, consumed: %u, n_cpus:%u)\n",
+              "Error: Not all items consumed (total:%zu, consumed: %zu, n_cpus:%zu)\n",
               g_WorkItems.size(),
               ulTotal,
               n_cpus);
