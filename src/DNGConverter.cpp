@@ -243,9 +243,9 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
   }
 
   if (!m_oConfig.m_szPathPrefixOutput.empty()) {
-    unIndex = m_szInputFile.find_last_of(DIR_DELIM);
+    unIndex = szBaseFilename.find_last_of(DIR_DELIM);
     if (unIndex != std::string::npos)
-      szBaseFilename = m_szInputFile.substr(unIndex + 1, m_szInputFile.length());
+      szBaseFilename = szBaseFilename.substr(unIndex + 1, szBaseFilename.length());
   }
 
   std::string m_szOutputFile = m_oConfig.m_szPathPrefixOutput + szBaseFilename + ".dng";
