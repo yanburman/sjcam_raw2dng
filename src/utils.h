@@ -19,4 +19,8 @@ size_t get_num_cpus(void);
 
 void set_thread_prio_low(void);
 
+#ifndef S_ISDIR
+#define S_ISDIR(mode) (((mode)&S_IFMT) == S_IFDIR)
+#endif
+
 #endif // __UTILS_H__
