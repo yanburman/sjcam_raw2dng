@@ -16,6 +16,7 @@ import subprocess
 import os
 
 def subprocess_thread(main, args):
+    wx.CallAfter(main.status_text_ctrl.AppendText, 'Starting conversion')
     # The following is true only on Windows.
     if hasattr(subprocess, 'STARTUPINFO'):
         # On Windows, subprocess calls will pop up a command window by default
