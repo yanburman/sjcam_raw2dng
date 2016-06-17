@@ -1,4 +1,5 @@
 v1.0.0
+* Added GUI
 * Fixed bug where output folder option would mess up filenames
 * Slightly improved default SJ5000x white balance for daylight
 * Fixed bug where we were missing every second file if folder had only raw files
