@@ -3,6 +3,7 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <algorithm>
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -326,10 +327,15 @@ int main(int argc, char *argv[])
     }
   }
 
+  if (g_WorkItems.size() == 0) {
+    printf("No raw files found\n");
+    return EXIT_SUCCESS;
+  }
+
   DNGConverter converter(conf);
 
-  size_t n_cpus = get_num_cpus();
-  if (n_cpus >= g_WorkItems.size()) {
+  size_t n_cpus = std::min(get_num_cpus(), g_WorkItems.size());
+  if (n_cpus == 1) {
     ThreadWork work;
     work.oConverter = &converter;
     work.m_ulStart = 0;
