@@ -20,7 +20,9 @@ Features:
 Camera profile usage:
 ---------------------
 In order to be able to utilize camera profiles, you will need to put them in
-C:\Users\{you}\AppData\Roaming\Adobe\CameraRaw\CameraProfiles\
+C:\Users\\{you}\AppData\Roaming\Adobe\CameraRaw\CameraProfiles\
+After that you will need to restart Lightroom in order to be able to use the profile.
+Now you can choose the new profile in Camera Calibration
 
 
 GUI:
