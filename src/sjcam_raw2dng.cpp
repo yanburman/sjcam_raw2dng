@@ -332,6 +332,8 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
   }
 
+  setvbuf(stdout, NULL, _IONBF, 0);
+
   DNGConverter converter(conf);
 
   size_t n_cpus = std::min(get_num_cpus(), g_WorkItems.size());
