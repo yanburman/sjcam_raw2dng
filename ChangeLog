@@ -1,3 +1,5 @@
+* Added one more SJ5000x FOV crop resolution support
+
 v1.0.0
 * Added GUI
 * Fixed bug where output folder option would mess up filenames
