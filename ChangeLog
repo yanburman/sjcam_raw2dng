@@ -1,4 +1,5 @@
-* Slightly improved default white balance for daylight
+v1.0.0
+* Slightly improved default SJ5000x white balance for daylight
 * Fixed bug where we were missing every second file if folder had only raw files
 * Added parallel processing
 * Added smallest FOV resulution to SJ5000x support
