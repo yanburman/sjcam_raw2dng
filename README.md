@@ -20,9 +20,9 @@ Features:
 Camera profile usage:
 ---------------------
 In order to be able to utilize camera profiles, you will need to put them in
-C:\Users\\{you}\AppData\Roaming\Adobe\CameraRaw\CameraProfiles\
+C:\Users\\{you}\AppData\Roaming\Adobe\CameraRaw\CameraProfiles
 After that you will need to restart Lightroom in order to be able to use the profile.
-Now you can choose the new profile in Camera Calibration
+Now you can choose the new profile (SJ5000x Recipe)  in Camera Calibration
 
 
 GUI:
@@ -40,9 +40,9 @@ Note that if you drag-n-drop directory or file into sjcam_raw2dng.exe on windows
 Troubleshooting:
 ---------------------
 
-Q: Windows returns an error about missing MSVCP140.dll.
+Q: Windows returns an error about missing MSVCP140.dll
 A: Install: https://www.microsoft.com/en-us/download/details.aspx?id=48145
 
-Q: Windows repors an error: "This app can’t run on your PC. To find a version for your PC, check with the software publisher."
+Q: Windows repors an error: "This app can't run on your PC. To find a version for your PC, check with the software publisher."
 A: The binary is for 64-bit windows, while you are probably running 32-bit
 
