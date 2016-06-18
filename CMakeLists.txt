@@ -9,6 +9,10 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
+if (NOT DEFINED CMAKE_CL_64)
+   message(FATAL_ERROR "Must define CMAKE_CL_64 to some value")
+endif (NOT DEFINED CMAKE_CL_64)
+
 # Our project
 project(sjcam_raw2dng)
 
@@ -22,6 +26,10 @@ add_subdirectory(dng_sdk/projects/cmake)
 set(SRC_DIR src)
 
 if (UNIX)
+    if (CMAKE_CL_64)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DqDNG64Bit")
+    endif (CMAKE_CL_64)
+
     if (APPLE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMAC_ENV=1 -DqDNGThreadSafe")
     else()
@@ -51,7 +59,11 @@ if (UNIX)
 endif()
 
 if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqDNG64Bit /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0 /DqDNGThreadSafe")
+    if (CMAKE_CL_64)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqDNG64Bit")
+    endif (CMAKE_CL_64)
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0 /DqDNGThreadSafe")
 endif(MSVC)
 
 # cmake adds -rdynamic to all links which effectively disables lto
