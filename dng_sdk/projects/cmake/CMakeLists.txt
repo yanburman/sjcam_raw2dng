@@ -19,7 +19,6 @@ endif (MSVC)
 # import XMP SDK
 set(XMPROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../xmp_sdk")
 set(XMP_BUILD_STATIC "On")
-set(CMAKE_CL_64 "On")
 set(CMAKE_TOOLCHAIN_FILE "${XMPROOT}/build/shared/ToolchangGCC.cmake")
 
 add_subdirectory(${XMPROOT}/build ${XMPROOT}/build)
