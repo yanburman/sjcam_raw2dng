@@ -580,7 +580,6 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // Lens corrections
     // -------------------------------------------------------------
 
-#if 0
     if (m_oConfig.m_bLensCorrections) {
       const dng_point_real64 oCenter(0.5, 0.5);
       std::vector<real64> oVignetteGainParams(dng_vignette_radial_params::kNumTerms);
@@ -594,7 +593,6 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
       AutoPtr<dng_opcode> oFixVignetteOpcode(new dng_opcode_FixVignetteRadial(oVignetteParams, dng_opcode::kFlag_None));
       oNegative->OpcodeList3().Append(oFixVignetteOpcode);
     }
-#endif
 
     // -------------------------------------------------------------
     // Write DNG file

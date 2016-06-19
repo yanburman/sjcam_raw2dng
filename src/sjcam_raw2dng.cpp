@@ -239,9 +239,7 @@ static void usage(const char *prog)
 #endif
           "\t-h, --help          Help\n"
           "\t-v, --version       Print version info and exit\n"
-#if 0
           "\t-l, --no-lens       Do not apply lens corrections\n"
-#endif
           "\t-c, --no-color      Do not apply color calibration (for color calibration)\n"
           "\t-o, --output <DIR>  Output dir (must exist)\n"
           "\t-t, --tiff          Write TIFF image to \"<file>.tiff\"\n",
@@ -280,10 +278,8 @@ int main(int argc, char *argv[])
     } else if (option.Matches("v", true) || option.Matches("-version", true)) {
       printf("Version: %s\n", VERSION_STR);
       return EXIT_SUCCESS;
-#if 0
     } else if (option.Matches("l", true) || option.Matches("-no-lens", true)) {
       conf.m_bLensCorrections = false;
-#endif
     } else if (option.Matches("c", true) || option.Matches("-no-color", true)) {
       conf.m_bNoCalibration = true;
     } else if (option.Matches("o", true) || option.Matches("-output", true)) {
