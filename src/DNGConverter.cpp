@@ -42,6 +42,7 @@
 #include <dng_file_stream.h>
 #include <dng_render.h>
 #include <dng_xmp_sdk.h>
+#include <dng_xmp.h>
 #include <dng_globals.h>
 
 #include <assert.h>
@@ -581,6 +582,9 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // -------------------------------------------------------------
 
     if (m_oConfig.m_bLensCorrections) {
+      dng_xmp *oXMP = oNegative->Metadata().GetXMP();
+      oXMP->SetBoolean(kXMP_NS_CameraRaw, "AutoLateralCA", true);
+
       const dng_point_real64 oCenter(0.5, 0.5);
       std::vector<real64> oVignetteGainParams(dng_vignette_radial_params::kNumTerms);
       oVignetteGainParams[0] = 0.2;
