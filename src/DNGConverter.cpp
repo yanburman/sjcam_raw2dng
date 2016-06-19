@@ -582,6 +582,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     if (m_oConfig.m_bLensCorrections) {
       const dng_point_real64 oCenter(0.5, 0.5);
+
       std::vector<real64> oVignetteGainParams(dng_vignette_radial_params::kNumTerms);
       oVignetteGainParams[0] = 0.2;
       oVignetteGainParams[1] = 0.2;
@@ -592,6 +593,32 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
       dng_vignette_radial_params oVignetteParams(oVignetteGainParams, oCenter);
       AutoPtr<dng_opcode> oFixVignetteOpcode(new dng_opcode_FixVignetteRadial(oVignetteParams, dng_opcode::kFlag_None));
       oNegative->OpcodeList3().Append(oFixVignetteOpcode);
+
+
+      dng_vector oRedRadParams(4);
+      dng_vector oGreenRadParams(4);
+      dng_vector oBlueRadParams(4);
+
+      oRedRadParams[0] = 1;
+      oRedRadParams[1] = 1;
+      oRedRadParams[2] = 1;
+      oRedRadParams[3] = 1;
+
+      oGreenRadParams[0] = 1;
+      oGreenRadParams[1] = 1;
+      oGreenRadParams[2] = 1;
+      oGreenRadParams[3] = 1;
+
+      oBlueRadParams[0] = 1;
+      oBlueRadParams[1] = 1;
+      oBlueRadParams[2] = 1;
+      oBlueRadParams[3] = 1;
+
+      dng_vector oRadParams[3] = {oRedRadParams, oGreenRadParams, oBlueRadParams};
+
+      dng_warp_params_fisheye oFisheyeParams(3, oRadParams, oCenter);
+      AutoPtr<dng_opcode> oFishEyeOpcode(new dng_opcode_WarpFisheye(oFisheyeParams, dng_opcode::kFlag_None));
+      oNegative->OpcodeList3().Append(oFishEyeOpcode);
     }
 
     // -------------------------------------------------------------
