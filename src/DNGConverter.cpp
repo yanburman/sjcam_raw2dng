@@ -55,6 +55,8 @@
 #include "CFAReader.h"
 
 const dng_urational DNGConverter::m_oZeroURational(0, 100);
+const dng_urational DNGConverter::m_oOneURational(1, 1);
+
 const dng_matrix_3by3 DNGConverter::m_oIdentityMatrix(1, 0, 0, 0, 1, 0, 0, 0, 1);
 
 const static dng_matrix_3by3 g_olsD65Matrix(0.8391, 0.1327, 0.0705, 0.4219, 0.4622, -0.1067, 0.0684, -0.0648, 0.8437);
@@ -375,11 +377,11 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set scale to square pixel
     // Remarks: Tag [DefaultScale] / [50718]
-    oNegative->SetDefaultScale(dng_urational(1, 1), dng_urational(1, 1));
+    oNegative->SetDefaultScale(m_oOneURational, m_oOneURational);
 
     // Set scale to square pixel
     // Remarks: Tag [BestQualityScale] / [50780]
-    oNegative->SetBestQualityScale(dng_urational(1, 1));
+    oNegative->SetBestQualityScale(m_oOneURational);
 
     // Set pixel area
     // Remarks: Tag [DefaultCropOrigin] / [50719]

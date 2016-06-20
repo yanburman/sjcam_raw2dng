@@ -65,6 +65,7 @@ class DNGConverter
   static const uint32 m_unBitLimit;
 
   static const dng_urational m_oZeroURational;
+  static const dng_urational m_oOneURational;
   static const dng_matrix_3by3 m_oIdentityMatrix;
   static const dng_matrix_3by3 m_olsD65Matrix;
   static const dng_matrix_3by3 m_olsAMatrix;
