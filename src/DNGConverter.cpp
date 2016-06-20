@@ -61,6 +61,8 @@ const static dng_matrix_3by3 g_olsD65Matrix(0.8391, 0.1327, 0.0705, 0.4219, 0.46
 
 const static dng_matrix_3by3 g_olsAMatrix(0.8535, 0.2414, -0.0780, 0.4064, 0.6032, -0.2464, 0.0280, -0.0436, 0.8861);
 
+static const dng_point_real64 g_oCenter(0.5, 0.5);
+
 const dng_matrix_3by3 DNGConverter::m_olsD65Matrix(Invert(g_olsD65Matrix));
 const dng_matrix_3by3 DNGConverter::m_olsAMatrix(Invert(g_olsAMatrix));
 
@@ -173,12 +175,20 @@ int DNGConverter::ParseMetadata(const std::string &metadata, Exif &oExif)
 
 struct CameraProfile {
   CameraProfile(uint32 w, uint32 h, uint32 black_level, double r, double g, double b, const char *name)
-          : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name), m_ulBlackLevel(black_level), m_oNeutralWB(3)
+          : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name), m_ulBlackLevel(black_level), m_oNeutralWB(3),
+            m_oVignetteGainParams(dng_vignette_radial_params::kNumTerms),
+            m_oVignetteParams(m_oVignetteGainParams, g_oCenter)
   {
     m_ulFileSize = (m_ulWidth * m_ulHeight * 12) / 8;
     m_oNeutralWB[0] = r;
     m_oNeutralWB[1] = g;
     m_oNeutralWB[2] = b;
+
+    m_oVignetteGainParams[0] = 0.2;
+    m_oVignetteGainParams[1] = 0.2;
+    m_oVignetteGainParams[2] = 0.2;
+    m_oVignetteGainParams[3] = 0.2;
+    m_oVignetteGainParams[4] = 0.2;
   }
 
   uint32 m_ulWidth;
@@ -187,6 +197,8 @@ struct CameraProfile {
   uint32 m_ulBlackLevel;
   uint32 m_ulFileSize;
   dng_vector m_oNeutralWB;
+  std::vector<real64> m_oVignetteGainParams;
+  dng_vignette_radial_params m_oVignetteParams;
 };
 
 const static CameraProfile gRawSizes[] = {CameraProfile(4000, 3000, 0, 0.87, 1.3, 0.72, "SJ5000X"),
@@ -581,20 +593,13 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // Lens corrections
     // -------------------------------------------------------------
 
+    AutoPtr<dng_opcode> oFixVignetteOpcode;
     if (m_oConfig.m_bLensCorrections) {
       dng_xmp *oXMP = oNegative->Metadata().GetXMP();
       oXMP->SetBoolean(kXMP_NS_CameraRaw, "AutoLateralCA", true);
 
-      const dng_point_real64 oCenter(0.5, 0.5);
-      std::vector<real64> oVignetteGainParams(dng_vignette_radial_params::kNumTerms);
-      oVignetteGainParams[0] = 0.2;
-      oVignetteGainParams[1] = 0.2;
-      oVignetteGainParams[2] = 0.2;
-      oVignetteGainParams[3] = 0.2;
-      oVignetteGainParams[4] = 0.2;
-
-      dng_vignette_radial_params oVignetteParams(oVignetteGainParams, oCenter);
-      AutoPtr<dng_opcode> oFixVignetteOpcode(new dng_opcode_FixVignetteRadial(oVignetteParams, dng_opcode::kFlag_None));
+      oFixVignetteOpcode.Reset(
+        new dng_opcode_FixVignetteRadial(oCamProfile->m_oVignetteParams, dng_opcode::kFlag_None));
       oNegative->OpcodeList3().Append(oFixVignetteOpcode);
     }
 
