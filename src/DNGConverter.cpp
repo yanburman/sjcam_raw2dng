@@ -76,7 +76,7 @@ const std::string DNGConverter::m_szMake = "SJCAM";
 // Calculate bit limit
 const uint32_t DNGConverter::m_unBitLimit = 0x01 << 12;
 
-DNGConverter::DNGConverter(Config &config)
+DNGConverter::DNGConverter(Config &config) : m_oNeutralWB(3)
 {
   m_oConfig = config;
 
@@ -84,6 +84,9 @@ DNGConverter::DNGConverter(Config &config)
 
   // SETTINGS: Whitebalance D65, Orientation "normal"
   m_oOrientation = dng_orientation::Normal();
+
+  if (m_oConfig.m_bNoCalibration)
+    m_oNeutralWB.SetIdentity(3);
 }
 
 DNGConverter::~DNGConverter()
@@ -390,13 +393,10 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // Remarks: See Restriction / Extension tags chapter
     oNegative->SetBaseOrientation(m_oOrientation);
 
-    dng_vector oNeutralWB(3);
     const dng_vector *pNeutral;
     if (m_oConfig.m_bNoCalibration) {
-      oNeutralWB.SetIdentity(3);
-      pNeutral = &oNeutralWB;
+      pNeutral = &m_oNeutralWB;
     } else {
-      oNeutralWB = oCamProfile->m_oNeutralWB;
       pNeutral = &oCamProfile->m_oNeutralWB;
     }
     // Set camera neutral coordinates

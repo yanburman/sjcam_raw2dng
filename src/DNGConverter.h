@@ -55,6 +55,7 @@ class DNGConverter
   Config m_oConfig;
 
   dng_orientation m_oOrientation;
+  dng_vector m_oNeutralWB;
 
   static uint8 m_unColorPlanes;
   static uint16 m_unBayerType;
