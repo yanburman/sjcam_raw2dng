@@ -240,6 +240,7 @@ static void usage(const char *prog)
           "\t-h, --help          Help\n"
           "\t-v, --version       Print version info and exit\n"
           "\t-l, --no-lens       Do not apply lens corrections\n"
+          "\t-p, --no-threads    Process in single threaded manner\n"
           "\t-c, --no-color      Do not apply color calibration (for color calibration)\n"
           "\t-o, --output <DIR>  Output dir (must exist)\n"
           "\t-t, --tiff          Write TIFF image to \"<file>.tiff\"\n",
@@ -275,6 +276,8 @@ int main(int argc, char *argv[])
 #endif
     } else if (option.Matches("t", true) || option.Matches("-tiff", true)) {
       conf.m_bTiff = true;
+    } else if (option.Matches("p", true) || option.Matches("-no-threads", true)) {
+      conf.m_bSingleThreaded = true;
     } else if (option.Matches("v", true) || option.Matches("-version", true)) {
       printf("Version: %s\n", VERSION_STR);
       return EXIT_SUCCESS;
@@ -332,64 +335,71 @@ int main(int argc, char *argv[])
 
   DNGConverter converter(conf);
 
-  size_t n_cpus = std::min(get_num_cpus(), g_WorkItems.size());
-  if (n_cpus == 1) {
-    ThreadWork work;
-    work.oConverter = &converter;
-    work.m_ulStart = 0;
-    work.m_ulEnd = g_WorkItems.size();
-    work.oWorks = &g_WorkItems;
-    thread_worker(&work);
+  if (conf.m_bSingleThreaded) {
+    std::vector<RawWorkItem *>::const_iterator it;
+
+    for (it = g_WorkItems.begin(); it != g_WorkItems.end(); ++it)
+      converter.ConvertToDNG((*it)->m_szRawFile, (*it)->m_szMetadataFile);
   } else {
-    ThreadWork *works = new ThreadWork[n_cpus];
-    pthread_t *threads = new pthread_t[n_cpus];
+    size_t n_cpus = std::min(get_num_cpus(), g_WorkItems.size());
+    if (n_cpus == 1) {
+      ThreadWork work;
+      work.oConverter = &converter;
+      work.m_ulStart = 0;
+      work.m_ulEnd = g_WorkItems.size();
+      work.oWorks = &g_WorkItems;
+      thread_worker(&work);
+    } else {
+      ThreadWork *works = new ThreadWork[n_cpus];
+      pthread_t *threads = new pthread_t[n_cpus];
 
-    unsigned int i;
-    int res;
+      unsigned int i;
+      int res;
 
-    size_t ulStart = 0;
-    size_t ulTotal = 0;
-    const size_t ulQuota = g_WorkItems.size() / n_cpus;
-    const size_t ulLeft = g_WorkItems.size() - ulQuota * n_cpus;
+      size_t ulStart = 0;
+      size_t ulTotal = 0;
+      const size_t ulQuota = g_WorkItems.size() / n_cpus;
+      const size_t ulLeft = g_WorkItems.size() - ulQuota * n_cpus;
 
-    printf("Starting %zu threads to process files\n", n_cpus);
+      printf("Starting %zu threads to process files\n", n_cpus);
 
-    for (i = 0; i < n_cpus; ++i) {
-      works[i].oConverter = &converter;
-      works[i].oWorks = &g_WorkItems;
-      works[i].m_ulStart = ulStart;
-      works[i].m_ulEnd = ulStart + ulQuota;
+      for (i = 0; i < n_cpus; ++i) {
+        works[i].oConverter = &converter;
+        works[i].oWorks = &g_WorkItems;
+        works[i].m_ulStart = ulStart;
+        works[i].m_ulEnd = ulStart + ulQuota;
 
-      ulTotal += ulQuota;
+        ulTotal += ulQuota;
 
-      if (i < ulLeft) {
-        ++works[i].m_ulEnd;
-        ++ulTotal;
+        if (i < ulLeft) {
+          ++works[i].m_ulEnd;
+          ++ulTotal;
+        }
+
+        ulStart = works[i].m_ulEnd;
+
+        res = pthread_create(&threads[i], NULL, thread_worker, &works[i]);
+        if (res) {
+          fprintf(stderr, "Error: Unable to start thread: %u\n", i);
+        }
       }
 
-      ulStart = works[i].m_ulEnd;
-
-      res = pthread_create(&threads[i], NULL, thread_worker, &works[i]);
-      if (res) {
-        fprintf(stderr, "Error: Unable to start thread: %u\n", i);
+      if (ulTotal != g_WorkItems.size()) {
+        fprintf(stderr,
+                "Error: Not all items consumed (total:%zu, consumed: %zu, n_cpus:%zu)\n",
+                g_WorkItems.size(),
+                ulTotal,
+                n_cpus);
       }
-    }
 
-    if (ulTotal != g_WorkItems.size()) {
-      fprintf(stderr,
-              "Error: Not all items consumed (total:%zu, consumed: %zu, n_cpus:%zu)\n",
-              g_WorkItems.size(),
-              ulTotal,
-              n_cpus);
-    }
+      void *result;
+      for (i = 0; i < n_cpus; ++i) {
+        pthread_join(threads[i], &result);
+      }
 
-    void *result;
-    for (i = 0; i < n_cpus; ++i) {
-      pthread_join(threads[i], &result);
+      delete[] works;
+      delete[] threads;
     }
-
-    delete[] works;
-    delete[] threads;
   }
 
   printf("Conversion complete\n");

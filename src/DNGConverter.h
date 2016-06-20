@@ -13,13 +13,14 @@
 #include <dng_orientation.h>
 
 struct Config {
-  Config() : m_bTiff(false), m_bLensCorrections(true), m_bNoCalibration(false)
+  Config() : m_bTiff(false), m_bLensCorrections(true), m_bNoCalibration(false), m_bSingleThreaded(false)
   {
   }
 
   bool m_bTiff;
   bool m_bLensCorrections;
   bool m_bNoCalibration;
+  bool m_bSingleThreaded;
   std::string m_szPathPrefixOutput;
 };
 
