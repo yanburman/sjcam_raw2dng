@@ -61,7 +61,7 @@ class DNGConverter
 
   static const std::string m_szMake;
 
-  static uint32 m_unBitLimit;
+  static const uint32 m_unBitLimit;
 
   static const dng_urational m_oZeroURational;
   static const dng_matrix_3by3 m_oIdentityMatrix;

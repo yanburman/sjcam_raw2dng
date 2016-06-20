@@ -74,7 +74,7 @@ uint16 DNGConverter::m_unBayerType = 1; // RGGB
 const std::string DNGConverter::m_szMake = "SJCAM";
 
 // Calculate bit limit
-uint32_t DNGConverter::m_unBitLimit = 0x01 << 12;
+const uint32_t DNGConverter::m_unBitLimit = 0x01 << 12;
 
 DNGConverter::DNGConverter(Config &config)
 {
