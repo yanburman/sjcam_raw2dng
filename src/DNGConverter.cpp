@@ -178,22 +178,44 @@ int DNGConverter::ParseMetadata(const std::string &metadata, Exif &oExif)
   return 0;
 }
 
-struct CameraProfile {
-  CameraProfile(uint32 w, uint32 h, uint32 black_level, double r, double g, double b, const char *name)
-          : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name), m_ulBlackLevel(black_level), m_oNeutralWB(3),
-            m_oVignetteGainParams(dng_vignette_radial_params::kNumTerms),
+class LensCalibration
+{
+  protected:
+  std::vector<real64> m_oVignetteGainParams;
+
+  public:
+  dng_vignette_radial_params m_oVignetteParams;
+
+  LensCalibration(float val)
+          : m_oVignetteGainParams(dng_vignette_radial_params::kNumTerms),
             m_oVignetteParams(m_oVignetteGainParams, g_oCenter)
+  {
+    m_oVignetteGainParams[0] = val;
+    m_oVignetteGainParams[1] = val;
+    m_oVignetteGainParams[2] = val;
+    m_oVignetteGainParams[3] = val;
+    m_oVignetteGainParams[4] = val;
+  }
+};
+
+const static LensCalibration SJ5000xCalib(0.2);
+
+struct CameraProfile {
+  CameraProfile(uint32 w,
+                uint32 h,
+                uint32 black_level,
+                double r,
+                double g,
+                double b,
+                const char *name,
+                const LensCalibration *calib = NULL)
+          : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name), m_ulBlackLevel(black_level), m_oNeutralWB(3),
+            m_oCalib(calib)
   {
     m_ulFileSize = (m_ulWidth * m_ulHeight * 12) / 8;
     m_oNeutralWB[0] = r;
     m_oNeutralWB[1] = g;
     m_oNeutralWB[2] = b;
-
-    m_oVignetteGainParams[0] = 0.2;
-    m_oVignetteGainParams[1] = 0.2;
-    m_oVignetteGainParams[2] = 0.2;
-    m_oVignetteGainParams[3] = 0.2;
-    m_oVignetteGainParams[4] = 0.2;
   }
 
   uint32 m_ulWidth;
@@ -202,11 +224,10 @@ struct CameraProfile {
   uint32 m_ulBlackLevel;
   uint32 m_ulFileSize;
   dng_vector m_oNeutralWB;
-  std::vector<real64> m_oVignetteGainParams;
-  dng_vignette_radial_params m_oVignetteParams;
+  const LensCalibration *m_oCalib;
 };
 
-const static CameraProfile gRawSizes[] = {CameraProfile(4000, 3000, 0, 0.87, 1.3, 0.72, "SJ5000X"),
+const static CameraProfile gRawSizes[] = {CameraProfile(4000, 3000, 0, 0.87, 1.3, 0.72, "SJ5000X", &SJ5000xCalib),
                                           CameraProfile(3032, 2272, 0, 0.87, 1.3, 0.72, "SJ5000X"),
                                           CameraProfile(2640, 1980, 0, 0.87, 1.3, 0.72, "SJ5000X"),
                                           CameraProfile(4608, 3456, 200, 0.51, 1, 0.64, "M20")};
@@ -600,9 +621,11 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
       dng_xmp *oXMP = oNegative->Metadata().GetXMP();
       oXMP->SetBoolean(kXMP_NS_CameraRaw, "AutoLateralCA", true);
 
-      oFixVignetteOpcode.Reset(
-        new dng_opcode_FixVignetteRadial(oCamProfile->m_oVignetteParams, dng_opcode::kFlag_None));
-      oNegative->OpcodeList3().Append(oFixVignetteOpcode);
+      if (oCamProfile->m_oCalib) {
+        oFixVignetteOpcode.Reset(
+          new dng_opcode_FixVignetteRadial(oCamProfile->m_oCalib->m_oVignetteParams, dng_opcode::kFlag_None));
+        oNegative->OpcodeList3().Append(oFixVignetteOpcode);
+      }
     }
 
     // -------------------------------------------------------------
