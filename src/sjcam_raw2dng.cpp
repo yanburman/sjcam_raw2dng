@@ -335,21 +335,13 @@ int main(int argc, char *argv[])
 
   DNGConverter converter(conf);
 
-  if (conf.m_bSingleThreaded) {
+  size_t n_cpus = std::min(get_num_cpus(), g_WorkItems.size());
+  if (conf.m_bSingleThreaded || (n_cpus == 1)) {
     std::vector<RawWorkItem *>::const_iterator it;
 
     for (it = g_WorkItems.begin(); it != g_WorkItems.end(); ++it)
       converter.ConvertToDNG((*it)->m_szRawFile, (*it)->m_szMetadataFile);
   } else {
-    size_t n_cpus = std::min(get_num_cpus(), g_WorkItems.size());
-    if (n_cpus == 1) {
-      ThreadWork work;
-      work.oConverter = &converter;
-      work.m_ulStart = 0;
-      work.m_ulEnd = g_WorkItems.size();
-      work.oWorks = &g_WorkItems;
-      thread_worker(&work);
-    } else {
       ThreadWork *works = new ThreadWork[n_cpus];
       pthread_t *threads = new pthread_t[n_cpus];
 
@@ -399,7 +391,6 @@ int main(int argc, char *argv[])
 
       delete[] works;
       delete[] threads;
-    }
   }
 
   printf("Conversion complete\n");
