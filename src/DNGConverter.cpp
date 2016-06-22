@@ -186,7 +186,7 @@ class LensCalibration
   public:
   dng_vignette_radial_params m_oVignetteParams;
 
-  LensCalibration(float val)
+  LensCalibration(double val)
           : m_oVignetteGainParams(dng_vignette_radial_params::kNumTerms),
             m_oVignetteParams(m_oVignetteGainParams, g_oCenter)
   {
@@ -621,11 +621,13 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
       dng_xmp *oXMP = oNegative->Metadata().GetXMP();
       oXMP->SetBoolean(kXMP_NS_CameraRaw, "AutoLateralCA", true);
 
+#if 0
       if (oCamProfile->m_oCalib) {
         oFixVignetteOpcode.Reset(
           new dng_opcode_FixVignetteRadial(oCamProfile->m_oCalib->m_oVignetteParams, dng_opcode::kFlag_None));
         oNegative->OpcodeList3().Append(oFixVignetteOpcode);
       }
+#endif
     }
 
     // -------------------------------------------------------------
