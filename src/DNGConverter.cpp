@@ -616,6 +616,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // Lens corrections
     // -------------------------------------------------------------
 
+#if 0
     AutoPtr<dng_opcode> oFixVignetteOpcode;
     if (m_oConfig.m_bLensCorrections) {
       dng_xmp *oXMP = oNegative->Metadata().GetXMP();
@@ -629,6 +630,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
       }
 #endif
     }
+#endif
 
     // -------------------------------------------------------------
     // Write DNG file
