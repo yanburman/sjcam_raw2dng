@@ -49,7 +49,7 @@ CFAReader::~CFAReader()
 int CFAReader::open(const char *fname, size_t expected_size)
 {
 #if defined(_WIN32) || defined(_WIN64)
-  m_fd = CreateFile(fname, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  m_fd = CreateFile(fname, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
   if (INVALID_HANDLE_VALUE == m_fd)
     return GetLastError();
   m_filesz = GetFileSize(m_fd, NULL);
