@@ -78,6 +78,7 @@ int CFAReader::open(const char *fname, size_t expected_size)
   if (MAP_FAILED == m_buf)
     return errno;
 
+  posix_madvise(m_buf, m_filesz, POSIX_MADV_SEQUENTIAL);
 #endif
 
   m_curr_byte = m_buf;
