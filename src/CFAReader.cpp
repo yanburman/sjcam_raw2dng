@@ -98,6 +98,12 @@ void CFAReader::read(uint8_t *out_buf)
     out_buf[1] = m_curr_byte[1] >> 4;
     out_buf[0] = (m_curr_byte[1] << 4) | (m_curr_byte[0] >> 4);
     m_curr_byte += 2;
+#if defined(_WIN32) || defined(_WIN64)
+	_mm_prefetch((const CHAR*)m_curr_byte, _MM_HINT_T0);
+#endif
+#if defined(__GNUC__)
+	__bulitin_prefetch(m_curr_byte);
+#endif
   }
 
   m_byte_aligned = !m_byte_aligned;
