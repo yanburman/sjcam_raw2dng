@@ -49,7 +49,8 @@ CFAReader::~CFAReader()
 int CFAReader::open(const char *fname, size_t expected_size)
 {
 #if defined(_WIN32) || defined(_WIN64)
-  m_fd = CreateFile(fname, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+  m_fd =
+    CreateFile(fname, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
   if (INVALID_HANDLE_VALUE == m_fd)
     return GetLastError();
   m_filesz = GetFileSize(m_fd, NULL);
@@ -99,10 +100,10 @@ void CFAReader::read(uint8_t *out_buf)
     out_buf[0] = (m_curr_byte[1] << 4) | (m_curr_byte[0] >> 4);
     m_curr_byte += 2;
 #if defined(_WIN32) || defined(_WIN64)
-	_mm_prefetch((const CHAR*)m_curr_byte, _MM_HINT_T0);
+    _mm_prefetch((const CHAR *)m_curr_byte, _MM_HINT_T0);
 #endif
 #if defined(__GNUC__)
-	__bulitin_prefetch(m_curr_byte);
+    __builtin_prefetch(m_curr_byte);
 #endif
   }
 
