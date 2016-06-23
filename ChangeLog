@@ -1,5 +1,7 @@
-* Added ACR CA correction
-* Added vignetting correction
+v1.0.1
+* Support for Windows 32-bit builds
+* Number of optimizations (cache control and readahead support for Win and *nix)
+* Added vignetting correction framework (not enabled yet)
 * Added one more SJ5000x FOV crop resolution support
 
 v1.0.0

@@ -18,7 +18,7 @@
 #include <dng_string.h>
 #include <dng_pthread.h>
 
-#define VERSION_STR "v1.0.0"
+#define VERSION_STR "v1.0.1"
 
 struct RawWorkItem {
   RawWorkItem(const std::string &szRawFile, const std::string &szMetadataFile)
