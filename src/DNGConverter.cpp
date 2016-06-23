@@ -312,10 +312,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     unsigned int ulNumPixels = oCamProfile->m_ulWidth * oCamProfile->m_ulHeight;
     AutoPtr<dng_memory_block> oBayerData(oDNGHost.Allocate(ulNumPixels * TagTypeSize(ttShort)));
 
-    uint8_t *buf = (uint8_t *)oBayerData->Buffer();
-    for (unsigned int i = 0; i < ulNumPixels; ++i, buf += 2) {
-      reader.read(buf);
-    }
+    reader.read((uint8_t *)oBayerData->Buffer(), ulNumPixels);
 
     // -------------------------------------------------------------
     // DNG Host Settings

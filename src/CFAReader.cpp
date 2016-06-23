@@ -20,7 +20,7 @@ CFAReader::CFAReader()
 #else
         : m_buf((uint8_t *)MAP_FAILED), m_fd(-1),
 #endif
-          m_filesz(0), m_curr_byte(NULL), m_byte_aligned(true)
+          m_filesz(0)
 {
 }
 
@@ -82,30 +82,32 @@ int CFAReader::open(const char *fname, size_t expected_size)
   posix_madvise(m_buf, m_filesz, POSIX_MADV_SEQUENTIAL);
 #endif
 
-  m_curr_byte = m_buf;
-
   return 0;
 }
 
-void CFAReader::read(uint8_t *out_buf)
+void CFAReader::read(uint8_t *out_buf, size_t total)
 {
-  if (m_byte_aligned) {
-    // layout: 22223333 XXXX1111
-    out_buf[1] = m_curr_byte[1] & 0x0F;
-    out_buf[0] = m_curr_byte[0];
-    ++m_curr_byte;
-  } else {
-    // layout: 3333XXXX 11112222
-    out_buf[1] = m_curr_byte[1] >> 4;
-    out_buf[0] = (m_curr_byte[1] << 4) | (m_curr_byte[0] >> 4);
-    m_curr_byte += 2;
+  uint8_t *bCurrByte = m_buf;
+  bool byteAligned = true;
+
+  for (unsigned int i = 0; i < total; ++i, out_buf += 2) {
+    if (byteAligned) {
+      // layout: 22223333 XXXX1111
+      out_buf[1] = bCurrByte[1] & 0x0F;
+      out_buf[0] = bCurrByte[0];
+      ++bCurrByte;
+    } else {
+      // layout: 3333XXXX 11112222
+      out_buf[1] = bCurrByte[1] >> 4;
+      out_buf[0] = (bCurrByte[1] << 4) | (bCurrByte[0] >> 4);
+      bCurrByte += 2;
 #if defined(_WIN32) || defined(_WIN64)
-    _mm_prefetch((const CHAR *)m_curr_byte, _MM_HINT_T0);
+      _mm_prefetch((const CHAR *)bCurrByte, _MM_HINT_T0);
 #endif
 #if defined(__GNUC__)
-    __builtin_prefetch(m_curr_byte);
+      __builtin_prefetch(bCurrByte);
 #endif
+    }
+    byteAligned = !byteAligned;
   }
-
-  m_byte_aligned = !m_byte_aligned;
 }

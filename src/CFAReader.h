@@ -15,7 +15,7 @@ class CFAReader
 
   int open(const char *fname, size_t expected_size);
 
-  void read(uint8_t *out_buf);
+  void read(uint8_t *out_buf, size_t total);
 
   ~CFAReader();
 
@@ -28,8 +28,6 @@ class CFAReader
   int m_fd;
 #endif
   size_t m_filesz;
-  uint8_t *m_curr_byte;
-  bool m_byte_aligned;
 };
 
 #endif // __CFA_READER_H__
