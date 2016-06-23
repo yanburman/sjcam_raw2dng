@@ -9,7 +9,7 @@ Currently supported cameras:
 Features:
 --------------------
 - Using official Adobe SDK for maximum compatibility and extendability
-- Parallel conversion speeding up batch conversion by utilizing all CPU cores in the system
+- Parallel conversion speeding up batch conversion
 - Adobe camera profile
 - Support for Linux and Windows (both GUI and CLI)
 - Best possible quality
@@ -22,7 +22,7 @@ Camera profile usage:
 In order to be able to utilize camera profiles, you will need to put them in
 C:\Users\\{you}\AppData\Roaming\Adobe\CameraRaw\CameraProfiles
 After that you will need to restart Lightroom in order to be able to use the profile.
-Now you can choose the new profile (SJ5000x Recipe)  in Camera Calibration
+Now you can choose the new profile (SJ5000x Recipe) in Camera Calibration
 
 
 GUI:
