@@ -246,7 +246,8 @@ static void usage(const char *prog, Config &conf)
           "\t-c, --no-color      Do not apply color calibration (for color calibration)\n"
           "\t-o, --output <DIR>  Output dir (must exist)\n"
           "\t-t, --tiff          Write TIFF image to \"<file>.tiff\"\n",
-          prog, conf.m_iThreads);
+          prog,
+          conf.m_iThreads);
 }
 
 int main(int argc, char *argv[])
