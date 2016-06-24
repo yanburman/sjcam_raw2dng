@@ -13,27 +13,31 @@ static int list_dir(const std::string dir, std::list<std::string> &files)
 
   // Find the first file in the directory.
 
-  const std::string files_to_list = dir + "\\*.RAW";
+  const char* extensions[] = { "\\*.RAW", "\\*.JPG" };
 
-  hFind = FindFirstFile(files_to_list.c_str(), &ffd);
+  for (unsigned int i = 0; i < sizeof(extensions) / sizeof(extensions[0]); ++i) {
+	  const std::string files_to_list = dir + extensions[i];
 
-  if (INVALID_HANDLE_VALUE == hFind)
-    return GetLastError();
+	  hFind = FindFirstFile(files_to_list.c_str(), &ffd);
 
-  // List all the files in the directory with some info about them.
+	  if (INVALID_HANDLE_VALUE == hFind)
+		  return GetLastError();
 
-  do {
-    if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-      std::string fname(ffd.cFileName);
-      files.push_back(fname);
-    }
-  } while (FindNextFile(hFind, &ffd) != 0);
+	  // List all the files in the directory with some info about them.
 
-  dwError = GetLastError();
-  if (dwError == ERROR_NO_MORE_FILES)
-    dwError = 0;
+	  do {
+		  if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+			  std::string fname = dir + "\\" + ffd.cFileName;
+			  files.push_back(fname);
+		  }
+	  } while (FindNextFile(hFind, &ffd) != 0);
 
-  FindClose(hFind);
+	  dwError = GetLastError();
+	  if (dwError == ERROR_NO_MORE_FILES)
+		  dwError = 0;
+
+	  FindClose(hFind);
+  }
 
   return dwError;
 }
