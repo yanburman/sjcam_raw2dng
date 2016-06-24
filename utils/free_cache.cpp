@@ -46,7 +46,9 @@ int main(int argc, char *argv[])
   }
 
   std::list<std::string> files;
-  int ret = list_dir(argv[1], files) if (ret) return 1;
+  int ret = list_dir(argv[1], files);
+  if (ret)
+    return 1;
 
   std::list<std::string>::const_iterator it;
   for (it = files.begin(); it != files.end(); ++it) {
@@ -55,7 +57,7 @@ int main(int argc, char *argv[])
                            0,
                            NULL,
                            OPEN_EXISTING,
-                           FFILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING,
+                           FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING,
                            NULL);
     CloseHandle(fd);
   }
