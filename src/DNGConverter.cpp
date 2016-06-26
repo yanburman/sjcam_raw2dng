@@ -53,6 +53,10 @@
 #include "DNGConverter.h"
 #include "helpers.h"
 #include "CFAReader.h"
+#include "StopWatch.h"
+
+// Enable this for some profiling
+// #define TIME_PROFILE
 
 const dng_urational DNGConverter::m_oZeroURational(0, 100);
 const dng_urational DNGConverter::m_oOneURational(1, 1);
@@ -248,6 +252,11 @@ static const CameraProfile *get_CameraProfile(uint32 sz)
 
 dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, const std::string &m_szMetadataFile)
 {
+#ifdef TIME_PROFILE
+  StopWatch oProfilerTotal;
+  oProfilerTotal.run();
+#endif
+
   struct stat sb;
   int ret = stat(m_szInputFile.c_str(), &sb);
   if (ret) {
@@ -263,8 +272,20 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
   Exif exif;
 
+#ifdef TIME_PROFILE
+  StopWatch oProfiler;
+#endif
+
   if (!m_szMetadataFile.empty()) {
+#ifdef TIME_PROFILE
+    oProfiler.reset();
+    oProfiler.run();
+#endif
     ret = ParseMetadata(m_szMetadataFile, exif);
+#ifdef TIME_PROFILE
+    oProfiler.stop();
+    printf("DNGConverter::ParseMetadata() time: %lu usec\n", oProfiler.elapsed_usec());
+#endif
     if (ret)
       return dng_error_unknown;
   }
@@ -312,7 +333,16 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     unsigned int ulNumPixels = oCamProfile->m_ulWidth * oCamProfile->m_ulHeight;
     AutoPtr<dng_memory_block> oBayerData(oDNGHost.Allocate(ulNumPixels * TagTypeSize(ttShort)));
 
+#ifdef TIME_PROFILE
+    oProfiler.reset();
+    oProfiler.run();
+#endif
     reader.read((uint8_t *)oBayerData->Buffer(), ulNumPixels);
+
+#ifdef TIME_PROFILE
+    oProfiler.stop();
+    printf("CFAReader::read() time: %lu usec\n", oProfiler.elapsed_usec());
+#endif
 
     // -------------------------------------------------------------
     // DNG Host Settings
@@ -636,11 +666,27 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // Assign Raw image data.
     oNegative->SetStage1Image(oImage);
 
+#ifdef TIME_PROFILE
+    oProfiler.reset();
+    oProfiler.run();
+#endif
     // Compute linearized and range mapped image
     oNegative->BuildStage2Image(oDNGHost);
+#ifdef TIME_PROFILE
+    oProfiler.stop();
+    printf("dng_negative::BuildStage2Image() time: %lu usec\n", oProfiler.elapsed_usec());
+#endif
 
+#ifdef TIME_PROFILE
+    oProfiler.reset();
+    oProfiler.run();
+#endif
     // Compute demosaiced image (used by preview and thumbnail)
     oNegative->BuildStage3Image(oDNGHost);
+#ifdef TIME_PROFILE
+    oProfiler.stop();
+    printf("dng_negative::BuildStage3Image() time: %lu usec\n", oProfiler.elapsed_usec());
+#endif
 
     // Update XMP / EXIF
     oNegative->SynchronizeMetadata();
@@ -651,9 +697,17 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // Create stream writer for output file
     dng_file_stream oDNGStream(m_szOutputFile.c_str(), true);
 
+#ifdef TIME_PROFILE
+    oProfiler.reset();
+    oProfiler.run();
+#endif
     // Write DNG file to disk
     AutoPtr<dng_image_writer> oWriter(new dng_image_writer());
     oWriter->WriteDNG(oDNGHost, oDNGStream, *oNegative.Get());
+#ifdef TIME_PROFILE
+    oProfiler.stop();
+    printf("dng_image_writer::WriteDNG() time: %lu usec\n", oProfiler.elapsed_usec());
+#endif
 
     if (m_oConfig.m_bTiff) {
       // -------------------------------------------------------------
@@ -678,6 +732,10 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
       oFinalImage.Reset(oRender.Render());
       oFinalImage->Rotate(oNegative->Orientation());
 
+#ifdef TIME_PROFILE
+      oProfiler.reset();
+      oProfiler.run();
+#endif
       // Write TIFF file to disk
       oWriter->WriteTIFF(oDNGHost,
                          oTIFFStream,
@@ -686,12 +744,21 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
                          ccUncompressed,
                          oNegative.Get(),
                          &oRender.FinalSpace());
+#ifdef TIME_PROFILE
+      oProfiler.stop();
+      printf("dng_image_writer::WriteTIFF() time: %lu usec\n", oProfiler.elapsed_usec());
+#endif
     }
   } catch (const dng_exception &except) {
     return except.ErrorCode();
   } catch (...) {
     return dng_error_unknown;
   }
+
+#ifdef TIME_PROFILE
+  oProfilerTotal.stop();
+  printf("DNGConverter::ConvertToDNG() time: %lu usec\n", oProfilerTotal.elapsed_usec());
+#endif
 
   return dng_error_none;
 }
