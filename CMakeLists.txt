@@ -49,6 +49,7 @@ if (UNIX)
         set(CMAKE_CXX_FLAGS_DEBUG "${warning_flags} \
                                    -O0 \
                                    -ggdb \
+                                   -DqDNGDebug=1 \
                                    -D_FORTIFY_SOURCE=2")
 
         set(CMAKE_CXX_FLAGS_RELEASE "${warning_flags} \
