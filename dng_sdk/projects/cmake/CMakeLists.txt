@@ -103,6 +103,7 @@ if (UNIX)
     else ()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack")
         set(CMAKE_CXX_FLAGS_DEBUG "${DNG_FLAGS} \
+                                   -DqDNGDebug=1 \
                                    -O0 \
                                    -ggdb \
                                    -D_FORTIFY_SOURCE=2")
