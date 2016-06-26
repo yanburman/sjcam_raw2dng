@@ -3,6 +3,9 @@
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <time.h>
+#include <windows.h>
+typedef unsigned __int64 uint64_t;
+
 struct timezone {
   int tz_minuteswest; /* minutes W of Greenwich */
   int tz_dsttime; /* type of dst correction */

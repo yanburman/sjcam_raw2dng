@@ -11,8 +11,6 @@
 #define DELTA_EPOCH_IN_MICROSECS 11644473600000000ULL
 #endif
 
-#include <windows.h>
-
 int gettimeofday(struct timeval *tv, struct timezone *tz)
 {
   FILETIME ft;
