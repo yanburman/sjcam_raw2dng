@@ -1,8 +1,8 @@
 
 First select the mode to compile in:
 
-cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_CL_64=On
-cmake . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CL_64=On
+cmake . -DCMAKE_BUILD_TYPE=Release -DCMAKE_CL_64=On -DXMP_OSX_SDK="10.11"
+cmake . -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CL_64=On -DXMP_OSX_SDK="10.11"
 
 Then run make.
 
