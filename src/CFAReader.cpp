@@ -65,7 +65,11 @@ int CFAReader::open(const char *fname, size_t expected_size)
   if (NULL == m_buf)
     return GetLastError();
 #else
+#ifdef O_NOATIME
   m_fd = ::open(fname, O_NOATIME | O_RDONLY);
+#else
+  m_fd = ::open(fname, O_RDONLY);
+#endif
   if (-1 == m_fd)
     return errno;
 
