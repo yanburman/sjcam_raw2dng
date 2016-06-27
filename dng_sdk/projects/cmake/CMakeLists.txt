@@ -99,7 +99,7 @@ if (UNIX)
     set(DNG_FLAGS "-DqDNG64Bit")
 
     if (APPLE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DNG_FLAGS} -DqMacOS=1 -DqDNGXMPDocOps=0")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DNG_FLAGS} -DqMacOS=1 -DqLinux=0 -DqWinOS=0 -DqDNGXMPDocOps=0")
     else ()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack")
         set(CMAKE_CXX_FLAGS_DEBUG "${DNG_FLAGS} \
