@@ -12,6 +12,7 @@
 #else
 #include <dirent.h>
 #include <unistd.h>
+#include <pthread.h>
 #endif
 
 const static std::string jpeg_suffix(".JPG");
