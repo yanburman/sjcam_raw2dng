@@ -31,7 +31,7 @@ if (UNIX)
     endif (CMAKE_CL_64)
 
     if (APPLE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMAC_ENV=1 -DqDNGThreadSafe")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DqMacOS=1 -DqWinOS=0 -DqLinux=0 -DqDNGThreadSafe")
     else()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack -DqDNGThreadSafe")
         set(warning_flags "-Wall \
