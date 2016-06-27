@@ -87,7 +87,6 @@ target_include_directories(${target} PUBLIC ${SRC_DIR}
 if (UNIX)
     target_link_libraries(${target}
                           dng_sdk
-                          -ljpeg
                           -lz
                           -lpthread
                           -ldl
