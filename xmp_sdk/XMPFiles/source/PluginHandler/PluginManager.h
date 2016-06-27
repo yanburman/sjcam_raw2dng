@@ -12,7 +12,7 @@
 #include "PluginHandler.h"
 #include "ModuleUtils.h"
 
-#if XMP_WinBuild && _MSC_VER >= 1700
+#if (XMP_WinBuild && _MSC_VER >= 1700) || __MAC_OS_X_VERSION_MAX_ALLOWED >= 1090
 	// Visual Studio 2012 or newer supports C++11 (mostly)
 	#include <memory>
 	#include <functional>

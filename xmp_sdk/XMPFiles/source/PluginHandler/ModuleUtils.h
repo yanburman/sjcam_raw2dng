@@ -16,7 +16,11 @@
 typedef HMODULE OS_ModuleRef;
 #elif XMP_MacBuild
 #include <CoreFoundation/CFBundle.h>
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1090
+#include <memory>
+#else
 #include <tr1/memory>
+#endif
 typedef CFBundleRef OS_ModuleRef;
 #elif XMP_UNIXBuild
 #include <tr1/memory>
