@@ -91,12 +91,12 @@ if (UNIX)
 
     target_link_libraries(${target}
                           dng_sdk
-                          -lz
-                          -lpthread
-                          -ldl
+                          z
+                          pthread
+                          dl
                           XMPFilesStatic
                           XMPCoreStatic
-                          -ldl
+                          dl
                           )
 endif(UNIX)
 
