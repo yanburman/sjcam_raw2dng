@@ -25,15 +25,16 @@ add_subdirectory(dng_sdk/projects/cmake)
 
 set(SRC_DIR src)
 
-if (UNIX)
-    if (CMAKE_CL_64)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DqDNG64Bit")
-    endif (CMAKE_CL_64)
+add_definitions(-DqDNGThreadSafe)
+if (CMAKE_CL_64)
+    add_definitions(-DqDNG64Bit)
+endif (CMAKE_CL_64)
 
+if (UNIX)
     if (APPLE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DqMacOS=1 -DqWinOS=0 -DqLinux=0 -DqDNGThreadSafe")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DqMacOS=1 -DqWinOS=0 -DqLinux=0")
     else()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack -DqDNGThreadSafe")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack")
         set(warning_flags "-Wall \
                            -Wsign-compare \
                            -Wclobbered \
@@ -60,11 +61,7 @@ if (UNIX)
 endif()
 
 if (MSVC)
-    if (CMAKE_CL_64)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqDNG64Bit")
-    endif (CMAKE_CL_64)
-
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0 /DqDNGThreadSafe")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0")
 endif(MSVC)
 
 # cmake adds -rdynamic to all links which effectively disables lto
