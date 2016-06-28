@@ -96,26 +96,29 @@ set(LIB_SRC
    )
 
 if (UNIX)
-    set(DNG_FLAGS "-DqDNG64Bit")
+    if (CMAKE_CL_64)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DqDNG64Bit")
+    endif (CMAKE_CL_64)
 
     if (APPLE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${DNG_FLAGS} -DqMacOS=1 -DqLinux=0 -DqWinOS=0 -DqDNGXMPDocOps=0")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DqMacOS=1 -DqLinux=0 -DqWinOS=0 -DqDNGXMPDocOps=0")
     else ()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack")
-        set(CMAKE_CXX_FLAGS_DEBUG "${DNG_FLAGS} \
-                                   -DqDNGDebug=1 \
+        set(CMAKE_CXX_FLAGS_DEBUG "-DqDNGDebug=1 \
                                    -O0 \
                                    -ggdb \
                                    -D_FORTIFY_SOURCE=2")
 
-        set(CMAKE_CXX_FLAGS_RELEASE "${DNG_FLAGS} \
-                                     -O2 \
+        set(CMAKE_CXX_FLAGS_RELEASE "-O2 \
                                      -DNDEBUG \
                                      -U_FORTIFY_SOURCE")
     endif (APPLE)
 else (UNIX)
     if (MSVC)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqDNG64Bit /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0")
+        if (CMAKE_CL_64)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqDNG64Bit")
+        endif (CMAKE_CL_64)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0")
     endif (MSVC)
 endif(UNIX)
 
@@ -145,13 +148,13 @@ endif (UNIX)
 
 
 target_link_libraries(${target}
-                                -ljpeg
-                                -lz
-                                -lpthread
-                                -ldl
+                                jpeg
+                                z
+                                pthread
+                                dl
                                 XMPFilesStatic
                                 XMPCoreStatic
-                                -ldl
+                                dl
                                 )
 
 # dng_sdk library
