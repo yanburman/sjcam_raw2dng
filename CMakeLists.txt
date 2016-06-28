@@ -85,6 +85,10 @@ target_include_directories(${target} PUBLIC ${SRC_DIR}
                                             ${XMPROOT}/public/include)
 
 if (UNIX)
+    if (APPLE)
+        set_property(TARGET ${target} PROPERTY LINK_FLAGS "-framework CoreFoundation")
+    endif (APPLE)
+
     target_link_libraries(${target}
                           dng_sdk
                           -lz
