@@ -40,12 +40,11 @@ Note that if you drag-n-drop directory or file into sjcam_raw2dng.exe on windows
 Troubleshooting:
 ---------------------
 
-Q: Windows returns an error about missing MSVCP140.dll
+Q: Windows returns an error about missing MSVCP140.dll<br/>
 A: Install: https://www.microsoft.com/en-us/download/details.aspx?id=48145
 
-Q: Windows repors an error: "This app can't run on your PC. To find a version for your PC, check with the software publisher."
+Q: Windows repors an error: "This app can't run on your PC. To find a version for your PC, check with the software publisher."<br/>
 A: The binary is for 64-bit windows, while you are probably running 32-bit
 
-Q: On Mac OSX GUI does not start
+Q: On Mac OSX GUI does not start<br/>
 A: Install wxPython and put sjcam_raw2dng in the same folder as the GUI
-
