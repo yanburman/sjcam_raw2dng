@@ -1,4 +1,5 @@
 v1.0.1
+* Support for Mac OSX
 * Support for Windows 32-bit builds
 * Number of optimizations (cache control and readahead support for Win and *nix)
 * Added vignetting correction framework (not enabled yet)

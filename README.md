@@ -11,7 +11,7 @@ Features:
 - Using official Adobe SDK for maximum compatibility and extendability
 - Parallel conversion speeding up batch conversion
 - Adobe camera profile
-- Support for Linux and Windows (both GUI and CLI)
+- Support for Linux, Windows and Mac (on Mac only CLI was tested on 10.11, although GUI should work as well)
 - Best possible quality
 - EXIF embedding from original JPEG files
 - Full EXIF support
@@ -45,4 +45,7 @@ A: Install: https://www.microsoft.com/en-us/download/details.aspx?id=48145
 
 Q: Windows repors an error: "This app can't run on your PC. To find a version for your PC, check with the software publisher."
 A: The binary is for 64-bit windows, while you are probably running 32-bit
+
+Q: On Mac OSX GUI does not start
+A: Install wxPython and put sjcam_raw2dng in the same folder as the GUI
 

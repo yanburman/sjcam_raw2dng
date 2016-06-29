@@ -83,7 +83,7 @@ target_include_directories(${target} PUBLIC ${SRC_DIR}
 
 if (UNIX)
     if (APPLE)
-        set_property(TARGET ${target} PROPERTY LINK_FLAGS "-framework CoreFoundation")
+        set_property(TARGET ${target} PROPERTY LINK_FLAGS "-framework CoreFoundation -framework CoreServices")
     endif (APPLE)
 
     target_link_libraries(${target}
