@@ -88,7 +88,6 @@ if (UNIX)
 
     target_link_libraries(${target}
                           dng_sdk
-                          z
                           pthread
                           dl
                           XMPFilesStatic
