@@ -33,7 +33,7 @@ Also optional is ability to convert to TIFF as well as DNG
 
 CLI:
 ---------------------
-This is allows most control by supporing list of files/directories to convert.
+This is allows most control by supporting list of files/directories to convert.
 Note that if you drag-n-drop directory or file into sjcam_raw2dng.exe on windows, it will do the batch conversion.
 
 
@@ -43,7 +43,7 @@ Troubleshooting:
 Q: Windows returns an error about missing MSVCP140.dll<br/>
 A: Install: https://www.microsoft.com/en-us/download/details.aspx?id=48145
 
-Q: Windows repors an error: "This app can't run on your PC. To find a version for your PC, check with the software publisher."<br/>
+Q: Windows reports an error: "This app can't run on your PC. To find a version for your PC, check with the software publisher."<br/>
 A: The binary is for 64-bit windows, while you are probably running 32-bit
 
 Q: On Mac OSX GUI does not start<br/>
