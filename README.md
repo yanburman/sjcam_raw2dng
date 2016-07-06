@@ -46,5 +46,8 @@ A: Install: https://www.microsoft.com/en-us/download/details.aspx?id=48145
 Q: Windows reports an error: "This app can't run on your PC. To find a version for your PC, check with the software publisher."<br/>
 A: The binary is for 64-bit windows, while you are probably running 32-bit
 
+Q: Windows is unable to convert files in directory containing non ASCII characters</br>
+A: Adobe libraries do not support unicode file names on Windows, so as result the same is true for sjcam_raw2dng
+
 Q: On Mac OSX GUI does not start<br/>
 A: Install wxPython and put sjcam_raw2dng in the same folder as the GUI
