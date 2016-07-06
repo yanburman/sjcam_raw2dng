@@ -104,3 +104,12 @@ if (MSVC)
                           XMPCoreStatic
                           )
 endif(MSVC)
+
+set(target prune_raw)
+
+add_executable(${target} ${SRC_DIR}/prune_raw.cpp
+                         ${SRC_DIR}/FileFinder.cpp
+                         ${SRC_DIR}/utils.cpp)
+
+target_include_directories(${target} PUBLIC ${SRC_DIR})
+
