@@ -73,6 +73,7 @@ set(target sjcam_raw2dng)
 
 add_executable(${target} ${SRC_DIR}/CFAReader.cpp
                          ${SRC_DIR}/DNGConverter.cpp
+                         ${SRC_DIR}/FileFinder.cpp
                          ${SRC_DIR}/utils.cpp
                          ${SRC_DIR}/StopWatch.cpp
                          ${SRC_DIR}/sjcam_raw2dng.cpp)

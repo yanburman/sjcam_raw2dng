@@ -1,7 +1,6 @@
 /* vim: set shiftwidth=2 tabstop=2 softtabstop=2 expandtab: */
 
 #include <string>
-#include <list>
 #include <vector>
 #include <algorithm>
 
@@ -11,6 +10,7 @@
 #include <sys/stat.h>
 
 #include "DNGConverter.h"
+#include "FileFinder.h"
 #include "helpers.h"
 #include "utils.h"
 
@@ -20,15 +20,7 @@
 
 #define VERSION_STR "v1.0.1"
 
-struct RawWorkItem {
-  RawWorkItem(const std::string &szRawFile, const std::string &szMetadataFile)
-          : m_szRawFile(szRawFile), m_szMetadataFile(szMetadataFile)
-  {
-  }
-
-  const std::string m_szRawFile;
-  const std::string m_szMetadataFile;
-};
+static FileFinder g_Files;
 
 struct ThreadWork {
   DNGConverter *oConverter;
@@ -47,160 +39,9 @@ static void *thread_worker(void *arg)
   return NULL;
 }
 
-static std::vector<RawWorkItem *> g_WorkItems;
-
-static void cleanup_work_items(void)
+static int handle_arg(const char *arg)
 {
-  std::vector<RawWorkItem *>::const_iterator it;
-
-  for (it = g_WorkItems.begin(); it != g_WorkItems.end(); ++it)
-    delete *it;
-
-  g_WorkItems.clear();
-}
-
-static void add_work_item(const std::string &szRawFile, const std::string &szMetadataFile)
-{
-  RawWorkItem *wi = new RawWorkItem(szRawFile, szMetadataFile);
-  g_WorkItems.push_back(wi);
-}
-
-static const std::string empty_string;
-
-static dng_error_code find_files(std::string &dir)
-{
-  std::list<std::string> files;
-  int ret = list_dir(dir, files);
-  if (ret)
-    return dng_error_unknown;
-
-  std::list<std::string>::iterator it, found_it = files.begin();
-  bool found = false;
-  char buffer[16];
-  std::string jpg_suffix;
-  std::string res;
-
-  dir += DELIM;
-
-  for (it = files.begin(); it != files.end(); ++it) {
-    if (found) {
-      if (has_suffix(*it, jpg_suffix)) {
-        res = dir + *it;
-      }
-
-      std::string fname = dir + *found_it;
-
-      add_work_item(fname, res);
-      found = false;
-      res.clear();
-    }
-
-    if (has_suffix(*it, raw_suffix)) {
-      size_t suffix_idx = it->find_last_of('_');
-      if (suffix_idx == std::string::npos) {
-        std::string fname = dir + *it;
-
-        add_work_item(fname, res);
-        found = false;
-        res.clear();
-        continue;
-      }
-
-      std::string suffix = it->substr(suffix_idx + 1, it->length());
-      int pic_num = atoi(suffix.c_str());
-      if (pic_num < 1) {
-        std::string fname = dir + *it;
-
-        add_work_item(fname, res);
-        found = false;
-        res.clear();
-        continue;
-      }
-
-      snprintf(buffer, sizeof(buffer), "_%03u.JPG", pic_num + 1);
-      jpg_suffix = buffer;
-
-      found_it = it;
-      found = true;
-    }
-  }
-
-  if (found) {
-    std::string fname = dir + *found_it;
-    add_work_item(fname, empty_string);
-  }
-
-  return dng_error_none;
-}
-
-static dng_error_code find_file(std::string &fname)
-{
-  std::string dir_name;
-  std::string file_name;
-  std::string res;
-
-  size_t idx = fname.find_last_of(DIR_DELIM);
-  if (idx == std::string::npos) {
-    dir_name = ".";
-    file_name = fname;
-  } else {
-    dir_name = fname.substr(0, idx);
-    file_name = fname.substr(idx + 1, fname.length());
-  }
-
-  size_t suffix_idx = file_name.find_last_of('_');
-  if (suffix_idx == std::string::npos) {
-    add_work_item(fname, res);
-    return dng_error_none;
-  }
-
-  std::string suffix = file_name.substr(suffix_idx + 1, file_name.length());
-  int pic_num = atoi(suffix.c_str());
-  if (pic_num < 1) {
-    add_work_item(fname, res);
-    return dng_error_none;
-  }
-
-  std::list<std::string> files;
-  int ret = list_dir(dir_name, files);
-  if (ret)
-    return dng_error_unknown;
-
-  char buffer[16];
-  snprintf(buffer, sizeof(buffer), "_%03u.JPG", pic_num + 1);
-
-  dir_name += DELIM;
-
-  const std::string jpg_suffix(buffer);
-  std::list<std::string>::iterator it, found_it = files.begin();
-  bool found = false;
-  for (it = files.begin(); it != files.end(); ++it) {
-    if (found) {
-      if (has_suffix(*it, jpg_suffix)) {
-        res = dir_name + *it;
-      }
-      add_work_item(fname, res);
-      found = false;
-      break;
-    }
-
-    if (*it == file_name) {
-      found_it = it;
-      found = true;
-    }
-  }
-
-  if (found) {
-    res = dir_name + *found_it;
-    add_work_item(fname, empty_string);
-  }
-
-  return dng_error_none;
-}
-
-static dng_error_code handle_arg(const char *arg)
-{
-  dng_error_code rc;
+  int rc;
   struct stat sb;
 
   int ret = stat(arg, &sb);
@@ -213,16 +54,16 @@ static dng_error_code handle_arg(const char *arg)
 
   switch (sb.st_mode & S_IFMT) {
   case S_IFDIR:
-    rc = find_files(str_arg);
+    rc = g_Files.find_files(str_arg);
     break;
 
   case S_IFREG:
-    rc = find_file(str_arg);
+    rc = g_Files.find_file(str_arg);
     break;
 
   default:
     fprintf(stderr, "Only files/directories are supported\n");
-    rc = dng_error_unknown;
+    rc = -1;
   }
 
   return rc;
@@ -332,16 +173,15 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  dng_error_code rc;
+  int rc;
   while (index < argc) {
     rc = handle_arg(argv[index++]);
-    if (rc != dng_error_none) {
-      cleanup_work_items();
+    if (rc)
       return EXIT_FAILURE;
-    }
   }
 
-  if (g_WorkItems.size() == 0) {
+  const std::vector<RawWorkItem *> o_WorkItems = g_Files.get_work_items();
+  if (o_WorkItems.size() == 0) {
     printf("No raw files found\n");
     return EXIT_SUCCESS;
   }
@@ -358,11 +198,11 @@ int main(int argc, char *argv[])
     n_cpus = (size_t)conf.m_iThreads;
   }
 
-  n_cpus = std::min(n_cpus, g_WorkItems.size());
+  n_cpus = std::min(n_cpus, o_WorkItems.size());
   if (n_cpus == 1) {
     std::vector<RawWorkItem *>::const_iterator it;
 
-    for (it = g_WorkItems.begin(); it != g_WorkItems.end(); ++it)
+    for (it = o_WorkItems.begin(); it != o_WorkItems.end(); ++it)
       converter.ConvertToDNG((*it)->m_szRawFile, (*it)->m_szMetadataFile);
   } else {
     ThreadWork *works = new ThreadWork[n_cpus];
@@ -373,14 +213,14 @@ int main(int argc, char *argv[])
 
     size_t ulStart = 0;
     size_t ulTotal = 0;
-    const size_t ulQuota = g_WorkItems.size() / n_cpus;
-    const size_t ulLeft = g_WorkItems.size() - ulQuota * n_cpus;
+    const size_t ulQuota = o_WorkItems.size() / n_cpus;
+    const size_t ulLeft = o_WorkItems.size() - ulQuota * n_cpus;
 
     printf("Starting %zu threads to process files\n", n_cpus);
 
     for (i = 0; i < n_cpus; ++i) {
       works[i].oConverter = &converter;
-      works[i].oWorks = &g_WorkItems;
+      works[i].oWorks = &o_WorkItems;
       works[i].m_ulStart = ulStart;
       works[i].m_ulEnd = ulStart + ulQuota;
 
@@ -399,10 +239,10 @@ int main(int argc, char *argv[])
       }
     }
 
-    if (ulTotal != g_WorkItems.size()) {
+    if (ulTotal != o_WorkItems.size()) {
       fprintf(stderr,
               "Error: Not all items consumed (total:%zu, consumed: %zu, n_cpus:%zu)\n",
-              g_WorkItems.size(),
+              o_WorkItems.size(),
               ulTotal,
               n_cpus);
     }
@@ -417,8 +257,6 @@ int main(int argc, char *argv[])
   }
 
   printf("Conversion complete\n");
-
-  cleanup_work_items();
 
   return EXIT_SUCCESS;
 }
