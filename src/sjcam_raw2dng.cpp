@@ -41,32 +41,31 @@ static void *thread_worker(void *arg)
 
 static int handle_arg(const char *arg)
 {
-  int rc;
   struct stat sb;
 
   int ret = stat(arg, &sb);
   if (ret) {
     perror("stat");
-    return dng_error_unknown;
+    return ret;
   }
 
   std::string str_arg(arg);
 
   switch (sb.st_mode & S_IFMT) {
   case S_IFDIR:
-    rc = g_Files.find_files(str_arg);
+    ret = g_Files.find_files(str_arg);
     break;
 
   case S_IFREG:
-    rc = g_Files.find_file(str_arg);
+    ret = g_Files.find_file(str_arg);
     break;
 
   default:
     fprintf(stderr, "Only files/directories are supported\n");
-    rc = -1;
+    ret = -1;
   }
 
-  return rc;
+  return ret;
 }
 
 static void usage(const char *prog, Config &conf)
