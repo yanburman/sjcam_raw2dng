@@ -10,10 +10,9 @@
 #include <sys/stat.h>
 
 #include "FileFinder.h"
+#include "utils.h"
 
-static FileFinder g_Files;
-
-static int handle_arg(const char *arg)
+static int handle_arg(const char *arg, FileFinder &finder)
 {
   struct stat sb;
 
@@ -27,7 +26,7 @@ static int handle_arg(const char *arg)
 
   switch (sb.st_mode & S_IFMT) {
   case S_IFDIR:
-    ret = g_Files.find_files(str_arg);
+    ret = finder.find_files(str_arg);
     break;
 
   default:
@@ -48,6 +47,20 @@ static void usage(const char *prog)
           "\t-i, --input <DIR>   Directory containing .dng files if they are not\n"
           "\t                    in the same folder with .RAW and .JPG\n",
           prog);
+}
+
+static int do_prune(const std::vector<RawWorkItem *> &o_WorkItems, std::list<std::string> &files)
+{
+  std::vector<RawWorkItem *>::const_iterator it;
+
+  for (it = o_WorkItems.begin(); it != o_WorkItems.end(); ++it)
+    printf("Found: %s, %s\n", (*it)->m_szRawFile.c_str(), (*it)->m_szMetadataFile.c_str());
+
+  std::list<std::string>::const_iterator dng_it;
+  for (dng_it = files.begin(); dng_it != files.end(); ++dng_it)
+    printf("Found DNG: %s\n", dng_it->c_str());
+
+  return 0;
 }
 
 int main(int argc, char *argv[])
@@ -102,20 +115,37 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  int rc = handle_arg(argv[index++]);
+  FileFinder oFiles;
+
+  int rc = handle_arg(argv[index], oFiles);
   if (rc)
     return EXIT_FAILURE;
 
-  const std::vector<RawWorkItem *> o_WorkItems = g_Files.get_work_items();
+  if (szInputFolder.empty())
+    szInputFolder = argv[index];
+
+  const std::vector<RawWorkItem *> o_WorkItems = oFiles.get_work_items();
   if (o_WorkItems.size() == 0) {
-    printf("No raw files found\n");
+    printf("No raw files found in folder '%s'\n", argv[index]);
     return EXIT_SUCCESS;
   }
 
-  std::vector<RawWorkItem *>::const_iterator it;
+  std::list<std::string> filter;
+  filter.push_back(dng_suffix);
 
-  for (it = o_WorkItems.begin(); it != o_WorkItems.end(); ++it)
-    printf("Found: %s, %s\n", (*it)->m_szRawFile.c_str(), (*it)->m_szMetadataFile.c_str());
+  std::list<std::string> files;
+  rc = list_dir(szInputFolder, files, filter);
+  if (rc)
+    return EXIT_FAILURE;
+
+  if (files.size() == 0) {
+    printf("No DNG files found in folder '%s'\n", szInputFolder.c_str());
+    return EXIT_SUCCESS;
+  }
+
+  rc = do_prune(o_WorkItems, files);
+  if (rc)
+    return EXIT_FAILURE;
 
   printf("Prune complete\n");
 
