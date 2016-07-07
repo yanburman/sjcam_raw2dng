@@ -41,6 +41,10 @@ static int handle_arg(const char *arg, FileFinder &finder)
 static void usage(const char *prog)
 {
   fprintf(stderr,
+          "Remove .RAW and .JPEG files that do not have corresponding .dng file\n"
+          "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+          "!!!WARNING: WILL REMOVE FILES!!!\n"
+          "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
           "Usage:  %s [options] dir\n"
           "\n"
           "Valid options:\n"
