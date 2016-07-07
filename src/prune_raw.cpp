@@ -11,6 +11,7 @@
 
 #include "FileFinder.h"
 #include "utils.h"
+#include "helpers.h"
 
 static int handle_arg(const char *arg, FileFinder &finder)
 {
@@ -53,12 +54,38 @@ static int do_prune(const std::vector<RawWorkItem *> &o_WorkItems, std::list<std
 {
   std::vector<RawWorkItem *>::const_iterator it;
 
-  for (it = o_WorkItems.begin(); it != o_WorkItems.end(); ++it)
-    printf("Found: %s, %s\n", (*it)->m_szRawFile.c_str(), (*it)->m_szMetadataFile.c_str());
+  for (it = o_WorkItems.begin(); it != o_WorkItems.end(); ++it) {
+    const std::string &szRawFile = (*it)->m_szRawFile;
+    size_t unDotIndex = szRawFile.find_last_of('.');
+    if (unDotIndex == std::string::npos) {
+      printf("Encountered an internal error. Refusing to continue!\n");
+      return -1;
+    }
 
-  std::list<std::string>::const_iterator dng_it;
-  for (dng_it = files.begin(); dng_it != files.end(); ++dng_it)
-    printf("Found DNG: %s\n", dng_it->c_str());
+    size_t unDelimIndex = szRawFile.find_last_of(DELIM);
+    if (unDelimIndex == std::string::npos)
+      unDelimIndex = 0;
+    else
+      ++unDelimIndex;
+
+    std::string szDngFilename = szRawFile.substr(unDelimIndex, unDotIndex - unDelimIndex) + dng_suffix;
+
+    bool found = false;
+    std::list<std::string>::iterator dng_it;
+    for (dng_it = files.begin(); dng_it != files.end(); ++dng_it) {
+      if (*dng_it == szDngFilename) {
+        files.erase(dng_it);
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      printf("Removing: %s, %s\n", (*it)->m_szRawFile.c_str(), (*it)->m_szMetadataFile.c_str());
+      remove((*it)->m_szRawFile.c_str());
+      remove((*it)->m_szMetadataFile.c_str());
+    }
+  }
 
   return 0;
 }
