@@ -11,9 +11,11 @@ static inline bool has_suffix(const std::string &str, const std::string &suffix)
   return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
-int list_dir(const std::string &dir, std::list<std::string> &files);
+int list_dir(const std::string &dir, std::list<std::string> &files, const std::list<std::string> &filter);
 
+extern const std::string jpeg_suffix;
 extern const std::string raw_suffix;
+extern const std::string dng_suffix;
 
 size_t get_num_cpus(void);
 

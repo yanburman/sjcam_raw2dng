@@ -29,7 +29,7 @@ void FileFinder::add_work_item(const std::string &szRawFile, const std::string &
 int FileFinder::find_files(std::string &dir)
 {
   std::list<std::string> files;
-  int ret = list_dir(dir, files);
+  int ret = list_dir(dir, files, m_Filter);
   if (ret)
     return ret;
 
@@ -121,7 +121,7 @@ int FileFinder::find_file(std::string &fname)
   }
 
   std::list<std::string> files;
-  int ret = list_dir(dir_name, files);
+  int ret = list_dir(dir_name, files, m_Filter);
   if (ret)
     return ret;
 

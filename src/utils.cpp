@@ -15,11 +15,11 @@
 #include <pthread.h>
 #endif
 
-const static std::string jpeg_suffix(".JPG");
-
+const std::string jpeg_suffix(".JPG");
 const std::string raw_suffix(".RAW");
+const std::string dng_suffix(".dng");
 
-int list_dir(const std::string &dir, std::list<std::string> &files)
+int list_dir(const std::string &dir, std::list<std::string> &files, const std::list<std::string> &filter)
 #if defined(_WIN32) || defined(_WIN64)
 {
   WIN32_FIND_DATA ffd;
@@ -41,8 +41,13 @@ int list_dir(const std::string &dir, std::list<std::string> &files)
     if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
       std::string fname(ffd.cFileName);
 
-      if (has_suffix(fname, raw_suffix) || has_suffix(fname, jpeg_suffix))
-        files.push_back(fname);
+      std::list<std::string>::const_iterator it;
+      for (it = filter.begin(); it != filter.end(); ++it) {
+        if (has_suffix(fname, *it)) {
+          files.push_back(fname);
+          break;
+        }
+      }
     }
   } while (FindNextFile(hFind, &ffd) != 0);
 
@@ -70,8 +75,13 @@ int list_dir(const std::string &dir, std::list<std::string> &files)
     if (dirp->d_type == DT_REG) {
       std::string fname(dirp->d_name);
 
-      if (has_suffix(fname, raw_suffix) || has_suffix(fname, jpeg_suffix))
-        files.push_back(fname);
+      std::list<std::string>::const_iterator it;
+      for (it = filter.begin(); it != filter.end(); ++it) {
+        if (has_suffix(fname, *it)) {
+          files.push_back(fname);
+          break;
+        }
+      }
     }
   }
   closedir(dp);
@@ -108,4 +118,3 @@ void set_thread_prio_low(void)
   pthread_setschedparam(pthread_self(), SCHED_OTHER, &param);
 }
 #endif
-

@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include "utils.h"
 
 struct RawWorkItem {
   RawWorkItem(const std::string &szRawFile, const std::string &szMetadataFile)
@@ -19,6 +20,12 @@ struct RawWorkItem {
 class FileFinder
 {
   public:
+  FileFinder()
+  {
+    m_Filter.push_back(jpeg_suffix);
+    m_Filter.push_back(raw_suffix);
+  }
+
   ~FileFinder()
   {
     cleanup_work_items();
@@ -38,6 +45,8 @@ class FileFinder
   void cleanup_work_items(void);
 
   std::vector<RawWorkItem *> m_WorkItems;
+
+  std::list<std::string> m_Filter;
 };
 
 #endif // __FILE_FIDER_H__
