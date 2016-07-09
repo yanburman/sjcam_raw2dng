@@ -58,6 +58,7 @@ static void usage(const char *prog)
 static int do_prune(const std::vector<RawWorkItem *> &o_WorkItems, std::list<std::string> &files, bool bDryRun)
 {
   std::vector<RawWorkItem *>::const_iterator it;
+  size_t count = 0;
 
   for (it = o_WorkItems.begin(); it != o_WorkItems.end(); ++it) {
     const std::string &szRawFile = (*it)->m_szRawFile;
@@ -87,12 +88,15 @@ static int do_prune(const std::vector<RawWorkItem *> &o_WorkItems, std::list<std
 
     if (!found) {
       printf("Removing: %s, %s\n", (*it)->m_szRawFile.c_str(), (*it)->m_szMetadataFile.c_str());
+      ++count;
       if (!bDryRun) {
         remove((*it)->m_szRawFile.c_str());
         remove((*it)->m_szMetadataFile.c_str());
       }
     }
   }
+
+  printf("Removed %zd RAW and JPG\n", count);
 
   return 0;
 }
