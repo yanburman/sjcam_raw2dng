@@ -49,12 +49,13 @@ static void usage(const char *prog)
           "\n"
           "Valid options:\n"
           "\t-h, --help          Help\n"
+          "\t-d, --dry-run       Only print what is going to be deleted without actually deleting\n"
           "\t-i, --input <DIR>   Directory containing .dng files if they are not\n"
           "\t                    in the same folder with .RAW and .JPG\n",
           prog);
 }
 
-static int do_prune(const std::vector<RawWorkItem *> &o_WorkItems, std::list<std::string> &files)
+static int do_prune(const std::vector<RawWorkItem *> &o_WorkItems, std::list<std::string> &files, bool bDryRun)
 {
   std::vector<RawWorkItem *>::const_iterator it;
 
@@ -86,8 +87,10 @@ static int do_prune(const std::vector<RawWorkItem *> &o_WorkItems, std::list<std
 
     if (!found) {
       printf("Removing: %s, %s\n", (*it)->m_szRawFile.c_str(), (*it)->m_szMetadataFile.c_str());
-      remove((*it)->m_szRawFile.c_str());
-      remove((*it)->m_szMetadataFile.c_str());
+      if (!bDryRun) {
+        remove((*it)->m_szRawFile.c_str());
+        remove((*it)->m_szMetadataFile.c_str());
+      }
     }
   }
 
@@ -103,6 +106,7 @@ int main(int argc, char *argv[])
 
   std::string szInputFolder;
   int index;
+  bool bDryRun = false;
 
   for (index = 1; index < argc && argv[index][0] == '-'; index++) {
     std::string option(&argv[index][1]);
@@ -110,6 +114,8 @@ int main(int argc, char *argv[])
     if (option == "h" || option == "-help") {
       usage(argv[0]);
       return EXIT_SUCCESS;
+    } else if (option == "d" || option == "-dry-run") {
+      bDryRun = true;
     } else if (option == "i" || option == "-input") {
       if (index + 1 < argc) {
         szInputFolder = argv[++index];
@@ -174,7 +180,7 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
   }
 
-  rc = do_prune(o_WorkItems, files);
+  rc = do_prune(o_WorkItems, files, bDryRun);
   if (rc)
     return EXIT_FAILURE;
 
