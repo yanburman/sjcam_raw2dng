@@ -102,8 +102,8 @@ void CFAReader::read(uint8_t *out_buf, size_t total)
       ++bCurrByte;
     } else {
       // layout: 3333XXXX 11112222
-      out_buf[1] = bCurrByte[1] >> 4;
-      out_buf[0] = (bCurrByte[1] << 4) | (bCurrByte[0] >> 4);
+      out_buf[1] = (uint8_t)(bCurrByte[1] >> 4);
+      out_buf[0] = (uint8_t)((bCurrByte[1] << 4) | (bCurrByte[0] >> 4));
       bCurrByte += 2;
 #if defined(_WIN32) || defined(_WIN64)
       _mm_prefetch((const CHAR *)bCurrByte, _MM_HINT_T0);
