@@ -147,7 +147,10 @@ int DNGConverter::ParseMetadata(const std::string &metadata, Exif &oExif)
   if (!exists)
     return -1;
 
-  oExif.m_unISO = atoi(propValue.c_str());
+  int res = atoi(propValue.c_str());
+  assert(res < 0x10000);
+
+  oExif.m_unISO = (uint16_t)res;
 
   XMP_DateTime myDate;
   exists = meta.GetProperty_Date(kXMP_NS_EXIF, "DateTimeOriginal", &myDate, NULL);
@@ -226,7 +229,7 @@ struct CameraProfile {
   uint32 m_ulHeight;
   std::string m_szCameraModel;
   uint32 m_ulBlackLevel;
-  uint32 m_ulFileSize;
+  size_t m_ulFileSize;
   dng_vector m_oNeutralWB;
   const LensCalibration *m_oCalib;
 };
@@ -236,7 +239,7 @@ const static CameraProfile gRawSizes[] = {CameraProfile(4000, 3000, 0, 0.87, 1.3
                                           CameraProfile(2640, 1980, 0, 0.87, 1.3, 0.72, "SJ5000X"),
                                           CameraProfile(4608, 3456, 200, 0.51, 1, 0.64, "M20")};
 
-static const CameraProfile *get_CameraProfile(uint32 sz)
+static const CameraProfile *get_CameraProfile(size_t sz)
 {
   const CameraProfile *oResult = NULL;
 
