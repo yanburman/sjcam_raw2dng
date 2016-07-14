@@ -328,24 +328,26 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // BAYER input file settings
     // -------------------------------------------------------------
 
-    CFAReader reader;
-    ret = reader.open(m_szInputFile.c_str(), oCamProfile->m_ulFileSize);
-    if (ret)
-      return dng_error_unknown;
-
     unsigned int ulNumPixels = oCamProfile->m_ulWidth * oCamProfile->m_ulHeight;
     AutoPtr<dng_memory_block> oBayerData(oDNGHost.Allocate(ulNumPixels * TagTypeSize(ttShort)));
 
-#ifdef TIME_PROFILE
-    oProfiler.reset();
-    oProfiler.run();
-#endif
-    reader.read((uint8_t *)oBayerData->Buffer(), ulNumPixels);
+    {
+      CFAReader reader;
+      ret = reader.open(m_szInputFile.c_str(), oCamProfile->m_ulFileSize);
+      if (ret)
+        return dng_error_unknown;
 
 #ifdef TIME_PROFILE
-    oProfiler.stop();
-    printf("CFAReader::read() time: %lu usec\n", oProfiler.elapsed_usec());
+      oProfiler.reset();
+      oProfiler.run();
 #endif
+      reader.read((uint8_t *)oBayerData->Buffer(), ulNumPixels);
+
+#ifdef TIME_PROFILE
+      oProfiler.stop();
+      printf("CFAReader::read() time: %lu usec\n", oProfiler.elapsed_usec());
+#endif
+    }
 
     // -------------------------------------------------------------
     // DNG Host Settings
