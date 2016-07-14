@@ -40,6 +40,7 @@ cmake_install.cmake
 dng_sdk/projects/linux/dng_validate
 dng_sdk/projects/cmake/dng_validate
 sjcam_raw2dng
+prune_raw
 xmp_sdk/public/libraries
 
 # diff
