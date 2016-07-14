@@ -188,21 +188,24 @@ add_executable(${target}
 if (UNIX)
     target_compile_options(${target} PUBLIC
                            "-DqDNGValidateTarget=1")
+    target_link_libraries(${target}
+                                  pthread
+                                  dl
+                                  XMPFilesStatic
+                                  XMPCoreStatic
+                                  dl
+                                  )
 else (UNIX)
     if (MSVC)
         target_compile_options(${target} PUBLIC
                                "/DqDNGValidateTarget=1")
+        target_link_libraries(${target}
+                                      XMPFilesStatic
+                                      XMPCoreStatic
+                                      )
     endif (MSVC)
 endif (UNIX)
 
-
-target_link_libraries(${target}
-                                pthread
-                                dl
-                                XMPFilesStatic
-                                XMPCoreStatic
-                                dl
-                                )
 
 # dng_sdk library
 set(target dng_sdk)
