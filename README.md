@@ -39,6 +39,13 @@ Note that if you drag-n-drop directory or file into sjcam_raw2dng.exe on windows
 
 Troubleshooting:
 ---------------------
+Q: I get "unsupported format" error when trying to convert a photo taken with FOV crop or zoom
+A: Only some of FOV crops are currently supported for SJ5000x Elite and none for M20. This is partly due to</br>
+crop raw files having some apparently extra pixels that are being discarded by the camera's firmware</br>
+thus making it difficult to find the actual width and height of the image.</br>
+Zoom settings are not planned to be supported as well.</br>
+Anyway, using crop/zoom setting with RAW have no real benefit, since shooting in full resolution</br>
+and then cropping in post-processing will yield identical results.
 
 Q: Windows returns an error about missing MSVCP140.dll<br/>
 A: Install: https://www.microsoft.com/en-us/download/details.aspx?id=48145
