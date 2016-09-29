@@ -58,3 +58,14 @@ A: Adobe libraries do not support unicode file names on Windows, so as result th
 
 Q: On Mac OSX GUI does not start<br/>
 A: Install wxPython and put sjcam_raw2dng in the same folder as the GUI
+
+Q: On Mac OSX running the executable results in "permission denied"<br/>
+A: Type "cd" [drag sjcam_raw2dng_v1.0.1_macosx folder here]</br>
+Type "ls –l"</br>
+Hit return.</br>
+Then type "chmod 755" [Drag the sjcam_raw2dng here]</br>
+Hit return.</br>
+
+Now you will be able to etither run the sjcam_raw2dng binary from console</br>
+or drag and drop files/folders into the sjcam_raw2dng binary
+
