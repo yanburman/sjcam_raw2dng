@@ -468,7 +468,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set baseline sharpness
     // Remarks: Tag [BaselineSharpness] / [50732]
-    oNegative->SetBaselineSharpness(0.1); // we don't have AA filter
+    oNegative->SetBaselineSharpness(1);
 
     // Set anti-alias filter strength
     // Remarks: Tag [AntiAliasStrength] / [50738]
