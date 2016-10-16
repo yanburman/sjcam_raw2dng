@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Sjcam raw2dng by yanburman</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Sjcam raw2dng</h1>
+        <h2>Convert SJCAM raw to Adobe DNG</h2>
+        <a href="https://github.com/yanburman/sjcam_raw2dng" class="button"><small>View project on</small> GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>
+<a id="sjcam_raw2dng" class="anchor" href="#sjcam_raw2dng" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>sjcam_raw2dng</h1>
+
+<p>Convert SJCAM raw files to Adobe DNG and TIFF while also getting metadata
+such as date and ISO from JPEGs that correlate to the RAW files</p>
+
+<p>Currently supported cameras:</p>
+
+<ul>
+<li>SJ5000X Elite (with Adobe camera profile for professional level color calibration)</li>
+<li>M20</li>
+</ul>
+
+<h2>
+<a id="features" class="anchor" href="#features" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Features:</h2>
+
+<ul>
+<li>Using official Adobe SDK for maximum compatibility and extendability</li>
+<li>Parallel conversion speeding up batch conversion</li>
+<li>Adobe camera profile</li>
+<li>Support for Linux, Windows and Mac (on Mac only CLI was tested on 10.11, although GUI should work as well)</li>
+<li>Best possible quality</li>
+<li>EXIF embedding from original JPEG files</li>
+<li>Full EXIF support</li>
+</ul>
+
+<h2>
+<a id="camera-profile-usage" class="anchor" href="#camera-profile-usage" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Camera profile usage:</h2>
+
+<p>In order to be able to utilize camera profiles, you will need to put them in
+C:\Users\{you}\AppData\Roaming\Adobe\CameraRaw\CameraProfiles
+After that you will need to restart Lightroom in order to be able to use the profile.
+Now you can choose the new profile (SJ5000x Recipe) in Camera Calibration</p>
+
+<h2>
+<a id="gui" class="anchor" href="#gui" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>GUI:</h2>
+
+<p>Enables selecting source and optionally destination directories and convert
+Also optional is ability to convert to TIFF as well as DNG</p>
+
+<h2>
+<a id="cli" class="anchor" href="#cli" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>CLI:</h2>
+
+<p>This is allows most control by supporting list of files/directories to convert.
+Note that if you drag-n-drop directory or file into sjcam_raw2dng.exe on windows, it will do the batch conversion.</p>
+
+<h2>
+<a id="troubleshooting" class="anchor" href="#troubleshooting" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Troubleshooting:</h2>
+
+<p>Q: I get "unsupported format" error when trying to convert a photo taken with FOV crop or zoom
+A: Only some of FOV crops are currently supported for SJ5000x Elite and none for M20. This is partly due to
+crop raw files having some apparently extra pixels that are being discarded by the camera's firmware
+thus making it difficult to find the actual width and height of the image.
+Zoom settings are not planned to be supported as well.
+Anyway, using crop/zoom setting with RAW have no real benefit, since shooting in full resolution
+and then cropping in post-processing will yield identical results.</p>
+
+<p>Q: Windows returns an error about missing MSVCP140.dll<br>
+A: Install: <a href="https://www.microsoft.com/en-us/download/details.aspx?id=48145">https://www.microsoft.com/en-us/download/details.aspx?id=48145</a></p>
+
+<p>Q: Windows reports an error: "This app can't run on your PC. To find a version for your PC, check with the software publisher."<br>
+A: The binary is for 64-bit windows, while you are probably running 32-bit</p>
+
+<p>Q: Windows is unable to convert files in directory containing non ASCII characters
+A: Adobe libraries do not support unicode file names on Windows, so as result the same is true for sjcam_raw2dng</p>
+
+<p>Q: On Mac OSX GUI does not start<br>
+A: Install wxPython and put sjcam_raw2dng in the same folder as the GUI</p>
+
+<p>Q: On Mac OSX running the executable results in "permission denied"<br>
+A: Type "cd" [drag sjcam_raw2dng_v1.0.1_macosx folder here]
+Type "ls –l"
+Hit return.
+Then type "chmod 755" [Drag the sjcam_raw2dng here]
+Hit return.</p>
+
+<p>Now you will be able to etither run the sjcam_raw2dng binary from console
+or drag and drop files/folders into the sjcam_raw2dng binary</p>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/yanburman/sjcam_raw2dng/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/yanburman/sjcam_raw2dng/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/yanburman/sjcam_raw2dng"></a> is maintained by <a href="https://github.com/yanburman">yanburman</a>.</p>
+
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>
