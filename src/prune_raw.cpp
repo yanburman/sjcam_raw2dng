@@ -45,7 +45,7 @@ static void usage(const char *prog)
           "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
           "!!!WARNING: WILL REMOVE FILES!!!\n"
           "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-          "Usage:  %s [options] dir\n"
+          "Usage:  %s [options] <raw_dir>\n"
           "\n"
           "Valid options:\n"
           "\t-h, --help          Help\n"
