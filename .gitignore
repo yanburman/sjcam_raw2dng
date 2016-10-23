@@ -63,6 +63,11 @@ xmp_sdk/public/libraries
 *.pdb
 *.cache
 *.ilk
+*.iobj
+*.ipdb
+*.idb
+*.res
+*nativecodeanalysis.xml
 
 # Misc
 *~
