@@ -62,3 +62,7 @@ xmp_sdk/public/libraries
 *.suo
 *.pdb
 *.cache
+*.ilk
+
+# Misc
+*~
