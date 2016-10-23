@@ -234,10 +234,22 @@ struct CameraProfile {
   const LensCalibration *m_oCalib;
 };
 
-const static CameraProfile gRawSizes[] = {CameraProfile(4000, 3000, 0, 0.87, 1.3, 0.72, "SJ5000X", &SJ5000xCalib),
-                                          CameraProfile(3032, 2272, 0, 0.87, 1.3, 0.72, "SJ5000X"),
-                                          CameraProfile(2640, 1980, 0, 0.87, 1.3, 0.72, "SJ5000X"),
-                                          CameraProfile(4608, 3456, 200, 0.51, 1, 0.64, "M20")};
+struct SJ5000xProfile : public CameraProfile {
+  SJ5000xProfile(uint32 w, uint32 h) : CameraProfile(w, h, 0, 0.87, 1.3, 0.72, "SJ5000X", &SJ5000xCalib)
+  {
+  }
+};
+
+struct M20Profile : public CameraProfile {
+  M20Profile() : CameraProfile(4608, 3456, 200, 0.51, 1, 0.64, "M20")
+  {
+  }
+};
+
+const static CameraProfile gRawSizes[] = {SJ5000xProfile(4000, 3000),
+                                          SJ5000xProfile(3032, 2272),
+                                          SJ5000xProfile(2640, 1980),
+                                          M20Profile()};
 
 static const CameraProfile *get_CameraProfile(size_t sz)
 {
