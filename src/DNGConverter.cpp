@@ -478,13 +478,17 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // Remarks: Tag [NoiseReductionApplied] / [50935]
     oNegative->SetNoiseReductionApplied(m_oZeroURational);
 
+    // Set baseline noise
+    // Remarks: Tag [BaselineNoise] / [50731]
+    oNegative->SetBaselineNoise(1);
+
     // Set baseline sharpness
     // Remarks: Tag [BaselineSharpness] / [50732]
     oNegative->SetBaselineSharpness(1);
 
     // Set anti-alias filter strength
     // Remarks: Tag [AntiAliasStrength] / [50738]
-    oNegative->SetAntiAliasStrength(m_oZeroURational); // we don't have AA filter
+    oNegative->SetAntiAliasStrength(m_oZeroURational);
 
     // -------------------------------------------------------------
     // DNG EXIF Settings
