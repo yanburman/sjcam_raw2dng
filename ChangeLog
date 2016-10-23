@@ -1,3 +1,4 @@
+* Improved noise threshold setting for both SJ5000x and M20
 * Fixed an issue that prevented Adobe ACR/LR to apply sharpness
 * Added prune_raw utility to delete RAW/JPEG files that don't have a matching DNG file
 

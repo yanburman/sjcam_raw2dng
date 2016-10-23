@@ -214,10 +214,11 @@ struct CameraProfile {
                 double r,
                 double g,
                 double b,
+                double base_noise,
                 const char *name,
                 const LensCalibration *calib = NULL)
           : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name), m_ulBlackLevel(black_level), m_oNeutralWB(3),
-            m_oCalib(calib)
+            m_oCalib(calib), m_fBaselineNoise(base_noise)
   {
     m_ulFileSize = (m_ulWidth * m_ulHeight * 12) / 8;
     m_oNeutralWB[0] = r;
@@ -229,19 +230,20 @@ struct CameraProfile {
   uint32 m_ulHeight;
   std::string m_szCameraModel;
   uint32 m_ulBlackLevel;
+  double m_fBaselineNoise;
   size_t m_ulFileSize;
   dng_vector m_oNeutralWB;
   const LensCalibration *m_oCalib;
 };
 
 struct SJ5000xProfile : public CameraProfile {
-  SJ5000xProfile(uint32 w, uint32 h) : CameraProfile(w, h, 0, 0.87, 1.3, 0.72, "SJ5000X", &SJ5000xCalib)
+  SJ5000xProfile(uint32 w, uint32 h) : CameraProfile(w, h, 0, 0.87, 1.3, 0.72, 3, "SJ5000X", &SJ5000xCalib)
   {
   }
 };
 
 struct M20Profile : public CameraProfile {
-  M20Profile() : CameraProfile(4608, 3456, 200, 0.51, 1, 0.64, "M20")
+  M20Profile() : CameraProfile(4608, 3456, 200, 0.51, 1, 0.64, 4, "M20")
   {
   }
 };
@@ -480,7 +482,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set baseline noise
     // Remarks: Tag [BaselineNoise] / [50731]
-    oNegative->SetBaselineNoise(1);
+    oNegative->SetBaselineNoise(oCamProfile->m_fBaselineNoise);
 
     // Set baseline sharpness
     // Remarks: Tag [BaselineSharpness] / [50732]
