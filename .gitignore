@@ -68,6 +68,7 @@ xmp_sdk/public/libraries
 *.idb
 *.res
 *nativecodeanalysis.xml
+*nativecodeanalysis.all.xml
 
 # Misc
 *~
