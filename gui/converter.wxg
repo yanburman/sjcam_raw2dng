@@ -56,10 +56,29 @@
             </object>
             <object class="sizeritem">
                 <border>0</border>
-                <option>0</option>
-                <object class="wxCheckBox" name="tiff_checkbox" base="EditCheckBox">
-                    <label>TIFF</label>
-                    <tooltip>Convert to TIFF as well as DNG</tooltip>
+                <option>1</option>
+                <object class="wxGridSizer" name="grid_sizer_2" base="EditGridSizer">
+                    <hgap>0</hgap>
+                    <rows>1</rows>
+                    <cols>2</cols>
+                    <vgap>0</vgap>
+                    <object class="sizeritem">
+                        <border>0</border>
+                        <option>0</option>
+                        <object class="wxCheckBox" name="tiff_checkbox" base="EditCheckBox">
+                            <label>TIFF</label>
+                            <tooltip>Convert to TIFF</tooltip>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <border>0</border>
+                        <option>0</option>
+                        <object class="wxCheckBox" name="dng_checkbox" base="EditCheckBox">
+                            <checked>1</checked>
+                            <label>DNG</label>
+                            <tooltip>Convert to DNG</tooltip>
+                        </object>
+                    </object>
                 </object>
             </object>
             <object class="sizeritem">

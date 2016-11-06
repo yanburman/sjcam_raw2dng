@@ -57,6 +57,7 @@ class MainFrame(wx.Frame):
         self.dest_dir_text_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_READONLY)
         self.dst_folder_button = wx.Button(self, wx.ID_ANY, _("Destination folder"))
         self.tiff_checkbox = wx.CheckBox(self, wx.ID_ANY, _("TIFF"))
+        self.dng_checkbox = wx.CheckBox(self, wx.ID_ANY, _("DNG"))
         self.convert_button = wx.Button(self, wx.ID_ANY, _("Convert"))
         self.status_text_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_MULTILINE | wx.TE_READONLY)
         self.abort_button = wx.Button(self, wx.ID_ANY, _("Abort"))
@@ -76,18 +77,23 @@ class MainFrame(wx.Frame):
         self.SetTitle(_("SJCAM RAW Converter"))
         self.SetSize((600, 300))
         self.src_dir_button.SetFocus()
-        self.tiff_checkbox.SetToolTip(wx.ToolTip(_("Convert to TIFF as well as DNG")))
+        self.tiff_checkbox.SetToolTip(wx.ToolTip(_("Convert to TIFF")))
+        self.dng_checkbox.SetToolTip(wx.ToolTip(_("Convert to DNG")))
+        self.dng_checkbox.SetValue(1)
         self.abort_button.Enable(False)
         # end wxGlade
 
     def __do_layout(self):
         # begin wxGlade: MainFrame.__do_layout
         grid_sizer_1 = wx.FlexGridSizer(4, 2, 0, 0)
+        grid_sizer_2 = wx.GridSizer(1, 2, 0, 0)
         grid_sizer_1.Add(self.src_dir_text_ctrl, 0, wx.EXPAND, 0)
         grid_sizer_1.Add(self.src_dir_button, 0, wx.ALIGN_RIGHT | wx.EXPAND, 0)
         grid_sizer_1.Add(self.dest_dir_text_ctrl, 0, wx.EXPAND, 0)
         grid_sizer_1.Add(self.dst_folder_button, 0, wx.ALIGN_RIGHT | wx.EXPAND, 0)
-        grid_sizer_1.Add(self.tiff_checkbox, 0, 0, 0)
+        grid_sizer_2.Add(self.tiff_checkbox, 0, 0, 0)
+        grid_sizer_2.Add(self.dng_checkbox, 0, 0, 0)
+        grid_sizer_1.Add(grid_sizer_2, 1, 0, 0)
         grid_sizer_1.Add(self.convert_button, 0, wx.ALL | wx.EXPAND, 2)
         grid_sizer_1.Add(self.status_text_ctrl, 0, wx.EXPAND, 0)
         grid_sizer_1.Add(self.abort_button, 0, wx.EXPAND, 0)
@@ -115,10 +121,20 @@ class MainFrame(wx.Frame):
     def OnConvert(self, event):  # wxGlade: MainFrame.<event_handler>
         self.status_text_ctrl.Clear()
 
+        if not self.tiff_checkbox.IsChecked() and not self.dng_checkbox.IsChecked():
+            dlg = wx.MessageDialog(self, _('Must select at least one output format (DNG/TIFF)'), _('Error!'), wx.OK | wx.ICON_ERROR)
+            dlg.ShowModal()
+            dlg.Destroy()
+            event.Skip()
+            return
+
         args = ['./sjcam_raw2dng']
 
         if self.tiff_checkbox.IsChecked():
             args.append('-t')
+
+        if self.dng_checkbox.IsChecked():
+            args.append('-d')
 
         if not self.dest_dir_text_ctrl.IsEmpty():
             args.append('-o')
