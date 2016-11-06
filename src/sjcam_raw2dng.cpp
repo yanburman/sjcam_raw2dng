@@ -85,7 +85,8 @@ static void usage(const char *prog, Config &conf)
           "\t-p, --threads <NUM> Number of threads to run. Default: %d (0 or -1 for number of CPUS in the system)\n"
           "\t-c, --no-color      Do not apply color calibration (for color calibration)\n"
           "\t-o, --output <DIR>  Output dir (must exist)\n"
-          "\t-t, --tiff          Write TIFF image to \"<file>.tiff\"\n",
+          "\t-t, --tiff          Write TIFF image to \"<file>.tiff\" (false by default)\n"
+          "\t-d, --dng           Write DNG image to \"<file>.dng\" (used by default if no output is supplied)\n",
           prog,
           conf.m_iThreads);
 }
@@ -119,6 +120,8 @@ int main(int argc, char *argv[])
 #endif
     } else if (option.Matches("t", true) || option.Matches("-tiff", true)) {
       conf.m_bTiff = true;
+    } else if (option.Matches("d", true) || option.Matches("-dng", true)) {
+      conf.m_bDng = true;
     } else if (option.Matches("p", true) || option.Matches("-threads", true)) {
       if (index + 1 < argc) {
         ++index;
@@ -170,6 +173,11 @@ int main(int argc, char *argv[])
   if (index == argc) {
     fprintf(stderr, "Error: No file specified\n");
     return EXIT_FAILURE;
+  }
+
+  if (!conf.m_bTiff && !conf.m_bDng) {
+    /* Most users want to convert to DNG */
+    conf.m_bDng = true;
   }
 
   int rc;

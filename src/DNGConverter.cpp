@@ -717,20 +717,23 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // Update IPTC
     oNegative->RebuildIPTC(true);
 
-    // Create stream writer for output file
-    dng_file_stream oDNGStream(m_szOutputFile.c_str(), true);
+    AutoPtr<dng_image_writer> oWriter(new dng_image_writer());
+
+    if (m_oConfig.m_bDng) {
+      // Create stream writer for output file
+      dng_file_stream oDNGStream(m_szOutputFile.c_str(), true);
 
 #ifdef TIME_PROFILE
-    oProfiler.reset();
-    oProfiler.run();
+      oProfiler.reset();
+      oProfiler.run();
 #endif
-    // Write DNG file to disk
-    AutoPtr<dng_image_writer> oWriter(new dng_image_writer());
-    oWriter->WriteDNG(oDNGHost, oDNGStream, *oNegative.Get());
+      // Write DNG file to disk
+      oWriter->WriteDNG(oDNGHost, oDNGStream, *oNegative.Get());
 #ifdef TIME_PROFILE
-    oProfiler.stop();
-    printf("dng_image_writer::WriteDNG() time: %lu usec\n", oProfiler.elapsed_usec());
+      oProfiler.stop();
+      printf("dng_image_writer::WriteDNG() time: %lu usec\n", oProfiler.elapsed_usec());
 #endif
+    }
 
     if (m_oConfig.m_bTiff) {
       // -------------------------------------------------------------

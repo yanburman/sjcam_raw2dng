@@ -13,11 +13,12 @@
 #include <dng_orientation.h>
 
 struct Config {
-  Config() : m_bTiff(false), m_bLensCorrections(false), m_bNoCalibration(false), m_iThreads(2)
+  Config() : m_bTiff(false), m_bDng(false), m_bLensCorrections(false), m_bNoCalibration(false), m_iThreads(2)
   {
   }
 
   bool m_bTiff;
+  bool m_bDng;
   bool m_bLensCorrections;
   bool m_bNoCalibration;
   int m_iThreads;
