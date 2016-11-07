@@ -11,12 +11,50 @@ import gettext
 # end wxGlade
 
 # begin wxGlade: extracode
+# end wxGlade
+
 from threading import Thread
 import subprocess
 import os
+import wx.html
+import sys
+
+
+class HtmlWindow(wx.html.HtmlWindow):
+   def __init__(self, parent, id, size=(600, 400)):
+       wx.html.HtmlWindow.__init__(self,parent, id, size=size)
+       if 'gtk2' in wx.PlatformInfo:
+           self.SetStandardFonts()
+
+   def OnLinkClicked(self, link):
+       wx.LaunchDefaultBrowser(link.GetHref())
+
+
+aboutText = """<p>SJCAM RAW to DNG/TIFF converter %(converter)s. It is
+running on version %(wxpy)s of <b>wxPython</b> and %(python)s of <b>Python</b>.
+See <a href="http://wiki.wxpython.org">wxPython Wiki</a></p>"""
+
+
+class AboutBox(wx.Dialog):
+    def __init__(self):
+        wx.Dialog.__init__(self, None, -1, _("About"),
+             style=wx.DEFAULT_DIALOG_STYLE|wx.THICK_FRAME|wx.RESIZE_BORDER|wx.TAB_TRAVERSAL)
+        hwin = HtmlWindow(self, -1, size=(400, 200))
+        vers = dict()
+        vers['python'] = sys.version.split()[0]
+        vers['wxpy'] = wx.VERSION_STRING
+        vers['converter'] = subprocess.check_output(['./sjcam_raw2dng', '-v']).strip()
+        hwin.SetPage(aboutText % vers)
+        btn = hwin.FindWindowById(wx.ID_OK)
+        irep = hwin.GetInternalRepresentation()
+        hwin.SetSize((irep.GetWidth() + 25, irep.GetHeight() + 10))
+        self.SetClientSize(hwin.GetSize())
+        self.CentreOnParent(wx.BOTH)
+        self.SetFocus()
+
 
 def subprocess_thread(main, args):
-    wx.CallAfter(main.status_text_ctrl.AppendText, 'Starting conversion\n')
+    wx.CallAfter(main.status_text_ctrl.AppendText, _("Starting conversion") + '\n')
     # The following is true only on Windows.
     if hasattr(subprocess, 'STARTUPINFO'):
         # On Windows, subprocess calls will pop up a command window by default
@@ -44,7 +82,7 @@ def subprocess_thread(main, args):
     finally:
         main.convert_button.Enable()
         main.abort_button.Disable()
-# end wxGlade
+
 
 
 class MainFrame(wx.Frame):
@@ -52,6 +90,19 @@ class MainFrame(wx.Frame):
         # begin wxGlade: MainFrame.__init__
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, *args, **kwds)
+        
+        # Menu Bar
+        self.main_frame_menubar = wx.MenuBar()
+        self.File = wx.Menu()
+        self.Exit = wx.MenuItem(self.File, wx.ID_EXIT, _("E&xit\tCtrl-Q"), _("Exit"), wx.ITEM_NORMAL)
+        self.File.AppendItem(self.Exit)
+        self.main_frame_menubar.Append(self.File, _("&File"))
+        self.Help = wx.Menu()
+        self.About = wx.MenuItem(self.Help, wx.ID_ABOUT, _("&About"), _("About"), wx.ITEM_NORMAL)
+        self.Help.AppendItem(self.About)
+        self.main_frame_menubar.Append(self.Help, _("&Help"))
+        self.SetMenuBar(self.main_frame_menubar)
+        # Menu Bar end
         self.src_dir_text_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_READONLY)
         self.src_dir_button = wx.Button(self, wx.ID_ANY, _("Source folder"))
         self.dest_dir_text_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_READONLY)
@@ -65,12 +116,15 @@ class MainFrame(wx.Frame):
         self.__set_properties()
         self.__do_layout()
 
+        self.Bind(wx.EVT_MENU, self.OnClose, self.Exit)
+        self.Bind(wx.EVT_MENU, self.OnMenuAbout, self.About)
         self.Bind(wx.EVT_BUTTON, self.OnSrcFolder, self.src_dir_button)
         self.Bind(wx.EVT_BUTTON, self.OnDstFolder, self.dst_folder_button)
         self.Bind(wx.EVT_BUTTON, self.OnConvert, self.convert_button)
         self.Bind(wx.EVT_BUTTON, self.OnAbort, self.abort_button)
         # end wxGlade
         self.proc = None
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def __set_properties(self):
         # begin wxGlade: MainFrame.__set_properties
@@ -162,6 +216,16 @@ class MainFrame(wx.Frame):
         if self.proc:
             self.proc.kill()
         event.Skip()
+
+    def OnMenuAbout(self, event):  # wxGlade: MainFrame.<event_handler>
+        dlg = AboutBox()
+        dlg.ShowModal()
+        dlg.Destroy()
+        event.Skip()
+
+    def OnClose(self, event):  # wxGlade: MainFrame.<event_handler>
+        self.OnAbort(event)
+        self.Destroy()
 
 # end of class MainFrame
 class MyApp(wx.App):
