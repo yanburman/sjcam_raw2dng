@@ -164,11 +164,17 @@ class MainFrame(wx.Frame):
         event.Skip()
 
 # end of class MainFrame
-if __name__ == "__main__":
-    gettext.install("converter", 'locale', True) # replace with the appropriate catalog name
+class MyApp(wx.App):
+    def OnInit(self):
+        main_frame = MainFrame(None, wx.ID_ANY, "")
+        self.SetTopWindow(main_frame)
+        main_frame.Show()
+        return True
 
-    converter = wx.PySimpleApp(0)
-    main_frame = MainFrame(None, wx.ID_ANY, "")
-    converter.SetTopWindow(main_frame)
-    main_frame.Show()
+# end of class MyApp
+
+if __name__ == "__main__":
+    gettext.install("converter", './locale') # replace with the appropriate catalog name
+
+    converter = MyApp(0)
     converter.MainLoop()
