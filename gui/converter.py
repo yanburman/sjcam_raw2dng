@@ -238,7 +238,7 @@ class MyApp(wx.App):
 # end of class MyApp
 
 if __name__ == "__main__":
-    gettext.install("converter", './locale') # replace with the appropriate catalog name
+    gettext.install("converter", './locale', True)
 
     converter = MyApp(0)
     converter.MainLoop()
