@@ -30,9 +30,10 @@ class HtmlWindow(wx.html.HtmlWindow):
        wx.LaunchDefaultBrowser(link.GetHref())
 
 
-aboutText = """<p>SJCAM RAW to DNG/TIFF converter %(converter)s. It is
-running on version %(wxpy)s of <b>wxPython</b> and %(python)s of <b>Python</b>.
-See <a href="http://wiki.wxpython.org">wxPython Wiki</a></p>"""
+aboutText = """<p>SJCAM RAW to DNG/TIFF converter %(converter)s. <br/>
+See <a href="http://yanburman.github.io/sjcam_raw2dng">sjcam_raw2dng</a><br/>
+It is running on version %(wxpy)s of <b>wxPython</b> and %(python)s of <b>Python</b>.
+</p>"""
 
 
 class AboutBox(wx.Dialog):
