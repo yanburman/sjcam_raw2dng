@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-06-15 08:45+0300\n"
+"POT-Creation-Date: 2016-11-09 15:03+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,46 +17,86 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: converter.py:47
+#: converter.py:101
+msgid "&About"
+msgstr ""
+
+#: converter.py:99
+msgid "&File"
+msgstr ""
+
+#: converter.py:103
+msgid "&Help"
+msgstr ""
+
+#: converter.py:114
 msgid "Abort"
 msgstr ""
 
-#: converter.py:94
+#: converter.py:40 converter.py:101
+msgid "About"
+msgstr ""
+
+#: converter.py:169
 msgid "Choose destination folder"
 msgstr ""
 
-#: converter.py:87
+#: converter.py:162
 msgid "Choose source folder"
 msgstr ""
 
-#: converter.py:45
+#: converter.py:112
 msgid "Convert"
 msgstr ""
 
-#: converter.py:64
-msgid "Convert to TIFF as well as DNG"
+#: converter.py:135
+msgid "Convert to DNG"
 msgstr ""
 
-#: converter.py:43
+#: converter.py:134
+msgid "Convert to TIFF"
+msgstr ""
+
+#: converter.py:111
+msgid "DNG"
+msgstr ""
+
+#: converter.py:109
 msgid "Destination folder"
 msgstr ""
 
-#: converter.py:113
+#: converter.py:97
+msgid "E&xit\tCtrl-Q"
+msgstr ""
+
+#: converter.py:179 converter.py:198
 msgid "Error!"
 msgstr ""
 
-#: converter.py:113
+#: converter.py:97
+msgid "Exit"
+msgstr ""
+
+#: converter.py:179
+msgid "Must select at least one output format (DNG/TIFF)"
+msgstr ""
+
+#: converter.py:198
 msgid "Must select source folder"
 msgstr ""
 
-#: converter.py:61
+#: converter.py:131
 msgid "SJCAM RAW Converter"
 msgstr ""
 
-#: converter.py:41
+#: converter.py:107
 msgid "Source folder"
 msgstr ""
 
-#: converter.py:44
+#: converter.py:57
+msgid "Starting conversion"
+msgstr ""
+
+#: converter.py:110
 msgid "TIFF"
 msgstr ""
