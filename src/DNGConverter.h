@@ -13,7 +13,9 @@
 #include <dng_orientation.h>
 
 struct Config {
-  Config() : m_bTiff(false), m_bDng(false), m_bLensCorrections(false), m_bNoCalibration(false), m_iThreads(2)
+  Config()
+          : m_bTiff(false), m_bDng(false), m_bLensCorrections(false), m_bNoCalibration(false), m_iThreads(2),
+            m_bGenPreview(false)
   {
   }
 
@@ -22,6 +24,7 @@ struct Config {
   bool m_bLensCorrections;
   bool m_bNoCalibration;
   int m_iThreads;
+  bool m_bGenPreview;
   std::string m_szPathPrefixOutput;
 };
 

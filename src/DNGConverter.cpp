@@ -41,6 +41,7 @@
 #include <dng_host.h>
 #include <dng_file_stream.h>
 #include <dng_render.h>
+#include <dng_preview.h>
 #include <dng_xmp_sdk.h>
 #include <dng_xmp.h>
 #include <dng_globals.h>
@@ -717,6 +718,45 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // Update IPTC
     oNegative->RebuildIPTC(true);
 
+    dng_preview_list *oPreviewList = NULL;
+    dng_jpeg_preview *oJpegPreview = NULL;
+
+    if (m_oConfig.m_bGenPreview) {
+#ifdef TIME_PROFILE
+      oProfiler.reset();
+      oProfiler.run();
+#endif
+
+      dng_render oNegRender(oDNGHost, *oNegative.Get());
+
+      oJpegPreview = new dng_jpeg_preview();
+      oJpegPreview->fInfo.fColorSpace = previewColorSpace_sRGB;
+
+      oNegRender.SetMaximumSize(1024);
+      AutoPtr<dng_image> negImage(oNegRender.Render());
+      dng_image_writer oJpegWriter;
+      oJpegWriter.EncodeJPEGPreview(oDNGHost, *negImage.Get(), *oJpegPreview, 4);
+      AutoPtr<dng_preview> oPreview(dynamic_cast<dng_preview *>(oJpegPreview));
+
+      dng_image_preview *oThumbnailPreview = new dng_image_preview();
+      oThumbnailPreview->fInfo.fColorSpace = previewColorSpace_sRGB;
+
+      oNegRender.SetMaximumSize(256);
+      oThumbnailPreview->fImage.Reset(oNegRender.Render());
+      AutoPtr<dng_preview> oThumbnail(dynamic_cast<dng_preview *>(oThumbnailPreview));
+
+      oPreviewList = new dng_preview_list();
+      oPreviewList->Append(oPreview);
+      oPreviewList->Append(oThumbnail);
+
+#ifdef TIME_PROFILE
+      oProfiler.stop();
+      printf("Generate thumbnails and preview time: %lu usec\n", oProfiler.elapsed_usec());
+#endif
+    }
+
+    AutoPtr<dng_preview_list> oPreviews(oPreviewList);
+
     AutoPtr<dng_image_writer> oWriter(new dng_image_writer());
 
     if (m_oConfig.m_bDng) {
@@ -728,7 +768,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
       oProfiler.run();
 #endif
       // Write DNG file to disk
-      oWriter->WriteDNG(oDNGHost, oDNGStream, *oNegative.Get());
+      oWriter->WriteDNG(oDNGHost, oDNGStream, *oNegative.Get(), oPreviews.Get());
 #ifdef TIME_PROFILE
       oProfiler.stop();
       printf("dng_image_writer::WriteDNG() time: %lu usec\n", oProfiler.elapsed_usec());
@@ -769,7 +809,9 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
                          piRGB,
                          ccUncompressed,
                          oNegative.Get(),
-                         &oRender.FinalSpace());
+                         &oRender.FinalSpace(),
+                         NULL,
+                         oJpegPreview);
 #ifdef TIME_PROFILE
       oProfiler.stop();
       printf("dng_image_writer::WriteTIFF() time: %lu usec\n", oProfiler.elapsed_usec());

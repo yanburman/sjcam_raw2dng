@@ -84,6 +84,7 @@ static void usage(const char *prog, Config &conf)
 #endif
           "\t-p, --threads <NUM> Number of threads to run. Default: %d (0 or -1 for number of CPUS in the system)\n"
           "\t-c, --no-color      Do not apply color calibration (for color calibration)\n"
+          "\t-m, --thumb         Add JPEG thumbnails (disabled by default to save disk space and conversion time)\n"
           "\t-o, --output <DIR>  Output dir (must exist)\n"
           "\t-t, --tiff          Write TIFF image to \"<file>.tiff\" (false by default)\n"
           "\t-d, --dng           Write DNG image to \"<file>.dng\" (used by default if no output is supplied)\n",
@@ -143,6 +144,8 @@ int main(int argc, char *argv[])
 #endif
     } else if (option.Matches("c", true) || option.Matches("-no-color", true)) {
       conf.m_bNoCalibration = true;
+    } else if (option.Matches("m", true) || option.Matches("-thumb", true)) {
+      conf.m_bGenPreview = true;
     } else if (option.Matches("o", true) || option.Matches("-output", true)) {
       if (index + 1 < argc) {
         conf.m_szPathPrefixOutput = argv[++index];
