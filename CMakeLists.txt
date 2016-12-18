@@ -93,6 +93,7 @@ if (UNIX)
                           dl
                           XMPFilesStatic
                           XMPCoreStatic
+                          jpeg
                           dl
                           )
 endif(UNIX)
@@ -102,6 +103,7 @@ if (MSVC)
                           dng_sdk
                           XMPFilesStatic
                           XMPCoreStatic
+                          jpeg
                           )
 endif(MSVC)
 

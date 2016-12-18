@@ -152,9 +152,9 @@ set(LIB_SRC
 
 if (UNIX)
     if (APPLE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DqMacOS=1 -DqLinux=0 -DqWinOS=0 -DqDNGXMPDocOps=0")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DqMacOS=1 -DqLinux=0 -DqWinOS=0 -DqDNGXMPDocOps=0 -DqDNGValidateTarget=1 -DqDNGUseLibJPEG=1")
     else ()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-z,relro -Wl,-z,now -Wl,-z,noexecstack -DqDNGValidateTarget=1 -DqDNGUseLibJPEG=1")
         set(CMAKE_CXX_FLAGS_DEBUG "-DqDNGDebug=1 \
                                    -O0 \
                                    -ggdb \
@@ -166,7 +166,7 @@ if (UNIX)
     endif (APPLE)
 else (UNIX)
     if (MSVC)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DqMacOS=0 /DqWinOS=1 /DqLinux=0 /D_CRT_SECURE_NO_DEPRECATE /DqDNGXMPDocOps=0 /DqDNGValidateTarget=1 /DqDNGUseLibJPEG=1")
     endif (MSVC)
 endif(UNIX)
 
@@ -177,31 +177,33 @@ set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 include_directories(${SRC_DIR} ${LIBJPEG_DIR} ${XMPROOT}/public/include ${XMPROOT}/third-party/zlib)
 
+# libjpeg library
+set(target jpeg)
+
+add_library(${target} STATIC ${LIBJPEG_SRC})
+
 # dng_validate binary
 set(target dng_validate)
 
 add_executable(${target}
 		${LIB_SRC}
-		${LIBJPEG_SRC}
 		${SRC_DIR}/dng_validate.cpp)
 
 if (UNIX)
-    target_compile_options(${target} PUBLIC
-                           "-DqDNGValidateTarget=1")
     target_link_libraries(${target}
                                   pthread
                                   dl
                                   XMPFilesStatic
                                   XMPCoreStatic
                                   dl
+                                  jpeg
                                   )
 else (UNIX)
     if (MSVC)
-        target_compile_options(${target} PUBLIC
-                               "/DqDNGValidateTarget=1")
         target_link_libraries(${target}
                                       XMPFilesStatic
                                       XMPCoreStatic
+                                      jpeg
                                       )
     endif (MSVC)
 endif (UNIX)
