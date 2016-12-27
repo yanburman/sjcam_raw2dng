@@ -9,7 +9,7 @@
 
 # ==============================================================================
 # define minimum cmake version
-cmake_minimum_required(VERSION 2.8.6)
+cmake_minimum_required(VERSION 3.5.1)
 
 SET(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Configurations" FORCE)
 # Enable folder grouping of projects in IDEs

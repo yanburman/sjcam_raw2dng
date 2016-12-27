@@ -37,6 +37,11 @@ namespace ISOMedia {
 	ISOboxType(k_f4v ,0x66347620UL)SEPARATOR \
 	ISOboxType(k_avc1,0x61766331UL)SEPARATOR \
 	ISOboxType(k_qt  ,0x71742020UL)SEPARATOR \
+	ISOboxType(k_isom,0x69736F6DUL)SEPARATOR \
+	ISOboxType(k_3gp4,0x33677034UL)SEPARATOR \
+	ISOboxType(k_3g2a,0x33673261UL)SEPARATOR \
+	ISOboxType(k_3g2b,0x33673262UL)SEPARATOR \
+	ISOboxType(k_3g2c,0x33673263UL)SEPARATOR \
 	\
 	ISOboxType(k_moov,0x6D6F6F76UL)SEPARATOR /* Container Box, no version/flags. */ \
 	ISOboxType(k_mvhd,0x6D766864UL)SEPARATOR /* Data FullBox, has version/flags. */ \
@@ -93,16 +98,17 @@ namespace ISOMedia {
 	bool IsKnownBoxType(XMP_Uns32 boxType) ;
 	void TerminateGlobals();
 
-	static XMP_Uns32 k_xmpUUID [4] = { MakeUns32BE ( 0xBE7ACFCBUL ),
-		                               MakeUns32BE ( 0x97A942E8UL ),
-		                               MakeUns32BE ( 0x9C719994UL ),
-		                               MakeUns32BE ( 0x91E3AFACUL ) };
+	static XMP_Uns8 k_xmpUUID [16] = { 0xBE, 0x7A, 0xCF, 0xCB, 0x97, 0xA9, 0x42, 0xE8, 0x9C, 0x71, 0x99, 0x94, 0x91, 0xE3, 0xAF, 0xAC };
 
 	struct BoxInfo {
 		XMP_Uns32 boxType;         // In memory as native endian!
 		XMP_Uns32 headerSize;      // Normally 8 or 16, less than 8 if available space is too small.
 		XMP_Uns64 contentSize;     // Always the real size, never 0 for "to EoF".
-		BoxInfo() : boxType(0), headerSize(0), contentSize(0) {};
+		XMP_Uns8 idUUID[16];		   // ID of the uuid atom if present
+		BoxInfo() : boxType(0), headerSize(0), contentSize(0)
+		{
+			memset( idUUID, 0, 16 );
+		};
 	};
 
 	// Get basic info about a box in memory, returning a pointer to the following box.

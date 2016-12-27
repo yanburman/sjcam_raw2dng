@@ -847,7 +847,6 @@ private:
     // involve heap allocations. This ensures the allocations occur within the client.
     static void SetClientString ( void * clientPtr, XMP_StringPtr valuePtr, XMP_StringLen valueLen );
     static void SetClientStringVector ( void * clientPtr, XMP_StringPtr* arrayPtr, XMP_Uns32 stringCount );
-
 };    // class TXMPFiles
 
 // =================================================================================================

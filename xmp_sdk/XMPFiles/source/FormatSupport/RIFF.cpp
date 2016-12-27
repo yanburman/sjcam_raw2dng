@@ -52,21 +52,20 @@ Chunk* getChunk ( ContainerChunk* parent, RIFF_MetaHandler* handler )
 		return new ContainerChunk( parent, handler );
 	case kChunk_LIST:
 		{
-		if ( level != 1 ) break; // only care on this level
+			if ( level != 1 ) break; // only care on this level
 
 			// look further (beyond 4+4 = beyond id+size) to check on relevance
 			file->Seek ( 8, kXMP_SeekFromCurrent  );
 			XMP_Uns32 containerType = XIO::PeekUns32_LE ( file );
 			file->Seek ( -8, kXMP_SeekFromCurrent  );
 
-		bool isRelevantList = ( containerType== kType_INFO || containerType == kType_Tdat );
-		if ( !isRelevantList ) break;
-
-				return new ContainerChunk( parent, handler );
+			bool isRelevantList = ( containerType== kType_INFO || containerType == kType_Tdat || containerType == kType_hdrl );
+			if ( !isRelevantList ) break;
+			return new ContainerChunk( parent, handler );
 		}
 	case kChunk_XMP:
-		if ( level != 1 ) break; // ignore on inappropriate levels (might be compound metadata?)
-		return new XMPChunk( parent, handler );
+			if ( level != 1 ) break; // ignore on inappropriate levels (might be compound metadata?)
+			return new XMPChunk( parent, handler );
 	case kChunk_DISP:
 		{
 			if ( level != 1 ) break; // only care on this level
@@ -112,6 +111,13 @@ Chunk* getChunk ( ContainerChunk* parent, RIFF_MetaHandler* handler )
 	case kChunk_JUNK:
 		{
 			JunkChunk* r = new JunkChunk( parent, handler );
+			return r;
+		}
+	case kChunk_IDIT:
+		{
+			if ( level != 2 ) break; // only care on this level
+			ValueChunk* r = new ValueChunk( parent, handler );
+			handler->iditChunk = r;
 			return r;
 		}
 	}
@@ -267,7 +273,8 @@ ContainerChunk::ContainerChunk( ContainerChunk* parent, RIFF_MetaHandler* handle
 		// has *relevant* subChunks? (there might be e.g. non-INFO LIST chunks we don't care about)
 		bool hasSubChunks = ( ( this->id == kChunk_RIFF ) ||
 							  ( this->id == kChunk_LIST && this->containerType == kType_INFO ) ||
-							  ( this->id == kChunk_LIST && this->containerType == kType_Tdat )
+							  ( this->id == kChunk_LIST && this->containerType == kType_Tdat ) ||
+							  ( this->id == kChunk_LIST && this->containerType == kType_hdrl )
 						  );
 		XMP_Int64 endOfChunk = this->oldPos + this->oldSize;
 
@@ -330,6 +337,8 @@ ContainerChunk::ContainerChunk( ContainerChunk* parent, RIFF_MetaHandler* handle
 				handler->listInfoChunk = this;
 			if ( level==1 && this->id==kChunk_LIST && this->containerType == kType_Tdat )
 				handler->listTdatChunk = this;
+			if ( level == 1 && this->id == kChunk_LIST && this->containerType == kType_hdrl )
+				handler->listHdlrChunk = this;
 		}
 		else // skip non-interest container chunk
 		{
@@ -814,8 +823,6 @@ chunkVectIter ContainerChunk::getChild( Chunk* needle )
 	chunkVectIter iter;
 	for( iter = this->children.begin(); iter != this->children.end(); iter++ )
 	{
-		Chunk* temp1 = *iter;
-		Chunk* temp2 = needle;
 		if ( (*iter) == needle ) return iter;
 	}
 	return this->children.end();

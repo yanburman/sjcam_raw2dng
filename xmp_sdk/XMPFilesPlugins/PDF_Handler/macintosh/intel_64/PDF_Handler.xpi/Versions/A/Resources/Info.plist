@@ -3,42 +3,38 @@
 <plist version="1.0">
 <dict>
 	<key>BuildMachineOSBuild</key>
-	<string>12C60</string>
+	<string>15E65</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
 	<key>CFBundleExecutable</key>
 	<string>PDF_Handler</string>
-	<key>CFBundleGetInfoString</key>
-	<string>PDF Handler 1.0, Copyright (c) 2002, Adobe Systems Incorporated</string>
-	<key>CFBundleIdentifier</key>
-	<string>com.xmp.PDF_Handler</string>
-	<key>CFBundleName</key>
-	<string>PDF_Handler</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
 	<key>CFBundlePackageType</key>
 	<string>FMWK</string>
-	<key>CFBundleShortVersionString</key>
-	<string>PDF Handler 1.0</string>
 	<key>CFBundleSignature</key>
-	<string>XMP </string>
-	<key>Configuration</key>
-	<string>Release</string>
+	<string>????</string>
+	<key>CFBundleSupportedPlatforms</key>
+	<array>
+		<string>MacOSX</string>
+	</array>
+	<key>CFBundleVersion</key>
+	<string></string>
+	<key>CSResourcesFileMapped</key>
+	<true/>
 	<key>DTCompiler</key>
 	<string>com.apple.compilers.llvm.clang.1_0</string>
 	<key>DTPlatformBuild</key>
-	<string>4H1003</string>
+	<string>7D1014</string>
 	<key>DTPlatformVersion</key>
 	<string>GM</string>
 	<key>DTSDKBuild</key>
-	<string>11E52</string>
+	<string>15E60</string>
 	<key>DTSDKName</key>
-	<string>macosx10.7</string>
+	<string>macosx10.11</string>
 	<key>DTXcode</key>
-	<string>0462</string>
+	<string>0731</string>
 	<key>DTXcodeBuild</key>
-	<string>4H1003</string>
-	<key>FileVersion</key>
-	<string>1.0</string>
-	<key>ProductName</key>
-	<string>PDF Handler</string>
-	<key>ProductVersion</key>
-	<string>1.0</string>
+	<string>7D1014</string>
 </dict>
 </plist>

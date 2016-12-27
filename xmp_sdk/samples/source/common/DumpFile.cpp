@@ -28,7 +28,11 @@
 //
 // DumpFile does depend on XMPCore and the packetscanner from XMPFiles. 
 
+
 #include <stdarg.h>
+
+#include "source/ExpatAdapter.hpp"
+
 #include "samples/source/common/globals.h"
 #include "samples/source/common/DumpFile.h"
 #include "samples/source/common/LargeFileAccess.hpp"
@@ -297,12 +301,12 @@ struct JpegMarker {
 };
 typedef std::vector<JpegMarker> JpegMarkers;
 
-static void DumpTIFF ( XMP_Uns8 * tiffContent, XMP_Uns32 tiffLen, XMP_Uns32 fileOffset, const char * label, std::string path );
+static void DumpTIFF ( XMP_Uns8 * tiffContent, XMP_Uns32 tiffLen, XMP_Uns32 fileOffset, const char * label, std::string path, bool isHeaderAbsent = false );
 static void DumpTIFF ( const JpegMarkers& psirMarkers, XMP_Uns8 * dataStart, const char * label, std::string path );
 static void DumpIPTC ( XMP_Uns8 * iptcOrigin, XMP_Uns32 iptcLen, XMP_Uns32 fileOffset, const char * label );
 static void DumpImageResources ( XMP_Uns8 * psirOrigin, XMP_Uns32 psirLen, XMP_Uns32 fileOffset, const char * label );
 static void DumpImageResources ( const JpegMarkers& psirMarkers, XMP_Uns8 * dataStart, const char * label );
-static void DumpIFDChain ( XMP_Uns8 * startPtr, XMP_Uns8 * endPtr, XMP_Uns8 * tiffContent, XMP_Uns32 fileOffset, const char * label, std::string path  );
+static void DumpIFDChain ( XMP_Uns8 * startPtr, XMP_Uns8 * endPtr, XMP_Uns8 * tiffContent, XMP_Uns32 fileOffset, const char * label, std::string path, bool isHeaderAbsent = false );
 
 // =================================================================================================
 
@@ -416,10 +420,11 @@ enum {
 	kTIFF_SRational	= 10,
 	kTIFF_Float		= 11,
 	kTIFF_Double	= 12,
-	kTIFF_TypeEnd
+	kTIFF_IFD		= 13,
+	kTIFF_TypeEnd = kTIFF_IFD
 };
 
-static const int sTIFF_TypeSizes[] = { 0, 1, 1, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8 };
+static const int sTIFF_TypeSizes[] = { 0, 1, 1, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8, 4 };
 static const char * sTIFF_TypeNames[] = { "", "BYTE", "ASCII", "SHORT", "LONG", "RATIONAL",
 "SBYTE", "UNDEFINED", "SSHORT", "SLONG", "SRATIONAL",
 "FLOAT", "DOUBLE" };
@@ -958,6 +963,12 @@ static const XMP_Uns32 kISOBrand_mp41 = 0x6D703431UL;
 static const XMP_Uns32 kISOBrand_mp42 = 0x6D703432UL;
 static const XMP_Uns32 kISOBrand_avc1 = 0x61766331UL;
 static const XMP_Uns32 kISOBrand_f4v  = 0x66347620UL;
+static const XMP_Uns32 kISOBrand_isom = 0x69736F6DUL;
+static const XMP_Uns32 kISOBrand_3gp4 = 0x33677034UL;
+static const XMP_Uns32 kISOBrand_3g2a = 0x33673261UL;
+static const XMP_Uns32 kISOBrand_3g2b = 0x33673262UL;
+static const XMP_Uns32 kISOBrand_3g2c = 0x33673263UL;
+
 
 static const XMP_Uns32 kQTTag_XMP_    = 0x584D505FUL;
 
@@ -1047,6 +1058,11 @@ CheckFileFormat ( const char * filePath, XMP_Uns8 * fileContent, XMP_Int64 fileS
 			case kISOBrand_mp41:
 			case kISOBrand_mp42:
 			case kISOBrand_avc1:
+			case kISOBrand_isom:
+			case kISOBrand_3gp4:
+			case kISOBrand_3g2a:
+			case kISOBrand_3g2b:
+			case kISOBrand_3g2c:
 				return kXMP_MPEG4File;
 				break;
 
@@ -1070,6 +1086,11 @@ CheckFileFormat ( const char * filePath, XMP_Uns8 * fileContent, XMP_Int64 fileS
 	// ! Do MPEG (MP2) and MOV last. They use just the file extension, not content.
 	if ( LookupFileExtMapping (filePath) == kXMP_MPEGFile ) return kXMP_MPEGFile;
 	if ( LookupFileExtMapping (filePath) == kXMP_MOVFile ) return kXMP_MOVFile;
+
+	std::string fileData = (char*)fileContent;
+	if ( (fileSize > 30) && (int)fileData.find ( "<svg" ) >= 0 ) {
+		return kXMP_SVGFile;
+	}
 
 	return kXMP_UnknownFile;
 
@@ -1676,6 +1697,14 @@ DumpOneIFD (int ifdIndex, XMP_Uns8 * ifdPtr, XMP_Uns8 * endPtr,
 			case kTIFF_Double :
 				break;
 
+			case kTIFF_IFD:
+				if ( valueCount == 1 ) {
+					value32 = TIFF_GetUns32 ( valuePtr );
+					tree->addComment ( "hex value = 0x%.8X", value32 );
+					tree->changeValue ( "%u", value32 );
+				}
+				break;
+
 			default :
 				tree->addComment("** unknown type **");
 				break;
@@ -1732,10 +1761,13 @@ DumpOneIFD (int ifdIndex, XMP_Uns8 * ifdPtr, XMP_Uns8 * endPtr,
 
 static void
 DumpIFDChain (XMP_Uns8 * startPtr, XMP_Uns8 * endPtr,
-			  XMP_Uns8 * tiffContent, XMP_Uns32 fileOrigin, const char * label, std::string path)
+			  XMP_Uns8 * tiffContent, XMP_Uns32 fileOrigin, const char * label, std::string path, bool isHeaderAbsent )
 {
 	XMP_Uns8 * ifdPtr = startPtr;
 	XMP_Uns32  ifdOffset = startPtr - tiffContent;
+
+	if (isHeaderAbsent) // It's a kind of hack to iterate all the ifdboxes at least once.
+		ifdOffset = 1;
 
 	for (size_t ifdIndex = 0; ifdOffset != 0; ++ifdIndex) {
 
@@ -1757,7 +1789,7 @@ DumpIFDChain (XMP_Uns8 * startPtr, XMP_Uns8 * endPtr,
 // =================================================================================================
 
 static void
-DumpTIFF (XMP_Uns8 * tiffContent, XMP_Uns32 tiffLen, XMP_Uns32 fileOffset, const char * label, std::string path)
+DumpTIFF (XMP_Uns8 * tiffContent, XMP_Uns32 tiffLen, XMP_Uns32 fileOffset, const char * label, std::string path, bool isHeaderAbsent)
 {
 	tree->pushNode("TIFF content from %s", label);
 	// ! TIFF can be nested because of the Photoshop 6 weiredness. Save and restore the procs.
@@ -1765,27 +1797,43 @@ DumpTIFF (XMP_Uns8 * tiffContent, XMP_Uns32 tiffLen, XMP_Uns32 fileOffset, const
 	GetUns32_Proc save_GetUns32 = TIFF_GetUns32;
 	GetUns64_Proc save_GetUns64 = TIFF_GetUns64;
 
-	if (CheckBytes(tiffContent,"II\x2A\x00",4)) {
+	XMP_Uns32 ifdOffset = 0;
+
+	if (!isHeaderAbsent)
+	{
+		if (CheckBytes(tiffContent, "II\x2A\x00", 4)) {
+			beTIFF = false;
+			TIFF_GetUns16 = GetUns16LE;
+			TIFF_GetUns32 = GetUns32LE;
+			TIFF_GetUns64 = GetUns64LE;
+			tree->addComment("Little endian ");
+		}
+		else if (CheckBytes(tiffContent, "MM\x00\x2A", 4)) {
+			beTIFF = true;
+			TIFF_GetUns16 = GetUns16BE;
+			TIFF_GetUns32 = GetUns32BE;
+			TIFF_GetUns64 = GetUns64BE;
+			tree->addComment("Big endian ");
+		}
+		else {
+			tree->comment("** Missing TIFF image file header tree.");
+			return;
+		}
+
+		tree->addComment("TIFF from %s, offset %d (0x%X), size %d", label, fileOffset, fileOffset, tiffLen);
+
+		ifdOffset = TIFF_GetUns32(tiffContent + 4);
+	}
+	else
+	{
 		beTIFF = false;
 		TIFF_GetUns16 = GetUns16LE;
 		TIFF_GetUns32 = GetUns32LE;
 		TIFF_GetUns64 = GetUns64LE;
 		tree->addComment("Little endian ");
-	} else if (CheckBytes(tiffContent,"MM\x00\x2A",4)) {
-		beTIFF = true;
-		TIFF_GetUns16 = GetUns16BE;
-		TIFF_GetUns32 = GetUns32BE;
-		TIFF_GetUns64 = GetUns64BE;
-		tree->addComment("Big endian ");
-	} else {
-		tree->comment("** Missing TIFF image file header tree.");
-		return;
 	}
 
-	tree->addComment("TIFF from %s, offset %d (0x%X), size %d", label, fileOffset, fileOffset, tiffLen);
-
-	XMP_Uns32 ifdOffset = TIFF_GetUns32 (tiffContent+4);
-	DumpIFDChain (tiffContent+ifdOffset, tiffContent+tiffLen, tiffContent, fileOffset, label, path);
+	DumpIFDChain(tiffContent + ifdOffset, tiffContent + tiffLen, tiffContent, fileOffset, label, path, isHeaderAbsent);
 
 	TIFF_GetUns16 = save_GetUns16;
 	TIFF_GetUns32 = save_GetUns32;
@@ -2017,7 +2065,6 @@ static const XMP_Uns8 kUUID_IPTC[16] =
 { 0x09, 0xA1, 0x4E, 0x97, 0xC0, 0xB4, 0x42, 0xE0, 0xBE, 0xBF, 0x36, 0xDF, 0x6F, 0x0C, 0xE3, 0x6F };
 static const XMP_Uns8 kUUID_PSIR[16] =
 { 0x2C, 0x4C, 0x01, 0x00, 0x85, 0x04, 0x40, 0xB9, 0xA0, 0x3E, 0x56, 0x21, 0x48, 0xD6, 0xDF, 0xEB };
-
 // -------------------------------------------------------------------------------------------------
 
 /**
@@ -2077,13 +2124,13 @@ DumpISOBoxes ( LFA_FileRef file, XMP_Uns32 maxBoxLen, std::string _isoPath )
 		// or, uhm, something garbage-ish...
 		if ( LFA_Tell(file) + boxHeaderSize > endOfThisLevel )
 		{
-			XMP_Int64 numUnusedBytes = (LFA_Tell(file) + boxHeaderSize - endOfThisLevel);
+			XMP_Int64 numUnusedBytes = (endOfThisLevel - LFA_Tell(file));
 			tree->digestString( file, isoPath+"unused", numUnusedBytes, false );
 			tree->addComment( "'free' since too small for a box" );
 
 			bool ok;
-			LFA_Seek( file, maxBoxLen, SEEK_CUR, &ok );
-			assertMsg("skippind to-small space failed (truncated file?)", ok ); 
+			LFA_Seek( file, endOfThisLevel, SEEK_SET, &ok );
+			assertMsg("skippind to-small space failed (truncated file?)", ok );
 			continue; // could just as well: return
 		}
 
@@ -2106,21 +2153,27 @@ DumpISOBoxes ( LFA_FileRef file, XMP_Uns32 maxBoxLen, std::string _isoPath )
 			break;
 		}
 
-                XMP_Uns32 tempBoxType = GetUns32LE(&boxType);
-                std::string boxString( fromArgs( "%.4s" , &tempBoxType) );
+		XMP_Uns32 tempBoxType = GetUns32LE(&boxType);
+		std::string boxString( fromArgs( "%.4s" , &tempBoxType) );
 
-		// substitute mac-copyright signs with an easier-to-handle "(c)"
+		if(boxString.size() != 0)
+		{
+			// substitute mac-copyright signs with an easier-to-handle "(c)"
 #if !IOS_ENV
-		if ( boxString.at(0) == 0xa9 )
+			if ( boxString.at(0) == 0xa9 )
 #else
-        if ( boxString.at(0) == 0xffffffa9 )
+			if ( boxString.at(0) == 0xffffffa9 )
 #endif
-            boxString = std::string("(c)") + boxString.substr(1);
+				boxString = std::string("(c)") + boxString.substr(1);
+		}
+		else
+			break;
+
 		isoPath = origIsoPath + boxString + "/";
 
 		// TEMP
 		// Log::info("pushing %s, endOfThisLevel: 0x%X", isoPath.c_str(), endOfThisLevel );
-       // printf ("%s \n", isoPath.c_str());
+		// printf ("%s \n", isoPath.c_str());
 		tree->pushNode(	isoPath );
 		tree->addComment("offset 0x%I64X, size 0x%I64X", boxPos , boxSize);
 
@@ -2317,9 +2370,9 @@ DumpISOBoxes ( LFA_FileRef file, XMP_Uns32 maxBoxLen, std::string _isoPath )
 				XMP_Int64 endOfTrailingBoxes = LFA_Tell(file) + remainingSize;
 				while ( LFA_Tell(file) < endOfTrailingBoxes )
 				{
-					LFA_Tell( file );
-					DumpISOBoxes( file, entrySize, isoPath );						
-					LFA_Tell( file );
+					LFA_Tell(file);
+					DumpISOBoxes( file, entrySize, isoPath );
+					LFA_Tell(file);
 				}
 
 				assertMsg( "did not boil down to zero", LFA_Tell(file) == endOfTrailingBoxes );
@@ -2385,7 +2438,7 @@ DumpISOBoxes ( LFA_FileRef file, XMP_Uns32 maxBoxLen, std::string _isoPath )
 			}
 
 			case 0x74727063: // cprt, FULLBOX
-				if ( isoPath == "moov/udta/cprt/")
+				if ( isoPath == "moov/udta/cprt/" || isoPath == "moov/uuid/udta/cprt/" )
 				{
 
 					digestISOFullBoxExtension( file, isoPath, remainingSize, version, flags );
@@ -2421,6 +2474,18 @@ DumpISOBoxes ( LFA_FileRef file, XMP_Uns32 maxBoxLen, std::string _isoPath )
 
 			// (c)-style quicktime boxes and boxes of no interest:
 			default:
+				if ( (boxType & 0xA9) == 0xA9) // (c)something
+				{
+					if ( 0 == isoPath.compare( 0 , 10, "moov/udta/" ))
+					{ // => Quicktime metadata "international text sequence" ( size, language code, value )
+						digestInternationalTextSequence( file, isoPath, &remainingSize );
+					} else
+					{
+						tree->addComment("WARNING: unknown flavor of (c)*** boxes, neither QT nor iTunes");
+					}			
+					break;
+				}
+				//boxes of no interest:
 				break;
 		}
 
@@ -3385,6 +3450,10 @@ DumpRIFFChunk ( LFA_FileRef file, XMP_Int64 parentEnd, std::string origChunkPath
 						isXMPchunk = true;
 					}
 
+					bool isIDITChunk = 
+						( ( origChunkPath == "RIFF:AVI/LIST:hdrl" || origChunkPath == "RIFF:AVI /LIST:hdrl" ) 
+						&& idString == "IDIT" );
+
 					// deal with chunks of interest /////////////////////////////////////////////
 					// a little prelude for disp chunk
 					if ( isDispChunk )
@@ -3399,7 +3468,7 @@ DumpRIFFChunk ( LFA_FileRef file, XMP_Int64 parentEnd, std::string origChunkPath
 						chunkSize -= 4;
 					}
 
-					if ( isListInfo || isListTdat || isDispChunk )
+					if (isListInfo || isListTdat || isDispChunk || isIDITChunk)
 					{
 						// dump that string:
 						std::string value;
@@ -3501,6 +3570,10 @@ DumpRIFFChunk ( LFA_FileRef file, XMP_Int64 parentEnd, std::string origChunkPath
 						// parse till first \0
 						std::string description( descriptionBuffer );
 
+						// Dumping the iXML chunk. Needed for testing
+						// Add iXML chunk as a node to tree
+						tree->setKeyValue( chunkPath+".ValueOfIXMLChunk", description );
+						
 						delete[] descriptionBuffer;
 						tree->addComment("packet end: 0x%llX", LFA_Tell( file ) );
 
@@ -3937,6 +4010,93 @@ DumpInDesign (LFA_FileRef file, XMP_Uns32 inddLen)
 	if (sXMPPtr != 0) DumpXMP ("InDesign XMP Contiguous Object");
 
 }	// DumpInDesign
+
+// =================================================================================================
+
+static void
+DumpSVGTag ( std::string basePath, XML_NodePtr currentNode )
+{
+	if ( currentNode )
+	{
+		tree->pushNode ( basePath + currentNode->name );
+
+		// Iterating over all XML children.
+		XML_NodeVector currNodeVector = currentNode->content;
+		for ( int i = 0; i < currNodeVector.size ( ); i++ )
+		{
+			// Dump all children who are element nodes.
+			if ( currNodeVector[i]->kind == kElemNode )
+				DumpSVGTag ( basePath + currentNode->name + "/", currNodeVector[i] );
+
+			// Extract the value from datanodes and put in TagMap if it's not yet available.
+			if ( currNodeVector[i]->kind == kCDataNode && tree->getValue ( basePath + currentNode->name ) == "" )
+				tree->updateKeyValue ( basePath + currentNode->name, currNodeVector[i]->value );
+		}
+	}
+
+}	// DumpSVGTag
+
+// =================================================================================================
+
+static void
+DumpSVG ( LFA_FileRef file, XMP_Uns32 svgLen )
+{
+	// SVG is an XML based format.We consider any file as SVG file if the given file contains a SVG tag.
+	// Hence CheckFileFormat looks for presence of "<svg" in the file.
+	//
+	// For Dumping SVG elements we are using ExpatAdapter. Below code will parse given file using this 
+	// adapter and add different tags in the TagMap tree.
+	//
+	// Below is the currently supported structure of known tags for this format.
+	//	<svg>
+	//		<title/>
+	//		<desc/>
+	//		<metadata>
+	//			<x:xmpmeta/>
+	//			<...>
+	//			<...>
+	//		</metadata>
+	//		<...>
+	//		<...>
+	//	</svg>
+
+	ExpatAdapter * pExpatAdapter = XMP_NewExpatAdapter ( false );
+
+	if ( pExpatAdapter == 0 )
+	{
+		tree->comment ( "ExpatAdapter initialization failed. Cann't parse SVG file." );
+		return;
+	}
+
+	// Allocating big enough memory on heap to read file contents.
+	XMP_Uns8 *fileContent = new XMP_Uns8[svgLen + 1];
+	memset ( fileContent, 0, (svgLen + 1)*sizeof ( XMP_Uns8 ) );
+
+	// Reading total file in buffer (fileContent)
+	LFA_Seek ( file, 0, SEEK_SET );
+	LFA_Read ( file, fileContent, svgLen + 1, false );
+
+	// Parsing the file with ExpatAdapter
+	pExpatAdapter->ParseBuffer ( fileContent, svgLen + 1, false /* not the end */ );
+
+	// Finding <svg> element and adding to TagMap tree.
+	XML_NodePtr svgNode = pExpatAdapter->tree.GetNamedElement ( "http://www.w3.org/2000/svg", "svg" );
+	DumpSVGTag ( "", svgNode );
+
+	// De-allocating all the resources.
+	if ( fileContent )
+	{
+		delete[] fileContent;
+		fileContent = NULL;
+	}
+
+	if ( pExpatAdapter )
+	{
+		delete pExpatAdapter;
+		pExpatAdapter = NULL;
+	}
+
+}	// DumpSVG
 
 // =================================================================================================
 
@@ -4788,6 +4948,7 @@ static void DumpID3v22Frames ( LFA_FileRef file, XMP_Uns8 vMajor, XMP_Uns32 fram
 static void DumpID3v23Frames ( LFA_FileRef file, XMP_Uns8 vMajor, XMP_Uns32 framePos, XMP_Uns32 frameEnd ) {
 
 	// Dump the frames in an ID3 v2.3 or v2.4 tag.
+	int iIterator = 0;
 
 	while ( (framePos < frameEnd) && ((frameEnd - framePos) >= 10) ) {
 
@@ -4879,9 +5040,76 @@ static void DumpID3v23Frames ( LFA_FileRef file, XMP_Uns8 vMajor, XMP_Uns32 fram
 			}
 
 		}
+		
+		else if ( CheckBytes ( frameHead.id , "APIC" , 4 ) ) {
+
+			++iIterator;
+			unsigned int iOffset = 0;
+			CaptureFileData ( file , 0 , frameHead.size );
+
+			char encoding[2];
+			memset ( encoding , 0x0 , 2 );
+			encoding[0] = sDataPtr[iOffset++];
+			tree->setKeyValue ( fromArgs ( "ID3v2:APIC-encodingType_%d" , iIterator ) , encoding );
+
+			char * mimeType = ( char* ) (sDataPtr + iOffset);
+			iOffset += strlen ( mimeType ) + 1;	//1 is for null termination 
+			tree->setKeyValue ( fromArgs ( "ID3v2:APIC-mimeType_%d" , iIterator ) , mimeType );
+
+			char pictureType[2];
+			memset ( pictureType , 0x0 , 2 );
+			pictureType[0] = sDataPtr[iOffset++];
+			tree->setKeyValue ( fromArgs ( "ID3v2:APIC-pictureType_%1d" , iIterator ) , pictureType );
+
+			bool bigEndian = PrintID3Encoding ( encoding[0] , (sDataPtr + iOffset) );
+			if ( encoding[0] == 0x00 ) {
+
+				XMP_Uns8 * descrPtr = sDataPtr + iOffset;
+				XMP_Uns8 * valuePtr = descrPtr;
+
+				while ( *valuePtr != 0 ) ++valuePtr;
+				++valuePtr;	//Null termination
+
+				size_t descrBytes = valuePtr - descrPtr;
+				tree->setKeyValue ( fromArgs ( "ID3v2:APIC-descr_%d" , iIterator ) , convert8Bit ( descrPtr , false , descrBytes - 1 ).c_str ( ) );
+				iOffset += descrBytes;
+			}
+			else if ( encoding[0] == 0x01 ) {
+
+				XMP_Uns16 * descrPtr = ( XMP_Uns16* ) (sDataPtr + iOffset);
+				XMP_Uns16 * valuePtr = descrPtr;
+
+				while ( *valuePtr != 0 ) ++valuePtr;
+				++valuePtr;	//Null termination
+
+				size_t descrBytes = 2 * (valuePtr - descrPtr);
+				tree->setKeyValue ( fromArgs ( "ID3v2:APIC-descr_%d" , iIterator ) , convert16Bit ( bigEndian , ( XMP_Uns8* ) (descrPtr + 1) , false , descrBytes - 4 ).c_str ( ) );
+				iOffset += descrBytes;
+			}
+			
+			XMP_Uns8 *picPtr = (sDataPtr + iOffset);
+			unsigned long size_PictureData = frameHead.size - iOffset;
+			
+			char picDataSize[8];
+			memset ( picDataSize , 0x0 , 8 );
+			sprintf ( picDataSize, "%d", size_PictureData );
+
+			std::string picData;
+			picData.assign ( ( char* ) picPtr , size_PictureData );
+
+			tree->setKeyValue ( fromArgs ( "ID3v2:APIC-pictureData_%d" , iIterator ) , picData );
+			tree->setKeyValue ( fromArgs ( "ID3v2:APIC-pictureDataSize_%d" , iIterator ) , picDataSize );
+		}
 
 		framePos += (sizeof(frameHead) + frameHead.size);
-
+		
+	}
+	
+	if ( iIterator ) {
+		char noOfAPICs[2];
+		memset ( noOfAPICs , 0x0 , 2 );
+		sprintf ( noOfAPICs , "%d" , iIterator );
+		tree->setKeyValue ( "ID3v2:NoOfAPIC" , noOfAPICs );
 	}
 
 	if ( framePos < frameEnd ) {
@@ -5328,6 +5556,12 @@ void DumpFile::Scan (std::string filename, TagTree &tagTree, bool resetTree)
 		DumpPS ( fileRef, fileLen );
 		tagTree.popNode();
 
+	}	else if ( format == kXMP_SVGFile ) {
+
+		tagTree.pushNode ( "Dumping SVG file" );
+		tagTree.addComment ( "size %lld (0x%llx)", fileLen, fileLen );
+		DumpSVG ( fileRef, fileLen );
+		tagTree.popNode ( );
 	} else if ( format == kXMP_UnknownFile ) {
 
 		tagTree.pushNode ( "Unknown format. packet scanning, size %d (0x%X)", fileLen, fileLen );

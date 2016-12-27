@@ -10,7 +10,6 @@
 
 #include "public/include/XMP_Environment.h"	// ! This must be the first include!
 #include "public/include/XMP_Const.h"
-
 #include "public/include/client-glue/WXMPUtils.hpp"
 
 #include "XMPCore/source/XMPCore_Impl.hpp"
@@ -49,7 +48,7 @@ WXMPUtils_ComposeArrayItemPath_1 ( XMP_StringPtr   schemaNS,
 		XMP_VarString localStr;
 
 		XMPUtils::ComposeArrayItemPath ( schemaNS, arrayName, itemIndex, &localStr );
-		if ( itemPath != 0 ) (*SetClientString) ( itemPath, localStr.c_str(), localStr.size() );
+		if ( itemPath != 0 ) (*SetClientString) ( itemPath, localStr.c_str(), static_cast< XMP_StringLen >( localStr.size() ) );
 
 	XMP_EXIT
 }
@@ -75,7 +74,7 @@ WXMPUtils_ComposeStructFieldPath_1 ( XMP_StringPtr	 schemaNS,
 		XMP_VarString localStr;
 
 		XMPUtils::ComposeStructFieldPath ( schemaNS, structName, fieldNS, fieldName, &localStr );
-		if ( fieldPath != 0 ) (*SetClientString) ( fieldPath, localStr.c_str(), localStr.size() );
+		if ( fieldPath != 0 ) (*SetClientString) ( fieldPath, localStr.c_str(), static_cast< XMP_StringLen >( localStr.size() ));
 
 	XMP_EXIT
 }
@@ -101,7 +100,7 @@ WXMPUtils_ComposeQualifierPath_1 ( XMP_StringPtr   schemaNS,
 		XMP_VarString localStr;
 
 		XMPUtils::ComposeQualifierPath ( schemaNS, propName, qualNS, qualName, &localStr );
-		if ( qualPath != 0 ) (*SetClientString) ( qualPath, localStr.c_str(), localStr.size() );
+		if ( qualPath != 0 ) (*SetClientString) ( qualPath, localStr.c_str(), static_cast< XMP_StringLen >( localStr.size() ) );
 
 	XMP_EXIT
 }
@@ -125,7 +124,7 @@ WXMPUtils_ComposeLangSelector_1 ( XMP_StringPtr	  schemaNS,
 		XMP_VarString localStr;
 
 		XMPUtils::ComposeLangSelector ( schemaNS, arrayName, langName, &localStr );
-		if ( selPath != 0 ) (*SetClientString) ( selPath, localStr.c_str(), localStr.size() );
+		if ( selPath != 0 ) (*SetClientString) ( selPath, localStr.c_str(), static_cast< XMP_StringLen >( localStr.size() ) );
 
 	XMP_EXIT
 }
@@ -153,7 +152,7 @@ WXMPUtils_ComposeFieldSelector_1 ( XMP_StringPtr   schemaNS,
 		XMP_VarString localStr;
 
 		XMPUtils::ComposeFieldSelector ( schemaNS, arrayName, fieldNS, fieldName, fieldValue, &localStr );
-		if ( selPath != 0 ) (*SetClientString) ( selPath, localStr.c_str(), localStr.size() );
+		if ( selPath != 0 ) (*SetClientString) ( selPath, localStr.c_str(), static_cast< XMP_StringLen >( localStr.size() ));
 
 	XMP_EXIT
 }
@@ -171,7 +170,7 @@ WXMPUtils_ConvertFromBool_1 ( XMP_Bool		binValue,
 		XMP_VarString localStr;
 
 		XMPUtils::ConvertFromBool ( binValue, &localStr );
-		if ( strValue != 0 ) (*SetClientString) ( strValue, localStr.c_str(), localStr.size() );
+		if ( strValue != 0 ) (*SetClientString) ( strValue, localStr.c_str(), static_cast< XMP_StringLen >( localStr.size() ) );
 
 	XMP_EXIT
 }
@@ -192,7 +191,7 @@ WXMPUtils_ConvertFromInt_1 ( XMP_Int32	   binValue,
 		XMP_VarString localStr;
 
 		XMPUtils::ConvertFromInt ( binValue, format, &localStr );
-		if ( strValue != 0 ) (*SetClientString) ( strValue, localStr.c_str(), localStr.size() );
+		if ( strValue != 0 ) (*SetClientString) ( strValue, localStr.c_str(), static_cast< XMP_StringLen >( localStr.size() ) );
 
 	XMP_EXIT
 }
@@ -213,7 +212,7 @@ WXMPUtils_ConvertFromInt64_1 ( XMP_Int64	 binValue,
 		XMP_VarString localStr;
 
 		XMPUtils::ConvertFromInt64 ( binValue, format, &localStr );
-		if ( strValue != 0 ) (*SetClientString) ( strValue, localStr.c_str(), localStr.size() );
+		if ( strValue != 0 ) (*SetClientString) ( strValue, localStr.c_str(), static_cast< XMP_StringLen >( localStr.size() ) );
 
 	XMP_EXIT
 }
@@ -234,7 +233,7 @@ WXMPUtils_ConvertFromFloat_1 ( double		 binValue,
 		XMP_VarString localStr;
 
 		XMPUtils::ConvertFromFloat ( binValue, format, &localStr );
-		if ( strValue != 0 ) (*SetClientString) ( strValue, localStr.c_str(), localStr.size() );
+		if ( strValue != 0 ) (*SetClientString) ( strValue, localStr.c_str(), static_cast< XMP_StringLen >( localStr.size() ) );
 
 	XMP_EXIT
 }
@@ -252,7 +251,7 @@ WXMPUtils_ConvertFromDate_1 ( const XMP_DateTime & binValue,
 		XMP_VarString localStr;
 
 		XMPUtils::ConvertFromDate( binValue, &localStr );
-		if ( strValue != 0 ) (*SetClientString) ( strValue, localStr.c_str(), localStr.size() );
+		if ( strValue != 0 ) (*SetClientString) ( strValue, localStr.c_str(), static_cast< XMP_StringLen >( localStr.size() ) );
 
 	XMP_EXIT
 }
@@ -417,7 +416,7 @@ WXMPUtils_EncodeToBase64_1 ( XMP_StringPtr rawStr,
 		XMP_VarString localStr;
 
 		XMPUtils::EncodeToBase64 ( rawStr, rawLen, &localStr );
-		if ( encodedStr != 0 ) (*SetClientString) ( encodedStr, localStr.c_str(), localStr.size() );
+		if ( encodedStr != 0 ) (*SetClientString) ( encodedStr, localStr.c_str(), static_cast< XMP_StringLen >( localStr.size()) );
 
 	XMP_EXIT
 }
@@ -436,7 +435,7 @@ WXMPUtils_DecodeFromBase64_1 ( XMP_StringPtr encodedStr,
 		XMP_VarString localStr;
 
 		XMPUtils::DecodeFromBase64 ( encodedStr, encodedLen, &localStr );
-		if ( rawStr != 0 ) (*SetClientString) ( rawStr, localStr.c_str(), localStr.size() );
+		if ( rawStr != 0 ) (*SetClientString) ( rawStr, localStr.c_str(), static_cast< XMP_StringLen >( localStr.size()) );
 
 	XMP_EXIT
 }
@@ -461,9 +460,9 @@ WXMPUtils_PackageForJPEG_1 ( XMPMetaRef    wxmpObj,
 		XMP_AutoLock metaLock ( &xmpObj.lock, kXMP_ReadLock );
 
 		XMPUtils::PackageForJPEG ( xmpObj, &localStdStr, &localExtStr, &localDigestStr );
-		if ( stdStr != 0 ) (*SetClientString) ( stdStr, localStdStr.c_str(), localStdStr.size() );
-		if ( extStr != 0 ) (*SetClientString) ( extStr, localExtStr.c_str(), localExtStr.size() );
-		if ( digestStr != 0 ) (*SetClientString) ( digestStr, localDigestStr.c_str(), localDigestStr.size() );
+		if ( stdStr != 0 ) (*SetClientString) ( stdStr, localStdStr.c_str(), static_cast< XMP_StringLen >( localStdStr.size()) );
+		if ( extStr != 0 ) (*SetClientString) ( extStr, localExtStr.c_str(), static_cast< XMP_StringLen >( localExtStr.size()) );
+		if ( digestStr != 0 ) (*SetClientString) ( digestStr, localDigestStr.c_str(), static_cast< XMP_StringLen >( localDigestStr.size()) );
 
 	XMP_EXIT
 }
@@ -518,7 +517,7 @@ WXMPUtils_CatenateArrayItems_1 ( XMPMetaRef 	wxmpObj,
 		XMP_AutoLock metaLock ( &xmpObj.lock, kXMP_ReadLock );
 
 		XMPUtils::CatenateArrayItems ( xmpObj, schemaNS, arrayName, separator, quotes, options, &localStr );
-		if ( catedStr != 0 ) (*SetClientString) ( catedStr, localStr.c_str(), localStr.size() );
+		if ( catedStr != 0 ) (*SetClientString) ( catedStr, localStr.c_str(), static_cast< XMP_StringLen >( localStr.size() ));
 
 	XMP_EXIT
 }

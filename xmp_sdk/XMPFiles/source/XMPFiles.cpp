@@ -36,6 +36,14 @@
 	#include "XMPFiles/source/FileHandlers/Generic_Handler.hpp"
 #endif
 
+#include "XMPCore/XMPCoreDefines.h"
+#if ENABLE_CPP_DOM_MODEL
+	#include "XMPCore/Interfaces/IMetadata.h"
+	#include "XMPCore/Interfaces/INodeIterator.h"
+	#include "XMPCommon/Interfaces/IUTF8String.h"
+	#include "XMPCore/Interfaces/ICoreObjectFactory.h"
+#endif
+
 // =================================================================================================
 /// \file XMPFiles.cpp
 /// \brief High level support to access metadata in files of interest to Adobe applications.
@@ -81,12 +89,12 @@ const char * kXMPFiles_EmbeddedVersion   = kXMPFiles_VersionMessage;
 const char * kXMPFiles_EmbeddedCopyright = kXMPFilesName " " kXMP_CopyrightStr;
 
 #define EMPTY_FILE_PATH ""
-#define XMP_FILES_STATIC_START try { int a;
-#define XMP_FILES_STATIC_END1(severity) a = 1; } catch ( XMP_Error & error ) { sDefaultErrorCallback.NotifyClient ( (severity), error, EMPTY_FILE_PATH ); }
-#define XMP_FILES_STATIC_END2(filePath, severity) a = 1; } catch ( XMP_Error & error ) { sDefaultErrorCallback.NotifyClient ( (severity), error, (filePath) ); }
-#define XMP_FILES_START try { int b;
-#define XMP_FILES_END1(severity) b = 1; } catch ( XMP_Error & error ) { errorCallback.NotifyClient ( (severity), error, this->filePath.c_str() ); }
-#define XMP_FILES_END2(filePath, severity) b = 1; } catch ( XMP_Error & error ) { errorCallback.NotifyClient ( (severity), error, (filePath) ); }
+#define XMP_FILES_STATIC_START try { /*int a;*/
+#define XMP_FILES_STATIC_END1(severity) /*a = 1;*/ } catch ( XMP_Error & error ) { sDefaultErrorCallback.NotifyClient ( (severity), error, EMPTY_FILE_PATH ); }
+#define XMP_FILES_STATIC_END2(filePath, severity) /*a = 1;*/ } catch ( XMP_Error & error ) { sDefaultErrorCallback.NotifyClient ( (severity), error, (filePath) ); }
+#define XMP_FILES_START try { /*int b;*/
+#define XMP_FILES_END1(severity) /*b = 1;*/ } catch ( XMP_Error & error ) { errorCallback.NotifyClient ( (severity), error, this->filePath.c_str() ); }
+#define XMP_FILES_END2(filePath, severity) /*b = 1;*/ } catch ( XMP_Error & error ) { errorCallback.NotifyClient ( (severity), error, (filePath) ); }
 #define XMP_FILES_STATIC_NOTIFY_ERROR(errorCallbackPtr, filePath, severity, error)							\
 	if ( (errorCallbackPtr) != NULL ) (errorCallbackPtr)->NotifyClient ( (severity), (error), (filePath) );
 
@@ -574,8 +582,67 @@ XMPFiles::GetFileModDate ( XMP_StringPtr    clientPath,
 
 	dummyParent.format = handlerInfo->format;
 	if ( format ) *format = handlerInfo->format;
+	dummyParent.openFlags = handlerInfo->flags;
 
 	dummyParent.handler = handlerInfo->handlerCTor ( &dummyParent );
+
+	bool ok = false;
+
+	std::vector <std::string> resourceList;
+	try{
+		XMP_DateTime lastModDate;
+		XMP_DateTime junkDate;
+		if ( modDate == 0 ) modDate = &junkDate;
+		dummyParent.handler->FillAssociatedResources ( &resourceList );
+		size_t countRes = resourceList.size();
+		for ( size_t index = 0; index < countRes ; ++index ){
+			XMP_StringPtr curFilePath = resourceList[index].c_str();
+			if( Host_IO::GetFileMode ( curFilePath ) != Host_IO::kFMode_IsFile ) continue;// only interested in files
+			if (!Host_IO::GetModifyDate ( curFilePath, &lastModDate ) ) continue;
+			if ( ! ok || ( SXMPUtils::CompareDateTime ( *modDate , lastModDate ) < 0 ) ) 
+			{
+				*modDate = lastModDate;
+				ok = true;
+			}
+		}
+	}
+	catch(...){
+		// Fallback to the old way 
+		// eventually this method would go away as 
+		// soon as the implementation for
+		// GetAssociatedResources is added to all 
+		// the file/Plugin Handlers
+		ok = dummyParent.handler->GetFileModDate ( modDate );
+	}
+	delete dummyParent.handler;
+	dummyParent.handler = 0;
+
+	return ok;
+	XMP_FILES_STATIC_END2 ( clientPath, kXMPErrSev_OperationFatal )
+	return false;
+
+}	// XMPFiles::GetFileModDate
+
+// =================================================================================================
+
+/* class static */
+bool
+XMPFiles::GetFileModDate ( const Common::XMPFileHandlerInfo& hdlInfo,
+						   XMP_StringPtr    clientPath,
+						   XMP_DateTime *   modDate,
+						   XMP_OptionBits   options /* = 0 */ )
+{
+	XMP_FILES_STATIC_START
+	Host_IO::FileMode clientMode;
+	std::string fileExt;	// Used to check for excluded files.
+	bool excluded = FileIsExcluded ( clientPath, &fileExt, &clientMode, &sDefaultErrorCallback );	// ! Fills in fileExt and clientMode.
+	if ( excluded ) return false;
+
+	XMPFiles dummyParent;	// GetFileModDate is static, but the handler needs a parent.
+	dummyParent.SetFilePath ( clientPath );
+	dummyParent.format = hdlInfo.format;
+	dummyParent.openFlags = hdlInfo.flags;
+	dummyParent.handler = hdlInfo.handlerCTor ( &dummyParent );
 
 	bool ok = false;
 
@@ -661,6 +728,7 @@ XMPFiles::GetAssociatedResources (
 	// Fill in the format output. Call the handler to get the Associated Resources.
 
 	dummyParent.format = handlerInfo->format;
+	dummyParent.openFlags = handlerInfo->flags;
 
 	dummyParent.handler = handlerInfo->handlerCTor ( &dummyParent );
 	
@@ -686,6 +754,53 @@ XMPFiles::GetAssociatedResources (
 
 }	// XMPFiles::GetAssociatedResources
 
+// =================================================================================================
+
+/* class static */
+bool
+XMPFiles::GetAssociatedResources (
+		const Common::XMPFileHandlerInfo& hdlInfo,
+		XMP_StringPtr              filePath,
+        std::vector<std::string> * resourceList,
+        XMP_OptionBits             options /*  = 0 */ )
+{
+	XMP_FILES_STATIC_START
+	Host_IO::FileMode clientMode;
+	std::string fileExt;	// Used to check for excluded files.
+	bool excluded = FileIsExcluded ( filePath, &fileExt, &clientMode, &sDefaultErrorCallback );	// ! Fills in fileExt and clientMode.
+	if ( excluded ) return false;
+
+	XMPFiles dummyParent;	// GetFileModDate is static, but the handler needs a parent.
+	dummyParent.SetFilePath ( filePath );
+	dummyParent.format = hdlInfo.format;
+	dummyParent.openFlags = hdlInfo.flags;
+	dummyParent.handler = hdlInfo.handlerCTor ( &dummyParent );
+
+	try {
+		dummyParent.handler->FillAssociatedResources ( resourceList );
+	} catch ( XMP_Error& error ) {
+		if ( error.GetID() == kXMPErr_Unimplemented ) {
+			XMP_FILES_STATIC_NOTIFY_ERROR ( &sDefaultErrorCallback, filePath, kXMPErrSev_Recoverable, error );
+			return false;
+		} else {
+			throw;
+		}
+	}
+	XMP_Assert ( ! resourceList->empty() );
+
+	delete dummyParent.handler;
+	dummyParent.handler = 0;
+	
+	return true;
+
+	XMP_FILES_STATIC_END2 ( filePath, kXMPErrSev_OperationFatal )
+	return false;
+
+}	// XMPFiles::GetAssociatedResources
+
+// =================================================================================================
+
+/* class static */
 bool 
 XMPFiles::IsMetadataWritable (
 		XMP_StringPtr  filePath,
@@ -732,6 +847,7 @@ XMPFiles::IsMetadataWritable (
 
 
 	dummyParent.format = handlerInfo->format;
+	dummyParent.openFlags = handlerInfo->flags;
 	dummyParent.handler = handlerInfo->handlerCTor ( &dummyParent );
 	
 	// We don't require any of the files to be opened at this point.
@@ -759,6 +875,58 @@ XMPFiles::IsMetadataWritable (
 	return true;
 } // XMPFiles::IsMetadataWritable 
 
+// =================================================================================================
+
+/* class static */
+bool 
+XMPFiles::IsMetadataWritable (
+		const Common::XMPFileHandlerInfo& hdlInfo,
+		XMP_StringPtr  filePath,
+        XMP_Bool *     writable,
+        XMP_OptionBits options  /* = 0 */ )
+{
+	XMP_FILES_STATIC_START
+	Host_IO::FileMode clientMode;
+	std::string fileExt;	// Used to check for excluded files.
+	bool excluded = FileIsExcluded ( filePath, &fileExt, &clientMode, &sDefaultErrorCallback );	// ! Fills in fileExt and clientMode.
+	if ( excluded ) return false;
+
+	if ( writable == 0 ) {
+		XMP_Throw("Boolean parameter is required for IsMetadataWritable() API.", kXMPErr_BadParam);
+	} else {
+		*writable = kXMP_Bool_False;
+	}
+
+	XMPFiles dummyParent;	// GetFileModDate is static, but the handler needs a parent.
+	dummyParent.SetFilePath ( filePath );
+	dummyParent.format = hdlInfo.format;
+	dummyParent.openFlags = hdlInfo.flags;
+	dummyParent.handler = hdlInfo.handlerCTor ( &dummyParent );
+
+	// We don't require any of the files to be opened at this point.
+	// Also, if We don't close them then this will be a problem for embedded handlers because we will be checking
+	// write permission on the same file which could be open (in some mode) already.
+	CloseLocalFile(&dummyParent);
+	
+	try {
+		*writable = ConvertBoolToXMP_Bool( dummyParent.handler->IsMetadataWritable() );
+	} catch ( XMP_Error& error ) {
+		delete dummyParent.handler;
+		dummyParent.handler = 0;
+		if ( error.GetID() == kXMPErr_Unimplemented ) {
+			XMP_FILES_STATIC_NOTIFY_ERROR ( &sDefaultErrorCallback, filePath, kXMPErrSev_Recoverable, error );
+			return false;
+		} else {
+			throw;
+		}
+	}
+	if ( dummyParent.handler ) {
+		delete dummyParent.handler;
+		dummyParent.handler = 0;
+	}
+	XMP_FILES_STATIC_END2 ( filePath, kXMPErrSev_OperationFatal )
+	return true;
+}  // XMPFiles::IsMetadataWritable 
 
 // =================================================================================================
 
@@ -1086,7 +1254,7 @@ XMPFiles::CloseFile ( XMP_OptionBits closeFlags /* = 0 */ )
 		XMP_Throw ( "XMPFiles::CloseFile - Safe update not supported", kXMPErr_Unavailable );
 	}
 
-	if ( (this->progressTracker != 0) && this->UsesLocalIO() ) {
+	if ( (this->progressTracker != 0) && this->UsesLocalIO() && this->ioRef != NULL ) {
 		XMPFiles_IO * localFile = (XMPFiles_IO*)this->ioRef;
 		localFile->SetProgressTracker ( this->progressTracker );
 	}
@@ -1306,7 +1474,7 @@ XMPFiles::GetXMP ( SXMPMeta *       xmpObj /* = 0 */,
 			if ( xmpObj != 0 ) {
 				// ! Don't use Clone, that replaces the internal ref in the local xmpObj, leaving the client unchanged!
 				xmpObj->Erase();
-				SXMPUtils::ApplyTemplate ( xmpObj, this->handler->xmpObj, applyTemplateFlags );
+					SXMPUtils::ApplyTemplate(xmpObj, this->handler->xmpObj, applyTemplateFlags);
 			}
 			if ( xmpPacket != 0 ) *xmpPacket = this->handler->xmpPacket.c_str();
 			if ( xmpPacketLen != 0 ) *xmpPacketLen = (XMP_StringLen) this->handler->xmpPacket.size();
@@ -1322,9 +1490,8 @@ XMPFiles::GetXMP ( SXMPMeta *       xmpObj /* = 0 */,
 		if ( xmpObj != 0 ) *xmpObj = this->handler->xmpObj.Clone();
 	#else
 		if ( xmpObj != 0 ) {
-			// ! Don't use Clone, that replaces the internal ref in the local xmpObj, leaving the client unchanged!
 			xmpObj->Erase();
-			SXMPUtils::ApplyTemplate ( xmpObj, this->handler->xmpObj, applyTemplateFlags );
+			SXMPUtils::ApplyTemplate(xmpObj, this->handler->xmpObj, applyTemplateFlags);
 		}
 	#endif
 
@@ -1482,6 +1649,7 @@ XMPFiles::CanPutXMP ( XMP_StringPtr xmpPacket,
 
 }	// XMPFiles::CanPutXMP
 
+
 // =================================================================================================
 
 /* class-static */
@@ -1513,6 +1681,11 @@ XMPFiles::SetProgressCallback ( const XMP_ProgressTracker::CallbackInfo & cbInfo
 	
 	if ( cbInfo.clientProc != 0 ) {
 		this->progressTracker = new XMP_ProgressTracker ( cbInfo );
+		if ( this->handler != 0 ) {		 // Provided to support ProgressTracker in Plugins
+			XMP_ProgressTracker::CallbackInfo * callbackInfo = new XMP_ProgressTracker::CallbackInfo(cbInfo);
+			this->handler->SetProgressCallback( callbackInfo ) ;
+			delete callbackInfo;
+		}
 	}
 	XMP_FILES_END1 ( kXMPErrSev_OperationFatal )
 
@@ -1559,6 +1732,8 @@ void XMPFiles::SetErrorCallback ( XMPFiles_ErrorCallbackWrapper	wrapperProc,
 	this->errorCallback.clientProc = clientProc;
 	this->errorCallback.context = context;
 	this->errorCallback.limit = limit;
+	if ( this->handler != 0 )	 // Provided to support ErrroCallback in Plugins
+		this->handler->SetErrorCallback( ErrorCallbackBox( errorCallback.wrapperProc, errorCallback.clientProc, errorCallback.context, errorCallback.limit ) );
 	XMP_FILES_END1 ( kXMPErrSev_OperationFatal )
 }	// SetErrorCallback
 
@@ -1571,6 +1746,8 @@ void XMPFiles::ResetErrorCallbackLimit ( XMP_Uns32 limit ) {
 	this->errorCallback.limit = limit;
 	this->errorCallback.notifications = 0;
 	this->errorCallback.topSeverity = kXMPErrSev_Recoverable;
+	if ( this->handler != 0 )		// Provided to support ErrroCallback in Plugins
+		this->handler->SetErrorCallback( ErrorCallbackBox( errorCallback.wrapperProc, errorCallback.clientProc, errorCallback.context, errorCallback.limit ) );
 	XMP_FILES_END1 ( kXMPErrSev_OperationFatal )
 }	// ResetErrorCallbackLimit
 

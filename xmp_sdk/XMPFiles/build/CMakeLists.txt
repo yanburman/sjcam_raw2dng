@@ -9,7 +9,7 @@
 
 # ==============================================================================
 # define minimum cmake version
-cmake_minimum_required(VERSION 2.8.6)
+cmake_minimum_required(VERSION 3.5.1)
 
 # Enable folder grouping of projects in IDEs
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -41,6 +41,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/${XMP_THIS_PROJECT_RELATIVEPATH}/build/XMP_C
 
 
 set(TP_ZUID_PATH "${XMPROOT_DIR}/third-party/zuid/interfaces")
+set(TP_EXPAT_PATH "${PROJECT_ROOT}/../../third-party/expat/lib/")
 set(LIB_ADOBEXMP XMPCore)
 
 # ==============================================================================

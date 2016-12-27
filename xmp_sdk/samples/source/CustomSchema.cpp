@@ -18,6 +18,8 @@
 #include <string>
 #include <cstring>
 
+//#define ENABLE_XMP_CPP_INTERFACE 1
+
 // Must be defined to instantiate template classes
 #define TXMP_STRING_TYPE std::string
 

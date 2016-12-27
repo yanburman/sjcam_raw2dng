@@ -81,14 +81,14 @@ public:
 
 	// ---------------------------------------------------------------------------------------------
 	
-	bool
+	virtual bool
 	GetProperty ( XMP_StringPtr	   schemaNS,
 				  XMP_StringPtr	   propName,
 				  XMP_StringPtr *  propValue,
 				  XMP_StringLen *  valueSize,
 				  XMP_OptionBits * options ) const;
 	
-	bool
+	virtual bool
 	GetArrayItem ( XMP_StringPtr	schemaNS,
 				   XMP_StringPtr	arrayName,
 				   XMP_Index		itemIndex,
@@ -96,7 +96,7 @@ public:
 				   XMP_StringLen *	valueSize,
 				   XMP_OptionBits * options ) const;
 	
-	bool
+	virtual bool
 	GetStructField ( XMP_StringPtr	  schemaNS,
 					 XMP_StringPtr	  structName,
 					 XMP_StringPtr	  fieldNS,
@@ -105,7 +105,7 @@ public:
 					 XMP_StringLen *  valueSize,
 					 XMP_OptionBits * options ) const;
 	
-	bool
+	virtual bool
 	GetQualifier ( XMP_StringPtr	schemaNS,
 				   XMP_StringPtr	propName,
 				   XMP_StringPtr	qualNS,
@@ -116,20 +116,20 @@ public:
 	
 	// ---------------------------------------------------------------------------------------------
 	
-	void
+	virtual void
 	SetProperty ( XMP_StringPtr	 schemaNS,
 				  XMP_StringPtr	 propName,
 				  XMP_StringPtr	 propValue,
 				  XMP_OptionBits options );
 	
-	void
+	virtual void
 	SetArrayItem ( XMP_StringPtr  schemaNS,
 				   XMP_StringPtr  arrayName,
 				   XMP_Index	  itemIndex,
 				   XMP_StringPtr  itemValue,
 				   XMP_OptionBits options );
 	
-	void
+	virtual void
 	AppendArrayItem ( XMP_StringPtr	 schemaNS,
 					  XMP_StringPtr	 arrayName,
 					  XMP_OptionBits arrayOptions,
@@ -144,7 +144,7 @@ public:
 					 XMP_StringPtr	fieldValue,
 					 XMP_OptionBits options );
 	
-	void
+	virtual void
 	SetQualifier ( XMP_StringPtr  schemaNS,
 				   XMP_StringPtr  propName,
 				   XMP_StringPtr  qualNS,
@@ -154,22 +154,22 @@ public:
 	
 	// ---------------------------------------------------------------------------------------------
 	
-	void
+	virtual void
 	DeleteProperty ( XMP_StringPtr schemaNS,
 					 XMP_StringPtr propName );
 	
-	void
+	virtual void
 	DeleteArrayItem ( XMP_StringPtr schemaNS,
 					  XMP_StringPtr arrayName,
 					  XMP_Index		itemIndex );
 	
-	void
+	virtual void
 	DeleteStructField ( XMP_StringPtr schemaNS,
 						XMP_StringPtr structName,
 						XMP_StringPtr fieldNS,
 						XMP_StringPtr fieldName );
 	
-	void
+	virtual void
 	DeleteQualifier ( XMP_StringPtr schemaNS,
 					  XMP_StringPtr propName,
 					  XMP_StringPtr qualNS,
@@ -177,7 +177,7 @@ public:
 	
 	// ---------------------------------------------------------------------------------------------
 	
-	bool
+	virtual bool
 	DoesPropertyExist ( XMP_StringPtr schemaNS,
 						XMP_StringPtr propName ) const;
 	
@@ -200,7 +200,7 @@ public:
 	
 	// ---------------------------------------------------------------------------------------------
 	
-	bool
+	virtual bool
 	GetLocalizedText ( XMP_StringPtr	schemaNS,
 					   XMP_StringPtr	altTextName,
 					   XMP_StringPtr	genericLang,
@@ -211,7 +211,7 @@ public:
 					   XMP_StringLen *	valueSize,
 					   XMP_OptionBits * options ) const;
 	
-	void
+	virtual void
 	SetLocalizedText ( XMP_StringPtr  schemaNS,
 					   XMP_StringPtr  altTextName,
 					   XMP_StringPtr  genericLang,
@@ -219,7 +219,7 @@ public:
 					   XMP_StringPtr  itemValue,
 					   XMP_OptionBits options );
 	
-	void
+	virtual void
 	DeleteLocalizedText (	XMP_StringPtr	schemaNS,
 							XMP_StringPtr	altTextName,
 							XMP_StringPtr	genericLang,
@@ -291,11 +291,11 @@ public:
 	
 	// ---------------------------------------------------------------------------------------------
 	
-	void
+	virtual void
 	GetObjectName ( XMP_StringPtr * namePtr,
 					XMP_StringLen * nameLen ) const;
 
-	void
+	virtual void
 	SetObjectName ( XMP_StringPtr name );
 
 	XMP_OptionBits
@@ -304,31 +304,31 @@ public:
 	void
 	SetObjectOptions ( XMP_OptionBits options );
 
-	void
+	virtual void
 	Sort();
 
-	void
+	virtual void
 	Erase();
 
-	void
+	virtual void
 	Clone ( XMPMeta * clone, XMP_OptionBits options ) const;
 	
-	XMP_Index
+	virtual XMP_Index
 	CountArrayItems ( XMP_StringPtr schemaNS,
 					  XMP_StringPtr arrayName ) const;
 	
-	void
+	virtual void
 	DumpObject ( XMP_TextOutputProc outProc,
 				 void *				refCon ) const;
 	
 	// ---------------------------------------------------------------------------------------------
 	
-	void
+	virtual void
 	ParseFromBuffer ( XMP_StringPtr	 buffer,
 					  XMP_StringLen	 bufferSize,
 					  XMP_OptionBits options );
 	
-	void
+	virtual void
 	SerializeToBuffer ( XMP_VarString * rdfString,
 						XMP_OptionBits	options,
 						XMP_StringLen	padding,
@@ -344,13 +344,13 @@ public:
 							  void *    context,
 							  XMP_Uns32 limit );
 
-	void
+	virtual void
 	SetErrorCallback ( XMPMeta_ErrorCallbackWrapper wrapperProc,
 					   XMPMeta_ErrorCallbackProc    clientProc,
 					   void *    context,
 					   XMP_Uns32 limit );
 
-	void
+	virtual void
 	ResetErrorCallbackLimit ( XMP_Uns32 limit );
 	
 	class ErrorCallbackInfo : public GenericErrorCallback {

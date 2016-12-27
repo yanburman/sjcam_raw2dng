@@ -51,6 +51,8 @@ static XMP_Bool WrapErrorNotify ( XMPMeta_ErrorCallbackProc proc, void * context
 #define zXMPMeta_DumpNamespaces_1(outProc,refCon) \
     WXMPMeta_DumpNamespaces_1 ( outProc, refCon, &wResult )
 
+#define zXMPMeta_Use_CPP_DOM_APIs_1(useNewCoreAPIs) \
+	WXMPMeta_Use_CPP_DOM_APIs_1( useNewCoreAPIs, &wResult )
 #define zXMPMeta_RegisterNamespace_1(namespaceURI,suggestedPrefix,actualPrefix,SetClientString) \
     WXMPMeta_RegisterNamespace_1 ( namespaceURI, suggestedPrefix, actualPrefix, SetClientString, &wResult )
 
@@ -62,6 +64,9 @@ static XMP_Bool WrapErrorNotify ( XMPMeta_ErrorCallbackProc proc, void * context
 
 #define zXMPMeta_DeleteNamespace_1(namespaceURI) \
     WXMPMeta_DeleteNamespace_1 ( namespaceURI, &wResult )
+
+#define zXMPMeta_GetIXMPMetadata_1() \
+	WXMPMeta_GetIXMPMetadata_1( this->xmpRef, &wResult )
 
 #define zXMPMeta_GetProperty_1(schemaNS,propName,propValue,options,SetClientString) \
     WXMPMeta_GetProperty_1 ( this->xmpRef, schemaNS, propName, propValue, options, SetClientString, &wResult )
@@ -231,6 +236,10 @@ XMP_PUBLIC WXMPMeta_DumpNamespaces_1 ( XMP_TextOutputProc outProc,
                             void *             refCon,
                             WXMP_Result *      wResult );
 
+extern void
+XMP_PUBLIC WXMPMeta_Use_CPP_DOM_APIs_1( XMP_Bool useNewCoreAPIs,
+										WXMP_Result * wResult );
+
 // -------------------------------------------------------------------------------------------------
 
 extern void
@@ -257,6 +266,11 @@ XMP_PUBLIC WXMPMeta_DeleteNamespace_1 ( XMP_StringPtr namespaceURI,
                              WXMP_Result * wResult );
 
 // -------------------------------------------------------------------------------------------------
+
+extern void
+XMP_PUBLIC WXMPMeta_GetIXMPMetadata_1(XMPMetaRef	  xmpObjRef,
+WXMP_Result *  wResult );
+
 
 extern void
 XMP_PUBLIC WXMPMeta_GetProperty_1 ( XMPMetaRef       xmpRef,

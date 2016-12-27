@@ -50,7 +50,8 @@ set (CMAKE_CXX_FLAGS "-headerpad_max_install_names -fvisibility=hidden -fvisibil
 
 set (CMAKE_C_LINK_FLAGS "-Wl,-search_paths_first ${CMAKE_C_LINK_FLAGS}")
 set (CMAKE_CXX_LINK_FLAGS "-Wl,-search_paths_first ${CMAKE_CXX_LINK_FLAGS}")
-
+# Setting Standard C++ complier library as 'libstdc++'
+set (CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libstdc++")
 set (CMAKE_PLATFORM_HAS_INSTALLNAME 1)
 set (CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS "-dynamiclib -headerpad_max_install_names")
 set (CMAKE_SHARED_MODULE_CREATE_C_FLAGS "-bundle -headerpad_max_install_names")
@@ -122,9 +123,9 @@ message (STATUS "CMAKE_IOS_SDK_ROOT ${CMAKE_IOS_SDK_ROOT}")
 # Set the sysroot default to the most recent SDK
 set (CMAKE_OSX_SYSROOT ${CMAKE_IOS_SDK_ROOT} CACHE PATH "Sysroot used for iOS support")
 
-# set the architecture for iOS - using ARCHS_STANDARD_32_BIT sets armv6,armv7 and appears to be XCode's standard. 
+# set the architecture for iOS - using ARCHS_STANDARD_INCLUDING_64_BIT sets armv7 and arm64.
 # The other value that works is ARCHS_UNIVERSAL_IPHONE_OS but that sets armv7 only
-set (CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_32_BIT)" CACHE string  "Build architecture for iOS")
+set (CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_INCLUDING_64_BIT)" CACHE string  "Build architecture for iOS")
 
 # Set the find root to the iOS developer roots and to user defined paths
 set (CMAKE_FIND_ROOT_PATH ${CMAKE_IOS_DEVELOPER_ROOT} ${CMAKE_IOS_SDK_ROOT} ${CMAKE_PREFIX_PATH} CACHE string  "iOS find search path root")
@@ -140,6 +141,6 @@ set (CMAKE_SYSTEM_FRAMEWORK_PATH
 )
 
 # only search the iOS sdks, not the remainder of the host filesystem
-set (CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ONLY)
-set (CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-set (CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set (CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH)
+set (CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
+set (CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)

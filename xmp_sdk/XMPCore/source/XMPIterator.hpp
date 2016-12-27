@@ -108,7 +108,7 @@ public:
 
 	virtual ~XMPIterator() RELEASE_NO_THROW;
 
-	bool
+	virtual bool
 	Next ( XMP_StringPtr *  schemaNS,
 		   XMP_StringLen *  nsSize,
 		   XMP_StringPtr *  propPath,
@@ -117,7 +117,7 @@ public:
 		   XMP_StringLen *  valueSize,
 		   XMP_OptionBits * propOptions );
 
-	void
+	virtual void
 	Skip ( XMP_OptionBits options );
 
 	// ! Expose so that wrappers and file static functions can see the data.

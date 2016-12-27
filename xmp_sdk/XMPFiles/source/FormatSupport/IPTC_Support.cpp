@@ -250,8 +250,10 @@ void IPTC_Manager::ParseMemoryDataSets ( const void* data, XMP_Uns32 length, boo
 			if ( (dsLen == 3) && (memcmp ( iptcPtr, "\x1B\x25\x47", 3 ) == 0) ) this->utf8Encoding = true;
 		}
 
-		XMP_Uns16 mapID = recNum*1000 + dsNum;	
-		DataSetInfo dsInfo ( recNum, dsNum, dsLen, iptcPtr );
+		XMP_Uns16 mapID = recNum*1000 + dsNum;
+		DataSetInfo dsInfo( recNum, dsNum, dsLen );
+		if ( dsLen != 0 )
+			dsInfo.dataPtr = iptcPtr;
 		DataSetMap::iterator dsPos = this->dataSets.find ( mapID );
 		
 		bool repeatable = false;
@@ -405,6 +407,10 @@ IPTC_Writer::~IPTC_Writer()
 
 void IPTC_Writer::SetDataSet_UTF8 ( XMP_Uns8 dsNum, const void* utf8Ptr, XMP_Uns32 utf8Len, long which /* = -1 */ )
 {
+	// No need to process if data is of zero length
+	if ( utf8Len == 0 )
+		return;
+
 	const DataSetCharacteristics* knownDS = FindKnownDataSet ( dsNum );
 	if ( knownDS == 0 ) XMP_Throw ( "Can only set known IPTC DataSets", kXMPErr_InternalFailure );
 	
@@ -413,7 +419,10 @@ void IPTC_Writer::SetDataSet_UTF8 ( XMP_Uns8 dsNum, const void* utf8Ptr, XMP_Uns
 	XMP_Uns8 *  tempPtr;
 	XMP_Uns32   dataLen;
 	std::string localStr;
-	
+#if XMP_MacBuild
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunreachable-code"
+#endif
 	if ( kUTF8_Mode == kUTF8_AlwaysMode ) {
 
 		// Always use UTF-8.
@@ -463,6 +472,9 @@ void IPTC_Writer::SetDataSet_UTF8 ( XMP_Uns8 dsNum, const void* utf8Ptr, XMP_Uns
 		}
 		
 	}
+#if XMP_MacBuild
+#pragma clang diagnostic pop
+#endif
 	
 	// Set the value for this DataSet, making a non-transient copy of the value. Respect UTF-8 character
 	// boundaries when truncating. This is easy to check. If the first truncated byte has 10 in the
@@ -674,15 +686,16 @@ void IPTC_Writer::ConvertToUTF8()
 	for ( ; dsPos != dsEnd; ++dsPos ) {
 
 		DataSetInfo & dsInfo = dsPos->second;
+		if ( dsInfo.dataLen != 0 )
+		{
+			ReconcileUtils::LocalToUTF8( dsInfo.dataPtr, dsInfo.dataLen, &utf8Str );
+			this->DisposeLooseValue( dsInfo );
 
-		ReconcileUtils::LocalToUTF8 ( dsInfo.dataPtr, dsInfo.dataLen, &utf8Str );
-		this->DisposeLooseValue ( dsInfo );
-
-		dsInfo.dataLen = (XMP_Uns32)utf8Str.size();
-		dsInfo.dataPtr = (XMP_Uns8*) malloc ( dsInfo.dataLen );
-		if ( dsInfo.dataPtr == 0 ) XMP_Throw ( "Out of memory", kXMPErr_NoMemory );
-		memcpy ( dsInfo.dataPtr, utf8Str.data(), dsInfo.dataLen );	// AUDIT: Safe, malloc'ed dataLen bytes above.
-
+			dsInfo.dataLen = ( XMP_Uns32 ) utf8Str.size();
+			dsInfo.dataPtr = ( XMP_Uns8* ) malloc( dsInfo.dataLen );
+			if ( dsInfo.dataPtr == 0 ) XMP_Throw( "Out of memory", kXMPErr_NoMemory );
+			memcpy( dsInfo.dataPtr, utf8Str.data(), dsInfo.dataLen );	// AUDIT: Safe, malloc'ed dataLen bytes above.
+		}
 	}
 	
 	this->utf8Encoding = true;
@@ -706,15 +719,16 @@ void IPTC_Writer::ConvertToLocal()
 	for ( ; dsPos != dsEnd; ++dsPos ) {
 
 		DataSetInfo & dsInfo = dsPos->second;
+		if ( dsInfo.dataLen != 0 )
+		{
+			ReconcileUtils::UTF8ToLocal( dsInfo.dataPtr, dsInfo.dataLen, &localStr );
+			this->DisposeLooseValue( dsInfo );
 
-		ReconcileUtils::UTF8ToLocal ( dsInfo.dataPtr, dsInfo.dataLen, &localStr );
-		this->DisposeLooseValue ( dsInfo );
-
-		dsInfo.dataLen = (XMP_Uns32)localStr.size();
-		dsInfo.dataPtr = (XMP_Uns8*) malloc ( dsInfo.dataLen );
-		if ( dsInfo.dataPtr == 0 ) XMP_Throw ( "Out of memory", kXMPErr_NoMemory );
-		memcpy ( dsInfo.dataPtr, localStr.data(), dsInfo.dataLen );	// AUDIT: Safe, malloc'ed dataLen bytes above.
-
+			dsInfo.dataLen = ( XMP_Uns32 ) localStr.size();
+			dsInfo.dataPtr = ( XMP_Uns8* ) malloc( dsInfo.dataLen );
+			if ( dsInfo.dataPtr == 0 ) XMP_Throw( "Out of memory", kXMPErr_NoMemory );
+			memcpy( dsInfo.dataPtr, localStr.data(), dsInfo.dataLen );	// AUDIT: Safe, malloc'ed dataLen bytes above.
+		}
 	}
 	
 	this->utf8Encoding = false;

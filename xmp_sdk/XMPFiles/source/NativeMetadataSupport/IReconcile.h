@@ -11,6 +11,7 @@
 #define _IReconcile_h_
 
 #include <string>
+#include <vector>
 
 #ifndef TXMP_STRING_TYPE
 	#define TXMP_STRING_TYPE std::string

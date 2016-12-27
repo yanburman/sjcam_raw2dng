@@ -179,14 +179,74 @@ bool CheckFormatStandard( SessionRef session, XMP_FileFormat format, const Strin
  * This call expects that session refers to a replacement file handler. Otherwise
  * this call fails with an exception.
  *
- * @param session		File handler session  (should refer to replacement handler)
+ * @param session			File handler session  (should refer to replacement handler)
+ * @param format			The file format identifier
+ * @param path				Path to the file that should be proceeded
+ * @param xmpStr			Reference to serialized XMP packet. Will be populated with the XMP Packet as read by the standard file handler
+ * @param containsXMP		Returns true if the standard handler detected XMP
+ * @param flags				OpenFlags passed during opening a file
+ * @param packet			Returns XMP packet already present in the file, if available
+ * @param packetInfo		Returns already present XMP packet information in the file, if available
+ * @param errorCallback		Points to plugin error callback information
+ * @param progCBInfoPtr		Points to the progress callback information
+ * @return					true on success
+ */
+bool GetXMPStandard( SessionRef session, XMP_FileFormat format, const StringPtr path, std::string& xmpStr, bool* containsXMP, XMP_OptionBits flags = NULL, std::string *packet = NULL, XMP_PacketInfo *packetInfo = NULL, ErrorCallbackInfo * errorCallback = NULL, XMP_ProgressTracker::CallbackInfo * progCBInfoPtr = NULL );
+
+/** @brief Put XMP into standard file handler
+ *
+ * Call the standard file handler in order to put XMP into it.
+ *
+ * @param session			File handler session  (should refer to replacement handler)
+ * @param format			The file format identifier
+ * @param path				Path to the file that should be proceeded
+ * @param xmpStr			Contains serialized XMP Packet to be embedded into the standard Handler
+ * @param flags				OpenFlags passed during opening a file
+ * @param errorCallback		Points to plugin error callback information
+ * @param progCBInfoPtr		Points to the progress callback information
+ * @return					true on success
+ */
+bool PutXMPStandard( SessionRef session, XMP_FileFormat format, const StringPtr path, const XMP_StringPtr xmpStr, XMP_OptionBits flags = NULL, ErrorCallbackInfo * errorCallback = NULL, XMP_ProgressTracker::CallbackInfo * progCBInfoPtr = NULL );
+
+/** @brief Getting file modification date from standard file handler
+ *
+ * Call the standard file handler in order to retrieve file modification date from it.
+ *
+ * @param session		File handler session (referring to replacement handler)
  * @param format		The file format identifier
  * @param path			Path to the file that should be proceeded
- * @param xmpStr		Reference to serialized XMP packet. Will be populated with the XMP Packet as read by the standard file handler
- * @param containsXMP	Returns true if the standard handler detected XMP
+ * @param modDate		will contain modification date of file obtained from the standard Handler
+ * @param isSuccess		Returns true if the standard handler detected file modification date 
+ * @param flags			OpenFlags passed during opening a file
  * @return				true on success
  */
-bool GetXMPStandard( SessionRef session, XMP_FileFormat format, const StringPtr path, std::string& xmpStr, bool* containsXMP );
+bool GetFileModDateStandardHandler( SessionRef session, XMP_FileFormat format, StringPtr path, XMP_DateTime * modDate, XMP_Bool * isSuccess, XMP_OptionBits flags = NULL );
+
+/** @brief Getting associated resources from standard file handler
+ *
+ * Call the standard file handler in order to retrieve all the associated resources with a file
+ *
+ * @param session		File handler session (referring to replacement handler)
+ * @param format		The file format identifier
+ * @param path			Path to the file that should be proceeded
+ * @param resourceList	will contain resources associated with the file obtained from the standard Handler
+ * @param flags			OpenFlags passed during opening a file
+ * @return				true on success
+ */
+bool GetAssociatedResourcesStandardHandler( SessionRef session, XMP_FileFormat format, StringPtr path, std::vector<std::string> * resourceList, XMP_OptionBits flags = NULL );
+
+/** @brief Checking whether metadata is writable or not into the file from standard file handler
+ *
+ * Call the standard file handler in order to check whether the metadata is writable or not into the file.
+ *
+ * @param session		File handler session (referring to replacement handler)
+ * @param format		The file format identifier
+ * @param path			Path to the file that should be proceeded
+ * @param isWritable	Returns true if the standard handler can write on the file.
+ * @param flags			OpenFlags passed during opening a file
+ * @return				true on success
+ */
+bool IsMetadataWritableStandardHandler( SessionRef session, XMP_FileFormat format, StringPtr path, XMP_Bool * isWritable, XMP_OptionBits flags = NULL );
 
 /** @brief Request additional API suite from the host.
  *

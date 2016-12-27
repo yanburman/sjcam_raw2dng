@@ -571,7 +571,7 @@ bool TIFF_FileWriter::IsLegacyChanged()
 // TIFF_FileWriter::ParseMemoryStream
 // ==================================
 
-void TIFF_FileWriter::ParseMemoryStream ( const void* data, XMP_Uns32 length, bool copyData /* = true */ )
+void TIFF_FileWriter::ParseMemoryStream ( const void* data, XMP_Uns32 length, bool copyData /* = true */, bool isAlreadyLittle /*= false */ )
 {
 	this->DeleteExistingInfo();
 	this->memParsed = true;
@@ -732,7 +732,18 @@ XMP_Uns32 TIFF_FileWriter::ProcessMemoryIFD ( XMP_Uns32 ifdOffset, XMP_Uns8 ifd 
 
 	ifdPtr += (2 + tagCount*12);
 	ifdInfo.origNextIFD = this->GetUns32 ( ifdPtr );
-
+// The following code modifies a file in case it is invalid, we should keep this fix so that we can track this issue if we receive client bugs for this
+#if 0
+	if (ifdInfo.origNextIFD != 0) {
+        if ( (ifdInfo.origNextIFD < 8) || (ifdInfo.origNextIFD > (this->tiffLength - kEmptyIFDLength)) ) {
+            // Next IFD offset is invalid.  Ignore it.
+            ifdInfo.origNextIFD = 0;
+            // Should we try to patch it?
+            ifdInfo.changed = true;
+            this->changed = true;
+        }
+	}
+#endif 
 	return ifdInfo.origNextIFD;
 
 }	// TIFF_FileWriter::ProcessMemoryIFD
@@ -779,13 +790,13 @@ void TIFF_FileWriter::ParseFileStream ( XMP_IO* fileRef )
 	}
 
 	const InternalTagInfo* exifIFDTag = this->FindTagInIFD ( kTIFF_PrimaryIFD, kTIFF_ExifIFDPointer );
-	if ( (exifIFDTag != 0) && (exifIFDTag->type == kTIFF_LongType) && (exifIFDTag->count == 1) ) {
+	if ( ( exifIFDTag != 0 ) && ( ( exifIFDTag->type == kTIFF_LongType || exifIFDTag->type == kTIFF_IFDType ) && ( exifIFDTag->count == 1 ) ) ) {
 		XMP_Uns32 exifOffset = this->GetUns32 ( exifIFDTag->dataPtr );
 		(void) this->ProcessFileIFD ( kTIFF_ExifIFD, exifOffset, fileRef );
 	}
 
 	const InternalTagInfo* gpsIFDTag = this->FindTagInIFD ( kTIFF_PrimaryIFD, kTIFF_GPSInfoIFDPointer );
-	if ( (gpsIFDTag != 0) && (gpsIFDTag->type == kTIFF_LongType) && (gpsIFDTag->count == 1) ) {
+	if ( ( gpsIFDTag != 0 ) && ( ( gpsIFDTag->type == kTIFF_LongType || gpsIFDTag->type == kTIFF_IFDType ) && ( gpsIFDTag->count == 1 ) ) ) {
 		XMP_Uns32 gpsOffset = this->GetUns32 ( gpsIFDTag->dataPtr );
 		if ( IsOffsetValid (gpsOffset, 8, ifdLimit ) ) {	// Remove a bad GPS IFD offset.
 			(void) this->ProcessFileIFD ( kTIFF_GPSInfoIFD, gpsOffset, fileRef );
@@ -797,7 +808,7 @@ void TIFF_FileWriter::ParseFileStream ( XMP_IO* fileRef )
 	}
 
 	const InternalTagInfo* interopIFDTag = this->FindTagInIFD ( kTIFF_ExifIFD, kTIFF_InteroperabilityIFDPointer );
-	if ( (interopIFDTag != 0) && (interopIFDTag->type == kTIFF_LongType) && (interopIFDTag->dataLen == 4) ) {
+	if ( ( interopIFDTag != 0 ) && ( ( interopIFDTag->type == kTIFF_LongType || interopIFDTag->type == kTIFF_IFDType ) && ( interopIFDTag->dataLen == 4 ) ) ) {
 		XMP_Uns32 interopOffset = this->GetUns32 ( interopIFDTag->dataPtr );
 		if ( IsOffsetValid (interopOffset, 8, ifdLimit ) ) {	// Remove a bad Interoperability IFD offset.
 			(void) this->ProcessFileIFD ( kTIFF_InteropIFD, interopOffset, fileRef );

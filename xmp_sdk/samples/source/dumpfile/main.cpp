@@ -41,6 +41,7 @@ const int DUMPFILEVERSION=2;
 #include "public/include/XMP.hpp"			//NB: no XMP.incl_cpp here on purpose, gets compiled in main...
 #include "public/include/XMP.incl_cpp"		//include in EXACTLY one source file (i.e. main, in Action gets you trouble...)
 #include "public/include/XMP_Const.h"
+#include "source/XML_Node.cpp"
 
 //utils
 #include "samples/source/common/Log.h"

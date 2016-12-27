@@ -1,4 +1,4 @@
-// =================================================================================================
+ // =================================================================================================
 // ADOBE SYSTEMS INCORPORATED
 // Copyright 2010 Adobe Systems Incorporated
 // All Rights Reserved
@@ -18,22 +18,22 @@
 
 
 #define EMPTY_FILE_PATH ""
-#define XMP_FILESIO_STATIC_START try { int a;
+#define XMP_FILESIO_STATIC_START try { /* int a;*/
 #define XMP_FILESIO_STATIC_END1(errorCallbackPtr, filePath, severity)											\
-		a = 1;																									\
+		/*a = 1;*/																									\
 	} catch ( XMP_Error & error ) {																				\
 		if ( (errorCallbackPtr) != NULL ) (errorCallbackPtr)->NotifyClient ( (severity), error, (filePath) );	\
 		else throw;																								\
 	}
-#define XMP_FILESIO_START try { int b;
+#define XMP_FILESIO_START try { /*int b;*/
 #define XMP_FILESIO_END1(severity)																				\
-		b = 1;																									\
+		/*b = 1;*/																									\
 	} catch ( XMP_Error & error ) {																				\
 		if ( errorCallback != NULL ) errorCallback->NotifyClient ( (severity), error, filePath.c_str() );		\
 		else throw;																								\
 	}
 #define XMP_FILESIO_END2(filePath, severity)																	\
-		b = 1;																									\
+	/*	b = 1;*/																									\
 	} catch ( XMP_Error & error ) {																				\
 		if ( errorCallback != NULL ) errorCallback->NotifyClient ( (severity), error, (filePath) );				\
 		else throw;																								\

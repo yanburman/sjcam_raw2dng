@@ -194,357 +194,14 @@ using namespace std;
 // ! also made sure that for a logical clip path the rootPath is an existing folder, and that the
 // ! file exists for a full file path.
 
-bool XDCAM_CheckFormat ( XMP_FileFormat format,
-						 const std::string & _rootPath,
-						 const std::string & _gpName,
-						 const std::string & parentName,
-						 const std::string & leafName,
-						 XMPFiles * parent )
-{
-	std::string rootPath = _rootPath;	// ! Need tweaking in the existing file cases (FAM and SAM).
-	std::string gpName   = _gpName;
-
-	bool isFAM = false;
-
-	std::string tempPath, childName;
-
-	std::string clipName = leafName;
-
-	// Do some basic checks on the root path and component names. Decide if this is FAM or SAM.
-
-	if ( gpName.empty() != parentName.empty() ) return false;	// Must be both empty or both non-empty.
-
-	if ( gpName.empty() ) {
-
-		// This is the logical clip path case. Just look for PROAV to see if this is FAM or SAM.
-		if ( Host_IO::GetChildMode ( rootPath.c_str(), "PROAV" ) != Host_IO::kFMode_IsFolder ) isFAM = true;
-
-	} else {
-
-		// This is the existing file case. See if this is FAM or SAM, tweak the clip name as needed.
-
-		if ( (parentName == "CLIP") || (parentName == "EDIT") || (parentName == "SUB") ) {
-			// ! The standard says Clip/Edit/Sub, but the caller has already shifted to upper case.
-			isFAM = true;
-		} else if ( (gpName != "CLPR") && (gpName != "EDTR") ) {
-			return false;
-		}
-
-		if ( isFAM ) {
-
-			// Put the proper root path together. Clean up the clip name if needed.
-
-			if ( ! rootPath.empty() ) rootPath += kDirChar;
-			rootPath += gpName;
-			gpName.erase();
-
-			// XMPilot has no ALIAS.XML, but does have a UserData folder, don't change the first
-			// letter of the clip name for XMPilot.
-			if ( (Host_IO::GetChildMode ( rootPath.c_str(), "ALIAS.XML" ) != Host_IO::kFMode_IsFile) &&
-				 (Host_IO::GetChildMode ( rootPath.c_str(), "UserData" ) != Host_IO::kFMode_IsFolder) ) {
-				clipName[0] = 'C';	// ! See notes above about pending bug.
-			}
-
-			if ( clipName.size() > 3 ) {
-				size_t clipMid = clipName.size() - 3;
-				char c1 = clipName[clipMid];
-				char c2 = clipName[clipMid+1];
-				char c3 = clipName[clipMid+2];
-				if ( ('A' <= c1) && (c1 <= 'Z') &&
-					 ('0' <= c2) && (c2 <= '9') && ('0' <= c3) && (c3 <= '9') ) {
-					clipName.erase ( clipMid );
-				}
-			}
-
-		} else {
-
-			// Fix the clip name. Check for and strip the "PROAV" suffix on the root path.
-
-			clipName = parentName;	// ! We have a folder with the (almost) exact clip name.
-			clipName[0] = 'C';
-
-			std::string proav;
-			XIO::SplitLeafName ( &rootPath, &proav );
-			MakeUpperCase ( &proav );
-			if ( (rootPath.empty()) || (proav != "PROAV") ) return false;
-
-		}
-
-	}
-
-	// Make sure the general XDCAM package structure is legit. Set tempPath as a bogus path of the
-	// form <root>/<FAM-or-SAM>/<clip>, e.g. ".../MyMovie/FAM/C0001". This is passed the handler via
-	// the tempPtr hackery.
-
-	if ( isFAM ) {
-
-		if ( (format != kXMP_XDCAM_FAMFile) && (format != kXMP_UnknownFile) ) return false;
-
-		tempPath = rootPath;
-
-		// XMPilot does not have INDEX.XML but does have UserData.
-        if ( (Host_IO::GetChildMode ( tempPath.c_str(), "INDEX.XML" ) != Host_IO::kFMode_IsFile) &&
-			 !((Host_IO::GetChildMode ( rootPath.c_str(), "UserData" ) == Host_IO::kFMode_IsFolder)
-			 // Changes introduced by Sony for XDCAM Memory SxS format in the FAM file structure are 
-			 //	1) There is no INDEX.XML in the root directory for XDCAM Memory SxS.
-			 //	2) There is a new Take folder(similar to XDCAMEX) in the root directory.
-			 || (Host_IO::GetChildMode ( tempPath.c_str(), "Take" ) == Host_IO::kFMode_IsFolder))) return false;
-		if ( Host_IO::GetChildMode ( tempPath.c_str(), "DISCMETA.XML" ) != Host_IO::kFMode_IsFile ) return false;
-		if ( Host_IO::GetChildMode ( tempPath.c_str(), "MEDIAPRO.XML" ) != Host_IO::kFMode_IsFile ) return false;
-
-		tempPath += kDirChar;
-		tempPath += "Clip";	// ! Yes, mixed case.
-		tempPath += kDirChar;
-		tempPath += clipName;
-		tempPath += "M01.XML";
-		if ( Host_IO::GetFileMode ( tempPath.c_str() ) != Host_IO::kFMode_IsFile ) return false;
-
-		tempPath = rootPath;
-		tempPath += kDirChar;
-		tempPath += "FAM";
-		tempPath += kDirChar;
-		tempPath += clipName;
-
-	} else {
-
-		if ( (format != kXMP_XDCAM_SAMFile) && (format != kXMP_UnknownFile) ) return false;
-
-		// We already know about the PROAV folder, just check below it.
-
-		tempPath = rootPath;
-		tempPath += kDirChar;
-		tempPath += "PROAV";
-
-		if ( Host_IO::GetChildMode ( tempPath.c_str(), "INDEX.XML" ) != Host_IO::kFMode_IsFile ) return false;
-		if ( Host_IO::GetChildMode ( tempPath.c_str(), "DISCMETA.XML" ) != Host_IO::kFMode_IsFile ) return false;
-		if ( Host_IO::GetChildMode ( tempPath.c_str(), "DISCINFO.XML" ) != Host_IO::kFMode_IsFile ) return false;
-		if ( Host_IO::GetChildMode ( tempPath.c_str(), "CLPR" ) != Host_IO::kFMode_IsFolder ) return false;
-
-		tempPath += kDirChar;
-		tempPath += "CLPR";
-		tempPath += kDirChar;
-		tempPath += clipName;
-		if ( Host_IO::GetFileMode ( tempPath.c_str() ) != Host_IO::kFMode_IsFolder ) return false;
-
-		tempPath += kDirChar;
-		tempPath += clipName;
-		tempPath += "M01.XML";
-		if ( Host_IO::GetFileMode ( tempPath.c_str() ) != Host_IO::kFMode_IsFile ) return false;
-
-		tempPath = rootPath;
-		tempPath += kDirChar;
-		tempPath += "SAM";
-		tempPath += kDirChar;
-		tempPath += clipName;
-
-	}
-
-	// Save the pseudo-path for the handler object. A bit of a hack, but the only way to get info
-	// from here to there.
-
-	size_t pathLen = tempPath.size() + 1;	// Include a terminating nul.
-	parent->tempPtr = malloc ( pathLen );
-	if ( parent->tempPtr == 0 ) XMP_Throw ( "No memory for XDCAM clip info", kXMPErr_NoMemory );
-	memcpy ( parent->tempPtr, tempPath.c_str(), pathLen );	// AUDIT: Safe, allocated above.
-
-	return true;
-
-}	// XDCAM_CheckFormat
-
-// =================================================================================================
-
-static void* CreatePseudoClipPath ( const std::string & clientPath ) {
-
-	// Used to create the clip pseudo path when the CheckFormat function is skipped.
-	
-	std::string pseudoPath = clientPath;
-	std::string clipName;
-	bool isSAM;
-	
-	size_t pathLen;
-	void* tempPtr = 0;
-	
-	if ( ! Host_IO::Exists ( pseudoPath.c_str() ) ) {
-
-		// This is the logical clip path case. Look for PROAV to see if this is FAM or SAM.
-
-		XIO::SplitLeafName ( &pseudoPath, &clipName );	// Extract the logical clip name, no extension.
-		isSAM = ( Host_IO::GetChildMode ( pseudoPath.c_str(), "PROAV" ) == Host_IO::kFMode_IsFolder );
-	
-	} else {
-	
-		// The client passed a physical path. We have separate cases for FAM and SAM. If the last
-		// folder, the parent of the file, is Clip, Edit, or Sub (ignoring case) then this is FAM
-		// and things are a bit messy. For SAM, the parent folder is the almost clip name.
-		
-		std::string parentName, ignored;
-		
-		XIO::SplitLeafName ( &pseudoPath, &clipName );	// Extract the logical clip name.
-		XIO::SplitFileExtension ( &clipName, &ignored );
-
-		XIO::SplitLeafName ( &pseudoPath, &parentName );
-		MakeUpperCase ( &parentName );
-		isSAM = ( (parentName != "CLIP") && (parentName != "EDIT") && (parentName != "SUB") );
-		
-		if ( isSAM ) {
-		
-			// SAM is easy, the parent name is almost the clip name, the first letter gets coerced
-			// to 'C'. There are 2 other folders to remove from the path.
-
-			clipName = parentName;
-			clipName[0] = 'C';
-			XIO::SplitLeafName ( &pseudoPath, &ignored );	// Remove the 2 intermediate folder levels.
-			XIO::SplitLeafName ( &pseudoPath, &ignored );
-
-		} else {
-		
-			// FAM is a bit messy, study the comments and code of XDCAM_CheckFormat for details.
-
-			if ( Host_IO::GetChildMode ( pseudoPath.c_str(), "ALIAS.XML" ) != Host_IO::kFMode_IsFile ) {
-				clipName[0] = 'C';	// ! See notes in XDCAM_CheckFormat about pending bug.
-			}
-
-			if ( clipName.size() > 3 ) {
-				size_t clipMid = clipName.size() - 3;
-				char c1 = clipName[clipMid];
-				char c2 = clipName[clipMid+1];
-				char c3 = clipName[clipMid+2];
-				if ( ('A' <= c1) && (c1 <= 'Z') &&
-					 ('0' <= c2) && (c2 <= '9') && ('0' <= c3) && (c3 <= '9') ) {
-					clipName.erase ( clipMid );
-				}
-			}
-		
-		}
-	
-	}
-	
-	pseudoPath += kDirChar;
-	if ( isSAM ) {
-		pseudoPath += "SAM";
-	} else {
-		pseudoPath += "FAM";
-	}
-	pseudoPath += kDirChar;
-	pseudoPath += clipName;
-
-	pathLen = pseudoPath.size() + 1;	// Include a terminating nul.
-	tempPtr = malloc ( pathLen );
-	if ( tempPtr == 0 ) XMP_Throw ( "No memory for XDCAM clip info", kXMPErr_NoMemory );
-	memcpy ( tempPtr, pseudoPath.c_str(), pathLen );
-	
-	return tempPtr;
-
-}	// CreatePseudoClipPath
-
-// =================================================================================================
-// XDCAM_MetaHandlerCTor
-// =====================
-
-XMPFileHandler * XDCAM_MetaHandlerCTor ( XMPFiles * parent )
-{
-	return new XDCAM_MetaHandler ( parent );
-
-}	// XDCAM_MetaHandlerCTor
-
-
-// =================================================================================================
-// XDCAM_MetaHandler::SetSidecarPath
-// ====================================
-void XDCAM_MetaHandler::SetSidecarPath()
-{
-	// Here, we set the appropriate sidecar name for this format.
-	// If, the format if XMPilot (no INDEX.XML but UserData folder present) or
-	// SxS (no INDEX.XML but Take folder present) then sidecar name will be
-	// old name used by MXFHandler i.e, {clipName}.MXF.xmp or {clipname}.mxf.xmp
-	// For all other cases, new side car name i.e, {clipname}M01.XMP will be used.
-	
-	try
-	{
-		if(this->isFAM &&  Host_IO::GetChildMode ( this->rootPath.c_str(), "INDEX.XML" ) != Host_IO::kFMode_IsFile &&
-			(Host_IO::GetChildMode ( rootPath.c_str(), "UserData" ) == Host_IO::kFMode_IsFolder 
-			|| Host_IO::GetChildMode ( this->rootPath.c_str(), "Take" ) == Host_IO::kFMode_IsFolder) )
-		{
-			// this is either XMPilot or SxS format.
-			XMP_VarString mxfFilePath;
-			if(MakeClipFilePath ( &mxfFilePath , ".MXF", true ) ||  MakeClipFilePath ( &mxfFilePath , ".mxf", true ) )
-			{
-				Host_IO::FileRef hostRef = Host_IO::Open ( mxfFilePath.c_str(), Host_IO::openReadOnly );
-				if ( hostRef != Host_IO::noFileRef )
-				{
-						
-					XMPFiles_IO mxfFile ( hostRef, mxfFilePath.c_str() , Host_IO::openReadOnly );	
-
-					if ( Host_IO::Length(hostRef) >= 16 )
-					{
-						XMP_Uns8 buffer[16];
-						Host_IO::Seek(hostRef, 0, kXMP_SeekFromStart);
-						XMP_Uns32 readBytes = Host_IO::Read(hostRef, buffer, 16 );	
-
-						if ( ( readBytes == 16 ) && 
-							( GetUns32BE(&buffer[0]) == 0x060E2B34 ) &&
-							( GetUns32BE(&buffer[4]) == 0x02050101 ) &&
-							( GetUns32BE(&buffer[8]) == 0x0D010201 ) &&
-							( ( GetUns32BE(&buffer[12]) & 0xFFFF00FF ) == 0x01020000 )
-							)
-						{
-							std::string pathtomxfclip=Host_IO::GetCasePreservedName(mxfFilePath);
-							if ( pathtomxfclip != "" )
-							{
-								std::string ext;
-								XIO::SplitFileExtension( &pathtomxfclip, &ext , false);
-								ext="."+ext;
-								MakeClipFilePath ( &mxfFilePath , ext.c_str() , false );
-								this->sidecarPath = mxfFilePath + ".xmp";
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	catch( ... )
-	{
-		// Use new side car name.
-	}
-	if(this->sidecarPath.empty())
-	{
-		MakeClipFilePath ( &this->sidecarPath , "M01.XMP", false ) ;
-	}
-}// XDCAM_MetaHandler::SetSidecarPath
-
 // =================================================================================================
 // XDCAM_MetaHandler::XDCAM_MetaHandler
 // ====================================
-
-XDCAM_MetaHandler::XDCAM_MetaHandler ( XMPFiles * _parent ) : isFAM(false), expat(0),clipMetadata(NULL)
+XDCAM_MetaHandler::XDCAM_MetaHandler ( XMPFiles * _parent ) : expat(0), clipMetadata(NULL)
 {
 
 	this->parent = _parent;	// Inherited, can't set in the prefix.
-	this->handlerFlags = kXDCAM_HandlerFlags;
 	this->stdCharForm  = kXMP_Char8Bit;
-
-	// Extract the root path, clip name, and FAM/SAM flag from tempPtr.
-
-	if ( this->parent->tempPtr == 0 ) {
-		// The CheckFormat call might have been skipped.
-		this->parent->tempPtr = CreatePseudoClipPath ( this->parent->GetFilePath() );
-	}
-
-	this->rootPath.assign ( (char*) this->parent->tempPtr );
-	free ( this->parent->tempPtr );
-	this->parent->tempPtr = 0;
-
-	XIO::SplitLeafName ( &this->rootPath, &this->clipName );
-
-	std::string temp;
-	XIO::SplitLeafName ( &this->rootPath, &temp );
-	XMP_Assert ( (temp == "FAM") || (temp == "SAM") );
-	if ( temp == "FAM" ) this->isFAM = true;
-	// backward compatibility ensured for XMPilot Clips
-	// XMPilot is FAM
-	this->SetSidecarPath();
-	XMP_Assert ( this->isFAM ? (this->parent->format == kXMP_XDCAM_FAMFile) : (this->parent->format == kXMP_XDCAM_SAMFile) );
 
 }	// XDCAM_MetaHandler::XDCAM_MetaHandler
 
@@ -562,35 +219,6 @@ XDCAM_MetaHandler::~XDCAM_MetaHandler()
 	}
 
 }	// XDCAM_MetaHandler::~XDCAM_MetaHandler
-
-// =================================================================================================
-// XDCAM_MetaHandler::MakeClipFilePath
-// ===================================
-
-bool XDCAM_MetaHandler::MakeClipFilePath ( std::string * path, XMP_StringPtr suffix, bool checkFile /* = false */ )
-{
-
-	*path = this->rootPath;
-	*path += kDirChar;
-
-	if ( this->isFAM ) {
-		*path += "Clip";	// ! Yes, mixed case.
-	} else {
-		*path += "PROAV";
-		*path += kDirChar;
-		*path += "CLPR";
-		*path += kDirChar;
-		*path += this->clipName;
-	}
-
-	*path += kDirChar;
-	*path += this->clipName;
-	*path += suffix;
-	
-	if ( ! checkFile ) return true;
-	return Host_IO::Exists ( path->c_str() );
-
-}	// XDCAM_MetaHandler::MakeClipFilePath
 
 // =================================================================================================
 // XDCAM_MetaHandler::MakeMediaproPath
@@ -615,6 +243,10 @@ bool XDCAM_MetaHandler::MakeMediaproPath ( std::string * path, bool checkFile /*
 // *** Early hack version.
 
 #define kHexDigits "0123456789ABCDEF"
+
+// =================================================================================================
+// XDCAM_MetaHandler::MakeLegacyDigest
+// ================================
 
 void XDCAM_MetaHandler::MakeLegacyDigest ( std::string * digestStr )
 {
@@ -664,7 +296,7 @@ void XDCAM_MetaHandler::MakeLegacyDigest ( std::string * digestStr )
 }	// XDCAM_MetaHandler::MakeLegacyDigest
 
 // =================================================================================================
-// P2_MetaHandler::CleanupLegacyXML
+// XDCAM_MetaHandler::CleanupLegacyXML
 // ================================
 
 void XDCAM_MetaHandler::CleanupLegacyXML()
@@ -675,6 +307,10 @@ void XDCAM_MetaHandler::CleanupLegacyXML()
 	clipMetadata = 0;	// ! Was a pointer into the expat tree.
 
 }	// XDCAM_MetaHandler::CleanupLegacyXML
+
+// =================================================================================================
+// XDCAM_MetaHandler::readXMLFile
+// ================================
 
 void  XDCAM_MetaHandler::readXMLFile( XMP_StringPtr filePath, ExpatAdapter* &expat )
 {
@@ -705,27 +341,25 @@ static inline bool operator< ( const XMP_DateTime & left, const XMP_DateTime & r
 	return (compare < 0);
 }
 
+// =================================================================================================
+// XDCAM_MetaHandler::GetFileModDate
+// ================================
+
 bool XDCAM_MetaHandler::GetFileModDate ( XMP_DateTime * modDate )
 {
 
-	// The XDCAM FAM locations of metadata:
-	//	MEDIAPRO.XML	// Has non-XMP metadata.
-	//	Clip:
-	//		C0001_50i_DVCAM_43_4chM01.XML	// Has non-XMP metadata.
-	//		C0001_50i_DVCAM_43_4chM01.XMP
-
-	// The XDCAM SAM locations of metadata:
-	//	PROAV:
-	//		CLPR:
-	//			C0001:
-	//				C0001M01.XML	// Has non-XMP metadata.
-	//				C0001M01.XMP
+	// Modify date is found in the increasing priority order
+	//
+	// MEDIAPRO.XML
+	// Non-Real time metadata file
+	// XMP file
 
 	bool ok, haveDate = false;
 	std::string fullPath;
 	XMP_DateTime oneDate, junkDate;
 	if ( modDate == 0 ) modDate = &junkDate;
 
+	// MEDIAPRO.XML	
 	std::string mediaproPath;
 	ok = MakeMediaproPath ( &mediaproPath, true /* checkFile */ );
 	if ( ok ) ok = Host_IO::GetModifyDate ( mediaproPath.c_str(), &oneDate );
@@ -734,15 +368,19 @@ bool XDCAM_MetaHandler::GetFileModDate ( XMP_DateTime * modDate )
 		haveDate = true;
 	}
 
-	ok = this->MakeClipFilePath ( &fullPath, "M01.XML", true /* checkFile */ );
-	if ( ok ) ok = Host_IO::GetModifyDate ( fullPath.c_str(), &oneDate );
+	// Non-Real time metadata file
+	ok = Host_IO::Exists( this->mNRTFilePath.c_str() );
+	//ok = this->MakeClipFilePath ( &fullPath, "M01.XML", true /* checkFile */ );
+	if ( ok ) ok = Host_IO::GetModifyDate ( this->mNRTFilePath.c_str(), &oneDate );
 	if ( ok ) {
 		if ( (! haveDate) || (*modDate < oneDate) ) *modDate = oneDate;
 		haveDate = true;
 	}
 
-	ok = this->MakeClipFilePath ( &fullPath, "M01.XMP", true /* checkFile */ );
-	if ( ok ) ok = Host_IO::GetModifyDate ( fullPath.c_str(), &oneDate );
+	// XMP file
+	ok = Host_IO::Exists( this->sidecarPath.c_str() );
+	//ok = this->MakeClipFilePath ( &fullPath, "M01.XMP", true /* checkFile */ );
+	if ( ok ) ok = Host_IO::GetModifyDate ( this->sidecarPath.c_str(), &oneDate );
 	if ( ok ) {
 		if ( (! haveDate) || (*modDate < oneDate) ) *modDate = oneDate;
 		haveDate = true;
@@ -751,140 +389,6 @@ bool XDCAM_MetaHandler::GetFileModDate ( XMP_DateTime * modDate )
 	return haveDate;
 
 }	// XDCAM_MetaHandler::GetFileModDate
-
-
-// =================================================================================================
-// XDCAM_MetaHandler::GetClipUmid
-// ==============================
-bool XDCAM_MetaHandler::GetClipUmid ( std::string &clipUmid ) 
-{
-	std::string clipInfoPath;
-	ExpatAdapter* clipInfoExpat = 0 ;
-	bool umidFound = false;
-	XMP_StringPtr nameSpace = 0;
-	try {
-		this->MakeClipFilePath ( &clipInfoPath, "C01.SMI" ) ;
-		readXMLFile( clipInfoPath.c_str(), clipInfoExpat );
-		if ( clipInfoExpat != 0 )
-		{	
-			XML_Node & xmlTree = clipInfoExpat->tree;
-			XML_NodePtr rootElem = 0;
-
-			for ( size_t i = 0, limit = xmlTree.content.size(); i < limit; ++i ) {
-				if ( xmlTree.content[i]->kind == kElemNode ) {
-					rootElem = xmlTree.content[i];
-				}
-			}
-			if ( rootElem != 0 )
-			{
-				XMP_StringPtr rootLocalName = rootElem->name.c_str() + rootElem->nsPrefixLen;
-				
-				if ( XMP_LitMatch ( rootLocalName, "smil" ) ) 
-				{
-					XMP_StringPtr umidValue = rootElem->GetAttrValue ( "umid" );
-					if ( umidValue != 0 ) {
-						clipUmid = umidValue;
-						umidFound = true;
-					}
-				}
-			}
-		}
-		if( ! umidFound )
-		{	//try to get the umid from the NRT metadata
-			delete ( clipInfoExpat ) ; clipInfoExpat = 0;
-			this->MakeClipFilePath ( &clipInfoPath, "M01.XML" ) ;
-			readXMLFile( clipInfoPath.c_str(), clipInfoExpat ) ;		
-			if ( clipInfoExpat != 0 )
-			{	
-				XML_Node & xmlTree = clipInfoExpat->tree;
-				XML_NodePtr rootElem = 0;
-				for ( size_t i = 0, limit = xmlTree.content.size(); i < limit; ++i ) {
-					if ( xmlTree.content[i]->kind == kElemNode ) {
-						rootElem = xmlTree.content[i];
-					}
-				}
-				if ( rootElem != 0 )
-				{
-					XMP_StringPtr rootLocalName = rootElem->name.c_str() + rootElem->nsPrefixLen;
-					
-					if ( XMP_LitMatch ( rootLocalName, "NonRealTimeMeta" ) ) 
-					{	
-						nameSpace = rootElem->ns.c_str() ;
-						XML_NodePtr targetProp = rootElem->GetNamedElement ( nameSpace, "TargetMaterial" );
-						if ( (targetProp != 0) && targetProp->IsEmptyLeafNode() ) {
-							XMP_StringPtr umidValue = targetProp->GetAttrValue ( "umidRef" );
-							if ( umidValue != 0 ) {
-								clipUmid = umidValue;
-								umidFound = true;
-							}
-						}
-					}
-				}
-			}
-		}
-	} catch ( ... ) {
-	}
-	delete ( clipInfoExpat ) ;
-	return umidFound;
-}// XDCAM_MetaHandler::GetClipUmid
-
-// =================================================================================================
-// XDCAM_MetaHandler::IsClipsPlanning
-// ==================================
-bool XDCAM_MetaHandler::IsClipsPlanning ( std::string clipUmid , XMP_StringPtr planPath ) 
-{
-	ExpatAdapter* planniingExpat = 0 ;
-	XMP_StringPtr nameSpace = 0 ;
-	try {
-		readXMLFile( planPath, planniingExpat );
-		if ( planniingExpat != 0 )
-		{	
-			XML_Node & xmlTree = planniingExpat->tree;
-			XML_NodePtr rootElem = 0;
-
-			for ( size_t i = 0, limit = xmlTree.content.size(); i < limit; ++i ) {
-				if ( xmlTree.content[i]->kind == kElemNode ) {
-					rootElem = xmlTree.content[i];
-				}
-			}
-			if ( rootElem != 0 )
-			{
-				XMP_StringPtr rootLocalName = rootElem->name.c_str() + rootElem->nsPrefixLen;
-				
-				if ( XMP_LitMatch ( rootLocalName, "PlanningMetadata" ) ) 
-				{
-					nameSpace = rootElem->ns.c_str() ;
-					size_t noOfMaterialGroups = rootElem->CountNamedElements ( nameSpace, "MaterialGroup" ) ;
-					while( noOfMaterialGroups-- )
-					{
-						XML_NodePtr mgNode = rootElem->GetNamedElement(  nameSpace, "MaterialGroup" );
-						size_t noOfMaterialElements = mgNode->CountNamedElements ( nameSpace, "Material" ) ;
-						while( noOfMaterialElements-- )
-						{
-							XML_NodePtr materialNode = mgNode->GetNamedElement(  nameSpace, "Material" );
-							XMP_StringPtr materialType = materialNode->GetAttrValue ( "type" );
-							if ( materialType  && XMP_LitMatch( materialType , "clip" ) ) 
-							{
-								XMP_StringPtr umidValue = materialNode->GetAttrValue ( "umidRef" );
-								if ( umidValue != 0 &&  XMP_LitMatch( umidValue , clipUmid.c_str()  ) )
-								{
-									delete ( planniingExpat ) ;
-									return true;
-								}
-							}
-							
-						}
-					}
-				}
-			}
-		}
-		
-	} catch ( ... ) {
-	}
-	delete ( planniingExpat ) ;
-	return false;
-} // XDCAM_MetaHandler::IsClipsPlanning
-
 
 // =================================================================================================
 // XDCAM_MetaHandler::RefersClipUmid
@@ -948,144 +452,9 @@ bool XDCAM_MetaHandler::RefersClipUmid ( std::string clipUmid , XMP_StringPtr ed
 	return false;
 } // XDCAM_MetaHandler::RefersClipUmid
 
-inline bool IsDigit( char c )
-{
-	return c >= '0' && c <= '9';
-}
-
-
-// =================================================================================================
-// XDCAM_MetaHandler::GetEditInfoFilesSAM
-// ======================================
-bool XDCAM_MetaHandler::GetEditInfoFilesSAM ( std::vector<std::string> &editInfoList ) 
-{
-	std::string clipUmid;
-	bool found = false;
-
-	if( GetClipUmid ( clipUmid ) )
-	{
-		std::string editFolderPath = this->rootPath + kDirChar + "PROAV" + kDirChar + "EDTR"  + kDirChar ;
-		if ( Host_IO::Exists( editFolderPath.c_str() ) && 
-			Host_IO::GetFileMode( editFolderPath.c_str() ) == Host_IO::kFMode_IsFolder 
-			)
-		{
-			Host_IO::AutoFolder edtrFolder, editFolder;
-			std::string edtrChildName, edlistChild;
-
-			edtrFolder.folder = Host_IO::OpenFolder ( editFolderPath.c_str() );
-			while (  Host_IO::GetNextChild ( edtrFolder.folder, &edtrChildName ) ) {
-				size_t childLen = edtrChildName.size();
-				std::string editListFolderPath = editFolderPath + edtrChildName + kDirChar ;
-				if ( ! ( childLen == 5 &&
-					edtrChildName[0] == 'E' &&
-					IsDigit( edtrChildName[1] ) &&
-					IsDigit( edtrChildName[2] ) &&
-					IsDigit( edtrChildName[3] ) &&
-					IsDigit( edtrChildName[4] ) &&
-					Host_IO::GetFileMode( editListFolderPath.c_str() ) == Host_IO::kFMode_IsFolder
-					) ) continue;
-				
-				editFolder.folder = Host_IO::OpenFolder ( editListFolderPath.c_str() );
-				while (  Host_IO::GetNextChild ( editFolder.folder, &edlistChild ) ) {
-					size_t filenamelen = edlistChild.size();
-					std::string editListFilePath = editListFolderPath + edlistChild ;
-					if ( ! ( filenamelen == 12 &&
-						edlistChild.compare ( filenamelen - 4, 4 , ".SMI" ) == 0 &&
-						edlistChild.compare ( 0, edtrChildName.size(), edtrChildName ) == 0 &&
-						Host_IO::GetFileMode( editListFilePath.c_str() ) == Host_IO::kFMode_IsFile
-					) ) continue;
-					if( RefersClipUmid ( clipUmid , editListFilePath.c_str() )  )
-					{
-						found = true ;
-						editInfoList.push_back( editListFilePath );
-					}
-				}
-			}
-		}
-	}
-	return found;
-} // XDCAM_MetaHandler::GetEditInfoFilesSAM
-
-// =================================================================================================
-// XDCAM_MetaHandler::GetInfoFilesFAM
-// ==================================
-bool XDCAM_MetaHandler::GetInfoFilesFAM ( std::vector<std::string> &editInfoList, std::string pathToFolder) 
-{
-	std::string clipUmid;
-	bool found = false;
-
-	if( GetClipUmid ( clipUmid ) )
-	{
-		if ( Host_IO::Exists( pathToFolder.c_str() ) && 
-			Host_IO::GetFileMode( pathToFolder.c_str() ) == Host_IO::kFMode_IsFolder 
-			)
-		{
-			Host_IO::AutoFolder editFolder;
-			std::string  edlistChild;
-
-			editFolder.folder = Host_IO::OpenFolder ( pathToFolder.c_str() );
-			while (  Host_IO::GetNextChild ( editFolder.folder, &edlistChild ) ) {
-				size_t filenamelen = edlistChild.size();
-				std::string editListFilePath = pathToFolder + edlistChild ;
-				if ( ! ( filenamelen > 7 && 
-					edlistChild.compare ( filenamelen - 4, 4 , ".SMI" ) == 0 &&
-					Host_IO::GetFileMode( editListFilePath.c_str() ) == Host_IO::kFMode_IsFile
-				) ) continue;
-				if( RefersClipUmid ( clipUmid , editListFilePath.c_str() )  )
-				{
-					found = true ;
-					editInfoList.push_back( editListFilePath );
-				}
-			}
-		}
-	}
-	return found;
-} // XDCAM_MetaHandler::GetInfoFilesFAM
-
-// =================================================================================================
-// XDCAM_MetaHandler::GetPlanningFilesFAM
-// ======================================
-bool XDCAM_MetaHandler::GetPlanningFilesFAM ( std::vector<std::string> &planInfoList, std::string pathToFolder) 
-{
-	std::string clipUmid;
-	bool found = false;
-
-	if( GetClipUmid ( clipUmid ) )
-	{
-		if ( Host_IO::Exists( pathToFolder.c_str() ) && 
-			Host_IO::GetFileMode( pathToFolder.c_str() ) == Host_IO::kFMode_IsFolder 
-			)
-		{
-			Host_IO::AutoFolder planFolder;
-			std::string  listChild;
-
-			planFolder.folder = Host_IO::OpenFolder ( pathToFolder.c_str() );
-			while (  Host_IO::GetNextChild ( planFolder.folder, &listChild ) ) {
-				size_t filenamelen = listChild.size();
-				std::string listFilePath = pathToFolder + listChild ;
-				if ( ! ( filenamelen > 4 && 
-					( listChild.compare ( filenamelen - 4, 4 , ".XML" ) == 0 
-					|| 
-					listChild.compare ( filenamelen - 4, 4 , ".xml" ) == 0
-					)
-					&&
-					Host_IO::GetFileMode( listFilePath.c_str() ) == Host_IO::kFMode_IsFile
-				) ) continue;
-				if( IsClipsPlanning ( clipUmid , listFilePath.c_str() )  )
-				{
-					found = true ;
-					planInfoList.push_back( listFilePath );
-				}
-			}
-		}
-	}
-	return found;
-} // XDCAM_MetaHandler::GetPlanningFilesFAM
-
 // =================================================================================================
 // XDCAM_MetaHandler::IsMetadataWritable
 // =======================================
-
 bool XDCAM_MetaHandler::IsMetadataWritable ( )
 {
 	std::vector<std::string> metadataFiles;
@@ -1099,310 +468,12 @@ bool XDCAM_MetaHandler::IsMetadataWritable ( )
 }// XDCAM_MetaHandler::IsMetadataWritable
 
 // =================================================================================================
-// XDCAM_MetaHandler::FillFAMAssociatedResources
-// =============================================
-void XDCAM_MetaHandler::FillFAMAssociatedResources ( std::vector<std::string> * resourceList )
-{
-	// The possible associated resources:
-    //  .../MyMovie/
-	//  	ALIAS.XML
-	//  	INDEX.XML
-	//  	DISCMETA.XML
-	//  	MEDIAPRO.XML
-	//  	MEDIAPRO.BUP
-	//      CUEUP.XML
-	//      CUEUP.BUP
-	//  	Clip/
-	//  		AAAAA.MXF                   AAAAA is the clipname with clipserial
-	//										XX is a counter which will start from from 01 and can go upto 99 based 
-	//				 					    on number of files present in this folder with same extension and same clipname/editListName/Takename.
-	//  		AAAAAMXX.XML  
-	//  		AAAAAMXX.XMP
-	//  		AAAAARXX.BIM
-	//  	Sub/
-	//  		AAAAASXX.MXF
-	//  	Local/
-	//  		AAAAACXX.SMI
-	//  		AAAAACXX.PPN
-	//  	Edit/                           DDDDD is the editListName
-	//  		DDDDDEXX.SMI
-	//  		DDDDDMXX.XML
-	// 		Take/							TTTTT is the Takename
-	//  		TTTTT.SMI
-	//			TTTTTUNN.SMI			NN is a counter which goes from 01 to N-1 where N is number of media, this
-	//									take is divided into. For Nth, TTTTT.SMI shall be picked up.
-	//  		TTTTTMXX.XML
-	//  	General/
-	//			Sony/
-	//				Planning/				AAAAA is the clipname without clipserial
-	//										YYYYMMDDHHMISS is DateTime
-	//						BBBBB_YYYYMMDDHHMISS.xml 
-	//      UserData/
-	//
-
-	//Add RootPath
-	std::string filePath = rootPath + kDirChar;
-	PackageFormat_Support::AddResourceIfExists( resourceList, filePath );
-
-	// Get the files present directly inside root folder.
-	filePath = rootPath + kDirChar + "ALIAS.XML";
-	PackageFormat_Support::AddResourceIfExists(resourceList, filePath);
-
-	filePath = rootPath + kDirChar + "INDEX.XML";
-	PackageFormat_Support::AddResourceIfExists(resourceList, filePath);
-
-	filePath = rootPath + kDirChar + "DISCMETA.XML";
-	PackageFormat_Support::AddResourceIfExists(resourceList, filePath);
-
-	filePath = rootPath + kDirChar + "MEDIAPRO.XML";
-	PackageFormat_Support::AddResourceIfExists(resourceList, filePath);
-	filePath = rootPath + kDirChar + "MEDIAPRO.BUP";
-	PackageFormat_Support::AddResourceIfExists(resourceList, filePath);
-
-	filePath = rootPath + kDirChar + "CUEUP.XML";
-	PackageFormat_Support::AddResourceIfExists(resourceList, filePath);
-	filePath = rootPath + kDirChar + "CUEUP.BUP";
-	PackageFormat_Support::AddResourceIfExists(resourceList, filePath);
-	
-	// Add the UserData folder which is used to identify the format in any way
-	filePath = rootPath + kDirChar + "UserData" + kDirChar;
-	PackageFormat_Support::AddResourceIfExists(resourceList, filePath);
-	
-	XMP_VarString clipPath = rootPath + kDirChar + "Clip" + kDirChar ;
-
-	size_t oldCount = resourceList->size();
-	// Get the files present inside clip folder.
-	XMP_VarString regExp;
-	XMP_StringVector regExpVec;
-	
-	regExp = "^" + clipName + ".MXF$";
-	regExpVec.push_back ( regExp );
-	regExp = "^" + clipName + "M\\d\\d.XML$";
-	regExpVec.push_back ( regExp );
-	regExp = "^" + clipName + "R\\d\\d.BIM$";
-	regExpVec.push_back ( regExp );
-	IOUtils::GetMatchingChildren ( *resourceList, clipPath, regExpVec, false, true, true ); 
-	PackageFormat_Support::AddResourceIfExists(resourceList, this->sidecarPath);
-	if ( resourceList->size() <= oldCount )
-	{
-		PackageFormat_Support::AddResourceIfExists(resourceList, clipPath);
-	}
-
-	//Get the files Under Sub folder
-	clipPath = rootPath + kDirChar + "Sub" + kDirChar ;
-	regExpVec.clear();
-	regExp = "^" + clipName + "S\\d\\d.MXF$";
-	regExpVec.push_back ( regExp );
-	oldCount = resourceList->size();
-	IOUtils::GetMatchingChildren ( *resourceList, clipPath, regExpVec, false, true, true );
-	// Add Sub folder if no file inside this, was added.
-	if ( resourceList->size() <= oldCount )
-	{
-		PackageFormat_Support::AddResourceIfExists(resourceList, clipPath);
-	}
-
-	//Get the files Under Local folder
-	clipPath = rootPath + kDirChar + "Local" + kDirChar ;
-	regExpVec.clear();
-	regExp = "^" + clipName + "C\\d\\d.SMI$";
-	regExpVec.push_back ( regExp );
-	regExp = "^" + clipName + "I\\d\\d.PPN$";
-	regExpVec.push_back ( regExp );
-	oldCount = resourceList->size();
-	IOUtils::GetMatchingChildren ( *resourceList, clipPath, regExpVec, false, true, true );
-	
-	//Add the Edit lists associated to this clip
-	XMP_StringVector editInfoList;
-	bool atLeastOneFileAdded = false;
-	clipPath = rootPath + kDirChar + "Edit" + kDirChar ;
-	if ( GetInfoFilesFAM ( editInfoList , clipPath ) )
-	{
-		size_t noOfEditInfoFiles = editInfoList.size() ;
-		for( size_t count = 0; count < noOfEditInfoFiles; count++ )
-		{
-			atLeastOneFileAdded = PackageFormat_Support::AddResourceIfExists(resourceList, editInfoList[count]) ? true : atLeastOneFileAdded;
-			std::string editNRTFile = editInfoList[count] ;
-			size_t filenamelen = editInfoList[count].length() ;
-			editNRTFile[ filenamelen - 7 ] = 'M';
-			editNRTFile[ filenamelen - 3 ] = 'X';
-			editNRTFile[ filenamelen - 2 ] = 'M';
-			editNRTFile[ filenamelen - 1 ] = 'L';
-			atLeastOneFileAdded = PackageFormat_Support::AddResourceIfExists(resourceList, editNRTFile ) ? true : atLeastOneFileAdded;
-		}
-	}
-	// Add Edit folder if no file inside this, was added.
-	if ( !atLeastOneFileAdded )
-	{
-		PackageFormat_Support::AddResourceIfExists(resourceList, clipPath);
-	}
-
-	atLeastOneFileAdded = false;
-
-	//Add the Takes associated to this clip
-	XMP_StringVector takeList;
-	clipPath = rootPath + kDirChar + "Take" + kDirChar ;
-	if( GetInfoFilesFAM ( takeList  , clipPath ) )
-	{
-		size_t noOfTakes = takeList.size() ;
-		for( size_t count = 0; count < noOfTakes; count++ )
-		{
-			atLeastOneFileAdded = PackageFormat_Support::AddResourceIfExists(resourceList, takeList[count]) ? true : atLeastOneFileAdded;
-			XMP_VarString takeNRTFile = takeList[count] ;
-			size_t filenamelen = takeList[count].length() ;
-			if ( takeNRTFile[ filenamelen - 7 ] == 'U' 
-				&& IsDigit( takeNRTFile[ filenamelen - 6 ] ) 
-				&& IsDigit( takeNRTFile[ filenamelen - 5 ] ) )
-			{
-				takeNRTFile.erase( takeNRTFile.begin() + filenamelen - 7, takeNRTFile.end() ) ;
-			}
-			else
-			{
-				takeNRTFile.erase( takeNRTFile.begin() + filenamelen - 4, takeNRTFile.end() ) ;
-			}
-
-			XMP_VarString fileName;
-			size_t pos = takeNRTFile.find_last_of ( kDirChar );
-			fileName = takeNRTFile.substr ( pos + 1 );
-			XMP_VarString regExp = "^" + fileName + "M\\d\\d.XML$";
-			oldCount = resourceList->size();
-			IOUtils::GetMatchingChildren ( *resourceList, clipPath, regExp, false, true, true );
-			atLeastOneFileAdded = resourceList->size() > oldCount;
-		}
-	}
-	// Add Take folder if no file inside this, was added.
-	if(!atLeastOneFileAdded)
-	{
-		filePath = rootPath + kDirChar + "Take" + kDirChar;
-		PackageFormat_Support::AddResourceIfExists(resourceList, filePath);
-	}
-
-	//Add the Planning Metadata Files associated to this clip
-	XMP_StringVector planList;
-	clipPath = rootPath + kDirChar + "General" + kDirChar + "Sony" + kDirChar+ "Planning" + kDirChar;
-	if( GetPlanningFilesFAM ( planList  , clipPath ) )
-	{
-		size_t noOfPlans = planList.size() ;
-		for( size_t count = 0; count < noOfPlans; count++ )
-		{
-			resourceList->push_back( planList[count] );
-		}
-	}
-} // XDCAM_MetaHandler::FillFAMAssociatedResources
-
-// =================================================================================================
-// XDCAM_MetaHandler::FillSAMAssociatedResources
-// =============================================
-void XDCAM_MetaHandler::FillSAMAssociatedResources ( std::vector<std::string> * resourceList )
-{
-	// The possible associated resources:
-    //  .../MyMovie/
-	//	    PROAV/
-	//  	    INDEX.XML
-	//  	    INDEX.BUP
-	//  	    DISCMETA.XML
-	//  	    DISCINFO.XML
-	//  	    DISCINFO.BUP
-	//		    CLPR/
-	//			    CXXXX/			 XXXX is ClipSerial and NN is a counter which will start from from 01 and can go upto 99 based 
-	//				 					on number of files present in this folder with same extension.
-	//				    CXXXXCNN.SMI
-	//				    CXXXXVNN.MXF
-	//				    CXXXXANN.MXF
-	//				    CXXXXRNN.BIM
-	//				    CXXXXINN.PPN
-	//				    CXXXXMNN.XML
-	//				    CXXXXSNN.MXF
-	//		    EDTR/
-	//			    EXXXX:
-	//				    EXXXXENN.SMI	
-	//				    EXXXXMNN.XML		
-	//					
-	std::string proavPath = rootPath + kDirChar + "PROAV" + kDirChar;
-	std::string filePath;
-	//Add RootPath
-	filePath = rootPath + kDirChar;
-	PackageFormat_Support::AddResourceIfExists( resourceList, filePath );
-
-	// Get the files present directly inside PROAV folder.
-	filePath = proavPath + "INDEX.XML";
-	PackageFormat_Support::AddResourceIfExists(resourceList, filePath);
-	filePath = proavPath + "INDEX.BUP";
-	PackageFormat_Support::AddResourceIfExists(resourceList, filePath);
-
-	filePath = proavPath + "DISCINFO.XML";
-	PackageFormat_Support::AddResourceIfExists(resourceList, filePath);
-	filePath = proavPath + "DISCINFO.BUP";
-	PackageFormat_Support::AddResourceIfExists(resourceList, filePath);
-
-	filePath = proavPath + "DISCMETA.XML";
-	PackageFormat_Support::AddResourceIfExists(resourceList, filePath);
-
-	XMP_VarString clipPath = proavPath + "CLPR" + kDirChar + clipName + kDirChar;
-	XMP_VarString regExp;
-	XMP_StringVector regExpVec;
-
-	regExp = "^" + clipName + "C\\d\\d.SMI$";
-	regExpVec.push_back ( regExp );
-	regExp = "^" + clipName + "M\\d\\d.XML$";
-	regExpVec.push_back ( regExp );
-	regExp = "^" + clipName + "V\\d\\d.MXF$";
-	regExpVec.push_back ( regExp );
-	regExp = "^" + clipName + "A\\d\\d.MXF$";
-	regExpVec.push_back ( regExp );
-	regExp = "^" + clipName + "R\\d\\d.BIM$";
-	regExpVec.push_back ( regExp );
-	regExp = "^" + clipName + "I\\d\\d.PPN$";
-	regExpVec.push_back ( regExp );
-	regExp = "^" + clipName + "S\\d\\d.MXF$";
-	regExpVec.push_back ( regExp );
-	IOUtils::GetMatchingChildren ( *resourceList, clipPath, regExpVec, false, true, true );
-	PackageFormat_Support::AddResourceIfExists(resourceList, this->sidecarPath);
-	//Add the Edit lists that refer this clip
-	std::vector<std::string> editInfoList;
-	if( GetEditInfoFilesSAM ( editInfoList ) )
-	{
-		size_t noOfEditInfoFiles = editInfoList.size() ;
-		for( size_t count = 0; count < noOfEditInfoFiles; count++ )
-		{
-			PackageFormat_Support::AddResourceIfExists(resourceList, editInfoList[count]);
-			std::string editNRTFile = editInfoList[count].c_str() ;
-			size_t filenamelen = editInfoList[count].length() ;
-			editNRTFile[ filenamelen - 7 ] = 'M';
-			editNRTFile[ filenamelen - 3 ] = 'X';
-			editNRTFile[ filenamelen - 2 ] = 'M';
-			editNRTFile[ filenamelen - 1 ] = 'L';
-			PackageFormat_Support::AddResourceIfExists(resourceList, editNRTFile );
-		}
-	}
-}// XDCAM_MetaHandler::FillSAMAssociatedResources
-
-// =================================================================================================
-// XDCAM_MetaHandler::FillAssociatedResources
-// ======================================
-void XDCAM_MetaHandler::FillAssociatedResources ( std::vector<std::string> * resourceList )
-{
-	if( this->isFAM )
-		 FillFAMAssociatedResources ( resourceList );
-	else
-		 FillSAMAssociatedResources ( resourceList );
-}
-// =================================================================================================
 // XDCAM_MetaHandler::FillMetadataFiles
 // ====================================
 void XDCAM_MetaHandler::FillMetadataFiles ( std::vector<std::string> * metadataFiles )
 {
-	std::string noExtPath, filePath;
-
-	if(this->isFAM) {
-		noExtPath = rootPath + kDirChar + "Clip" + kDirChar + clipName;
-	} else {
-		noExtPath = rootPath + kDirChar + "PROAV" + kDirChar + "CLPR" +
-						   kDirChar + clipName + kDirChar + clipName;
-	}
-
-	metadataFiles->push_back ( this->sidecarPath );
-	filePath = noExtPath + "M01.XML";
-	metadataFiles->push_back ( filePath );
+	metadataFiles->push_back( this->sidecarPath );
+	metadataFiles->push_back( this->mNRTFilePath );
 
 }	// XDCAM_MetaHandler::FillMetadataFiles
 
@@ -1419,7 +490,6 @@ void XDCAM_MetaHandler::CacheFileData()
 	}
 
 	// See if the clip's .XMP file exists.
-
 	if ( ! Host_IO::Exists ( this->sidecarPath.c_str() ) ) return;	// No XMP.
 
 	// Read the entire .XMP file. We know the XMP exists, New_XMPFiles_IO is supposed to return 0
@@ -1428,6 +498,7 @@ void XDCAM_MetaHandler::CacheFileData()
 	bool readOnly = XMP_OptionIsClear ( this->parent->openFlags, kXMPFiles_OpenForUpdate );
 
 	XMP_Assert ( this->parent->ioRef == 0 );
+
 	XMPFiles_IO* xmpFile =  XMPFiles_IO::New_XMPFiles_IO ( this->sidecarPath.c_str(), readOnly );
 	if ( xmpFile == 0 ) XMP_Throw ( "XDCAM XMP file open failure", kXMPErr_InternalFailure );
 	this->parent->ioRef = xmpFile;
@@ -1454,20 +525,6 @@ void XDCAM_MetaHandler::CacheFileData()
 // XDCAM_MetaHandler::GetMediaProMetadata
 // ======================================
 
-bool XDCAM_MetaHandler::GetMediaProMetadata ( SXMPMeta * xmpObjPtr,
-											  const std::string& clipUMID,
-											  bool digestFound )
-{
-	if (!this->isFAM) return false;
-
-	// Build a directory string to the MEDIAPRO file.
-
-	std::string mediaproPath;
-	MakeMediaproPath ( &mediaproPath );
-	return XDCAM_Support::GetMediaProLegacyMetadata ( xmpObjPtr, clipUMID, mediaproPath, digestFound );
-
-}
-
 // =================================================================================================
 // XDCAM_MetaHandler::ProcessXMP
 // =============================
@@ -1492,10 +549,10 @@ void XDCAM_MetaHandler::ProcessXMP()
 	}
 
 	// NonRealTimeMeta -> XMP by schema
-	std::string xmlPath, umid;
-	this->MakeClipFilePath ( &xmlPath, "M01.XML" );
+	std::string xmlPath = this->mNRTFilePath;
+	std::string umid;
 
-	readXMLFile( xmlPath.c_str(),this->expat );
+	readXMLFile( xmlPath.c_str(), this->expat );
 	if ( this->expat == 0 ) return;
 
 	// The root element should be NonRealTimeMeta in some namespace. Take whatever this file uses.
@@ -1590,7 +647,7 @@ void XDCAM_MetaHandler::UpdateFile ( bool doSafeUpdate )
 
 		std::string legacyXML, xmlPath;
 		this->expat->tree.Serialize ( &legacyXML );
-		this->MakeClipFilePath ( &xmlPath, "M01.XML" );
+		xmlPath = this->mNRTFilePath;
 
 		bool haveXML = Host_IO::Exists ( xmlPath.c_str() );
 		if ( ! haveXML ) Host_IO::Create ( xmlPath.c_str() );

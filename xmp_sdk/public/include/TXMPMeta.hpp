@@ -5,6 +5,11 @@
     #error "Do not directly include, use XMP.hpp"
 #endif
 
+#include "XMPCore/XMPCoreDefines.h"
+#if ENABLE_CPP_DOM_MODEL
+	#include "XMPCore/XMPCoreFwdDeclarations.h"
+#endif
+
 // =================================================================================================
 // ADOBE SYSTEMS INCORPORATED
 // Copyright 2002 Adobe Systems Incorporated
@@ -1725,7 +1730,7 @@ public:
 	
 	//  --------------------------------------------------------------------------------------------
 	/// @brief ResetErrorCallbackLimit() resets the error notification limit and counting. It has no
-	/// effect if an error notification callback function is not registered. 
+	///        effect if an error notification callback function is not registered. 
 	///
 	/// @param limit A limit on the number of notifications to be delivered.
 	

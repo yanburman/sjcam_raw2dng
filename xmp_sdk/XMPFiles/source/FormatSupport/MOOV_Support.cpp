@@ -59,6 +59,8 @@ void MOOV_Manager::FillBoxInfo ( const BoxNode & node, BoxInfo * info ) const
 	info->childCount = (XMP_Uns32)node.children.size();
 	info->contentSize = node.contentSize;
 	info->content = PickContentPtr ( node );
+	if( node.boxType == ISOMedia::k_uuid )
+		memcpy( info->idUUID, node.idUUID, 16);
 
 }	// MOOV_Manager::FillBoxInfo
 
@@ -249,7 +251,10 @@ void MOOV_Manager::ParseNestedBoxes ( BoxNode * parentNode, const std::string & 
 			 (isoInfo.contentSize == 0) ) continue;	// Skip trailing padding that QT sometimes writes.
 		
 		XMP_Uns32 childOffset = (XMP_Uns32) (currChild - moovOrigin);
-		parentNode->children.push_back ( BoxNode ( childOffset, isoInfo.boxType, isoInfo.headerSize, (XMP_Uns32)isoInfo.contentSize ) );
+		if( isoInfo.boxType == ISOMedia::k_uuid )
+			parentNode->children.push_back ( BoxNode ( childOffset, isoInfo.boxType, isoInfo.headerSize, (XMP_Uns8 *)isoInfo.idUUID, (XMP_Uns32)isoInfo.contentSize ) );
+		else
+			parentNode->children.push_back ( BoxNode ( childOffset, isoInfo.boxType, isoInfo.headerSize, (XMP_Uns32)isoInfo.contentSize ) );
 		BoxNode * newChild = &parentNode->children.back();
 		
 		#if TraceParseMoovTree
@@ -300,13 +305,17 @@ void MOOV_Manager::NoteChange()
 //
 // Save the new data, set this box's changed flag, and set the top changed flag.
 
-void MOOV_Manager::SetBox ( BoxRef theBox, const void* dataPtr, XMP_Uns32 size )
+void MOOV_Manager::SetBox ( BoxRef theBox, const void* dataPtr, XMP_Uns32 size , const XMP_Uns8 * idUUID )
 {
 	XMP_Enforce ( size < moovBoxSizeLimit );
 	BoxNode * node = (BoxNode*)theBox;
 	
 	if ( node->contentSize == size ) {
-	
+		if( node->boxType == ISOMedia::k_uuid && idUUID != 0 )
+		{
+			memcpy ( node->idUUID, idUUID, 16 );
+			this->moovNode.changed = true;
+		}
 		XMP_Uns8 * oldContent = PickContentPtr ( *node );
 		if ( memcmp ( oldContent, dataPtr, size ) == 0 ) return;	// No change.
 		memcpy ( oldContent, dataPtr, size );	// Update the old content in-place
@@ -323,6 +332,8 @@ void MOOV_Manager::SetBox ( BoxRef theBox, const void* dataPtr, XMP_Uns32 size )
 		memcpy ( &node->changedContent[0], dataPtr, size );
 		node->contentSize = size;
 		node->changed = true;
+		if( node->boxType == ISOMedia::k_uuid && idUUID != 0)
+			memcpy ( node->idUUID, idUUID, 16 );
 		this->moovNode.changed = true;
 		
 		#if TraceUpdateMoovTree
@@ -342,7 +353,7 @@ void MOOV_Manager::SetBox ( BoxRef theBox, const void* dataPtr, XMP_Uns32 size )
 //
 // Like above, but create the path to the box if necessary.
 
-void MOOV_Manager::SetBox ( const char * boxPath, const void* dataPtr, XMP_Uns32 size )
+void MOOV_Manager::SetBox ( const char * boxPath, const void* dataPtr, XMP_Uns32 size , const XMP_Uns8 * idUUID )
 {
 	XMP_Enforce ( size < moovBoxSizeLimit );
 
@@ -363,11 +374,11 @@ void MOOV_Manager::SetBox ( const char * boxPath, const void* dataPtr, XMP_Uns32
 		
 		parentRef = currRef;
 		currRef = this->GetTypeChild ( parentRef, boxType, 0 );
-		if ( currRef == 0 ) currRef = this->AddChildBox ( parentRef, boxType, 0, 0 );
+		if ( currRef == 0 ) currRef = this->AddChildBox ( parentRef, boxType, 0, 0 , idUUID );
 	
 	}
 
-	this->SetBox ( currRef, dataPtr, size );
+	this->SetBox ( currRef, dataPtr, size, idUUID );
 	
 }	// MOOV_Manager::SetBox
 
@@ -375,12 +386,15 @@ void MOOV_Manager::SetBox ( const char * boxPath, const void* dataPtr, XMP_Uns32
 // MOOV_Manager::AddChildBox
 // =========================
 
-MOOV_Manager::BoxRef MOOV_Manager::AddChildBox ( BoxRef parentRef, XMP_Uns32 childType, const void* dataPtr, XMP_Uns32 size )
+MOOV_Manager::BoxRef MOOV_Manager::AddChildBox ( BoxRef parentRef, XMP_Uns32 childType, const void* dataPtr, XMP_Uns32 size , const XMP_Uns8 * idUUID )
 {
 	BoxNode * parent = (BoxNode*)parentRef;
 	XMP_Assert ( parent != 0 );
 	
-	parent->children.push_back ( BoxNode ( 0, childType, 0, 0 ) );
+	if( childType == ISOMedia::k_uuid && idUUID != 0)
+		parent->children.push_back ( BoxNode ( 0, childType, 0, idUUID, 0 ) );
+	else
+		parent->children.push_back ( BoxNode ( 0, childType, 0, 0 ) );
 	BoxNode * newNode = &parent->children.back();
 	this->SetBox ( newNode, dataPtr, size );
 	
@@ -436,6 +450,8 @@ XMP_Uns32 MOOV_Manager::NewSubtreeSize ( const BoxNode & node, const std::string
 {
 	XMP_Uns32 subtreeSize = 8 + node.contentSize;	// All boxes will have 8 byte headers.
 
+	if( node.boxType == ISOMedia::k_uuid )
+		subtreeSize += 16;				// id of uuid is 16 bytes long
 	if ( (node.boxType == ISOMedia::k_free) || (node.boxType == ISOMedia::k_wide) ) {
 	}
 
@@ -493,7 +509,12 @@ XMP_Uns8 * MOOV_Manager::AppendNewSubtree ( const BoxNode & node, const std::str
 	XMP_Uns8 * boxOrigin = newPtr;	// Save origin to fill in the final size.
 	PutUns32BE ( node.boxType, (newPtr + 4) );
 	IncrNewPtr ( 8 );
-	
+	if( node.boxType == ISOMedia::k_uuid )		// For uuid, additional 16 bytes is stored for ID 
+	{
+		XMP_Enforce ( (XMP_Uns32)(newEnd - newPtr) >= ( 16 + node.contentSize ) );
+		memcpy( newPtr, node.idUUID, 16 );
+		IncrNewPtr ( 16 );
+	}
 	if ( node.contentSize != 0 ) {
 		const XMP_Uns8 * content = PickContentPtr( node );
 		memcpy ( newPtr, content, node.contentSize );

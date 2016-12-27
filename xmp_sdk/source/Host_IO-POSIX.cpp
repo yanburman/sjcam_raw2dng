@@ -357,7 +357,7 @@ XMP_Uns32 Host_IO::Read ( Host_IO::FileRef refNum, void * buffer, XMP_Uns32 coun
 	ssize_t bytesRead = read ( refNum, buffer, count );
 	if ( bytesRead == -1 ) XMP_Throw ( "Host_IO::Read, read failure", kXMPErr_ReadError );
 
-	return bytesRead;
+	return static_cast<XMP_Uns32>( bytesRead );
 
 }	// Host_IO::Read
 

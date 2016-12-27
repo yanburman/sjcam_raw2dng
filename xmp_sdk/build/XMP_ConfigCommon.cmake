@@ -9,7 +9,7 @@
 
 # ==============================================================================
 # define minimum cmake version
-cmake_minimum_required(VERSION 2.8.6)
+cmake_minimum_required(VERSION 3.5.1)
 
 #add definition specific to XMP and shared by all projects
 add_definitions(-DXML_STATIC=1 -DHAVE_EXPAT_CONFIG_H=1 )
@@ -18,7 +18,7 @@ if(XMP_BUILD_STATIC)
 else()
 	add_definitions(-DXMP_DynamicBuild=1)
 endif()
-add_definitions(-DBUILDING_XMPCOMMON_LIB=1)
+#add_definitions(-DBUILDING_XMPCOMMON_LIB=1)
 
 set (XMPROOT_DIR ${XMP_ROOT})
 set (COMPONENT XMP)
@@ -93,6 +93,7 @@ endfunction(CopyResource)
 function(CreatePlugin productname outputDir copyWhat)
 	if(UNIX)
 		if(APPLE)
+			set_target_properties(${productname} PROPERTIES XCODE_ATTRIBUTE_GCC_SYMBOLS_PRIVATE_EXTERN "YES") 
 			if(APPLE_IOS OR XMP_BUILD_STATIC)
 				CreateStaticLib(${productname} ${outputDir})
 				CopyResource(${productname} "${outputDir}/lib${productname}.resources" "${copyWhat}")
@@ -116,6 +117,7 @@ function(CreatePlugin productname outputDir copyWhat)
 				set(XMP_SHARED_MODULE_SUFFIX ".xpi")
 				set_target_properties(${productname} PROPERTIES  SUFFIX ${XMP_SHARED_MODULE_SUFFIX})
 				set_target_properties(${productname} PROPERTIES  PREFIX "")
+				set_target_properties(${productname} PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
 				set(LIBRARY_OUTPUT_PATH ${outputDir} PARENT_SCOPE)
 				# copy resources
 				#CopyResource(${productname} "${outputDir}/${productname}.resources" "${copyWhat}")
@@ -320,6 +322,15 @@ macro(SetPluginOutputPath)
 		set(OUTPUT_DIR ${PROJECT_SOURCE_DIR}/${XMP_THIS_PROJECT_RELATIVEPATH}/toolkit/XMPFilesPlugins/public/${XMP_PLATFORM_FOLDER}/${CMAKE_CFG_INTDIR}/${PRODUCT_NAME})
 	endif()
 endmacro(SetPluginOutputPath)
+
+# ==============================================================================
+# Macro: Set Plugin Optional Output folder
+# Copy plugin output to optional folder in XMPFilesPlugins folder
+# ==============================================================================
+#
+macro(SetOptionalPluginOutputPath)
+	set(XMPPLUGIN_OUTPUT_DIR ${PROJECT_SOURCE_DIR}/${XMP_THIS_PROJECT_RELATIVEPATH}/toolkit/XMPFilesPlugins/optional/${XMP_PLATFORM_FOLDER}/${XMP_BUILDMODE_DIR})
+endmacro(SetOptionalPluginOutputPath)
 
 # ==============================================================================
 # Function: Setup XMP for the application

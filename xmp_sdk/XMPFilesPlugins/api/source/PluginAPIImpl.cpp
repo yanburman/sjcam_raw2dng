@@ -110,6 +110,32 @@ static XMPErrorID Static_InitializeSession( XMP_StringPtr uid, XMP_StringPtr fil
 
 // ============================================================================
 
+static XMPErrorID Static_InitializeSessionV2( XMP_StringPtr uid, XMP_StringPtr filePath, XMP_Uns32 format, XMP_Uns32 handlerFlags, XMP_Uns32 openFlags, SessionRef * session, WXMP_Error * wError,
+											 ErrorCallbackBox errorCallbackBox, XMP_ProgressTracker::CallbackInfo * progCBInfo )
+{
+	if( wError == NULL )	return kXMPErr_BadParam;
+
+	wError->mErrorID = kXMPErr_PluginSessionInit;
+
+	try
+	{
+		*session = PluginRegistry::create(uid, filePath, openFlags, format, handlerFlags, &errorCallbackBox, progCBInfo );
+
+		if( *session != NULL )
+		{
+			wError->mErrorID = kXMPErr_NoError;
+		}
+	}
+	catch( ... )
+	{
+		HandleException( wError );
+	}
+	
+	return wError->mErrorID;
+}
+
+// ============================================================================
+
 static XMPErrorID Static_TerminateSession( SessionRef session, WXMP_Error * wError )
 {
 	if( wError == NULL )	return kXMPErr_BadParam;
@@ -188,7 +214,7 @@ static XMPErrorID Static_GetFileModDate ( SessionRef session, XMP_Bool * ok, XMP
 		*ok = thiz->getFileModDate ( modDate );
 		wError->mErrorID = kXMPErr_NoError;
 	} 
-	catch ( ... ) 
+	catch( ... )
 	{
 		HandleException( wError );
 	}
@@ -211,8 +237,17 @@ static XMPErrorID Static_CacheFileData( SessionRef session, XMP_IORef fileRef, X
 			wError->mErrorID = kXMPErr_NoError;
 		}
 	}
-	catch( ... )
-	{
+	catch( XMP_Error& error ) {
+		if ( error.GetID() == kXMPErr_FilePermission )
+		{
+			wError->mErrorID = kXMPErr_FilePermission;
+			wError->mErrorMsg = "Open, file permission error";
+		}
+		if ( error.GetID() == kXMPErr_BadFileFormat )
+		{
+			wError->mErrorID = kXMPErr_BadFileFormat;
+			wError->mErrorMsg = "Ill-formed QuickTime file";
+		}
 		HandleException( wError );
 	}
 
@@ -418,6 +453,81 @@ static XMPErrorID Static_IsMetadataWritable( SessionRef session, XMP_Bool * resu
 }
 // ============================================================================
 
+static XMPErrorID Static_ImportToXMPStringWithPacket( SessionRef session, XMP_StringPtr* xmpStr, WXMP_Error * wError, XMP_StringPtr* packetPtr, XMP_PacketInfo * packetInfo )
+{
+	if( wError == NULL )	return kXMPErr_BadParam;
+
+	wError->mErrorID = kXMPErr_PluginImportToXMP;
+	
+	PluginBase* thiz = (PluginBase*) session;
+	try
+	{
+		if(thiz)
+		{
+			thiz->importToXMP( xmpStr, packetPtr, packetInfo );
+			wError->mErrorID = kXMPErr_NoError;
+		}
+	}
+	catch( ... )
+	{
+		HandleException( wError );
+	}
+
+	return wError->mErrorID;
+}
+
+// ============================================================================
+
+static XMPErrorID Static_SetErrorCallback ( SessionRef session, ErrorCallbackBox errorCallbackBox, WXMP_Error * wError )
+{
+	if( wError == NULL )	return kXMPErr_BadParam;
+
+	wError->mErrorID = kXMPErr_PluginImportToXMP;
+	
+	PluginBase* thiz = (PluginBase*) session;
+	try
+	{
+		if(thiz)
+		{
+			thiz->SetErrorCallback( errorCallbackBox.wrapperProc, errorCallbackBox.clientProc, errorCallbackBox.context, errorCallbackBox.limit );
+			wError->mErrorID = kXMPErr_NoError;
+		}
+	}
+	catch( ... )
+	{
+		HandleException( wError );
+	}
+
+	return wError->mErrorID;
+}
+
+// ============================================================================
+
+static XMPErrorID Static_SetProgressCallback ( SessionRef session, XMP_ProgressTracker::CallbackInfo * progCBInfoPtr, WXMP_Error * wError )
+{
+	if( wError == NULL )	return kXMPErr_BadParam;
+
+	wError->mErrorID = kXMPErr_PluginImportToXMP;
+	
+	PluginBase* thiz = (PluginBase*) session;
+	try
+	{
+		if(thiz)
+		{
+			thiz->SetProgressCallback( progCBInfoPtr );
+			wError->mErrorID = kXMPErr_NoError;
+		}
+	}
+	catch( ... )
+	{
+		HandleException( wError );
+	}
+
+	return wError->mErrorID;
+}
+
+// ============================================================================
+
 XMPErrorID InitializePlugin( XMP_StringPtr moduleID, PluginAPIRef pluginAPI, WXMP_Error * wError )
 {
 	if( wError == NULL )	return kXMPErr_BadParam;
@@ -484,6 +594,15 @@ XMPErrorID InitializePlugin( XMP_StringPtr moduleID, PluginAPIRef pluginAPI, WXM
 				pluginAPI->mIsMetadataWritableProc = Static_IsMetadataWritable;
 			}
 			
+			// version 4
+			if( pluginAPI->mSize > offsetof( PluginAPI, mImportToXMPStringWithPacketProc ) )
+			{
+				pluginAPI->mImportToXMPStringWithPacketProc = Static_ImportToXMPStringWithPacket;
+				pluginAPI->mSetErrorCallbackproc = Static_SetErrorCallback;
+				pluginAPI->mInitializeSessionV2Proc = Static_InitializeSessionV2;
+				pluginAPI->mSetProgressCallbackproc = Static_SetProgressCallback;
+			}
+
 			// Compatibility hack for CS6 (plugin version 1):
 			// set mVersion to 1 if pluginAPI is for version 1
 			// because in CS6 plugin version is used to determine the hostAPI version.

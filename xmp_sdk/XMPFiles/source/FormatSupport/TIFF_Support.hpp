@@ -91,10 +91,11 @@ enum {	// Constants for the type field of a tag, as defined by TIFF.
 	kTIFF_SRationalType   = 10,
 	kTIFF_FloatType       = 11,
 	kTIFF_DoubleType      = 12,
-	kTIFF_LastType        = 12
+	kTIFF_IFDType		  = 13,
+	kTIFF_LastType		  = kTIFF_IFDType
 };
 
-static const size_t kTIFF_TypeSizes[]    = { 0, 1, 1, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8 };
+static const size_t kTIFF_TypeSizes[]    = { 0, 1, 1, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8, 4 };
 
 static const bool kTIFF_IsIntegerType[]  = { 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0 };
 static const bool kTIFF_IsRationalType[] = { 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0 };
@@ -643,8 +644,9 @@ public:
 	// The condenseStream parameter to UpdateMemoryStream can be used to rewrite the full stream
 	// instead of appending. This will discard any MakerNote tags and risks breaking offsets that
 	// are hidden. This can be necessary though to try to make the TIFF fit in a JPEG file.
-
-	virtual void ParseMemoryStream ( const void* data, XMP_Uns32 length, bool copyData = true ) = 0;
+	
+	// isAlredyLittle is provided for case when data contain no information about Endianess, So need not to check for header
+	virtual void ParseMemoryStream ( const void* data, XMP_Uns32 length, bool copyData = true, bool isAlreadyLittle = false ) = 0;
 	virtual void ParseFileStream   ( XMP_IO* fileRef ) = 0;
 
 	virtual void IntegrateFromPShop6 ( const void * buriedPtr, size_t buriedLen ) = 0;
@@ -740,7 +742,8 @@ public:
 	bool IsChanged() { return false; };
 	bool IsLegacyChanged() { return false; };
 
-	void ParseMemoryStream ( const void* data, XMP_Uns32 length, bool copyData = true );
+	// isAlredyLittle is provided for case when data contain no information about Endianess, So need not to check for header
+	void ParseMemoryStream ( const void* data, XMP_Uns32 length, bool copyData = true, bool isAlreadyLittle = false );
 	void ParseFileStream   ( XMP_IO* fileRef ) { NotAppropriate(); };
 
 	void IntegrateFromPShop6 ( const void * buriedPtr, size_t buriedLen ) { NotAppropriate(); };
@@ -782,7 +785,8 @@ private:
 
 	static void SortIFD ( TweakedIFDInfo* thisIFD );
 
-	XMP_Uns32 ProcessOneIFD ( XMP_Uns32 ifdOffset, XMP_Uns8 ifd );
+	// ModifiedInitialCheck is provided for case when data contain no header
+	XMP_Uns32 ProcessOneIFD ( XMP_Uns32 ifdOffset, XMP_Uns8 ifd, bool ModifiedInitialCheck = false );
 
 	const TweakedIFDEntry* FindTagInIFD ( XMP_Uns8 ifd, XMP_Uns16 id ) const;
 
@@ -850,7 +854,8 @@ public:
 
 	enum { kDoNotCopyData = false };
 
-	void ParseMemoryStream ( const void* data, XMP_Uns32 length, bool copyData = true );
+	// isAlredyLittle is provided for case when data contain no information about Endianess, So need not to check for header
+	void ParseMemoryStream ( const void* data, XMP_Uns32 length, bool copyData = true, bool isAlreadyLittle = false );
 	void ParseFileStream   ( XMP_IO* fileRef );
 
 	void IntegrateFromPShop6 ( const void * buriedPtr, size_t buriedLen );

@@ -52,9 +52,11 @@ public:
 	 *	@param format File format id the class is created for
 	 *	@param handlerFlags	According handler flags
 	 *  @param filePath FilePath of the file which is to be opened.
+	 *  @param errorCallbackbox Pointer to error callback info
+	 *  @param progCBInfo Points to the progress callback notification information
 	 *  @return Pointer to file Handler instance.
 	 */
-	static PluginBase* create( const std::string& uid, const std::string& filePath, XMP_Uns32 openFlags, XMP_Uns32 format, XMP_Uns32 handlerFlags );
+	static PluginBase* create( const std::string& uid, const std::string& filePath, XMP_Uns32 openFlags, XMP_Uns32 format, XMP_Uns32 handlerFlags, ErrorCallbackBox * errorCallbackbox = 0, XMP_ProgressTracker::CallbackInfo * progCBInfo = 0 );
 	
 	/** @brief Check whether the input file /a filePath is supported by the file handler with uid /a uid.
 	 *  @param uid Unique identifier string (uid) of the file handler.
@@ -98,8 +100,8 @@ public:
 	PluginCreatorBase() {}
 	virtual ~PluginCreatorBase() {}
 
-	virtual PluginBase* create( const std::string& filePath, XMP_Uns32 openFlags, XMP_Uns32 format, XMP_Uns32 handlerFlags ) const = 0;
-	
+	virtual PluginBase* create( const std::string& filePath, XMP_Uns32 openFlags, XMP_Uns32 format, XMP_Uns32 handlerFlags, ErrorCallbackBox * errorCallbackbox = 0, XMP_ProgressTracker::CallbackInfo * progCBInfo = 0 ) const = 0;
+
 	/** A File handler should provide either checkFileFormat if it is OwningHandler or NormalHandler
 	 *  OR it should provide checkFolderFormat if it is FolderHandler. Default implementation returns false
 	 *  which mean the handler does not support the file format.
@@ -146,13 +148,18 @@ public:
 	 *  @param openFlags Flags that describe the desired access.
 	 *	@param format File format id the class is created for
 	 *	@param handlerFlags	According handler flags
+	 *  @param errorCallbackbox Pointer to error callback info
+	 *  @param progCBInfo Points to the progress callback notification information
 	 *  @return Pointer to file Handler instance.
 	 */
-	inline PluginBase* create( const std::string& filePath, XMP_Uns32 openFlags, XMP_Uns32 format, XMP_Uns32 handlerFlags ) const
+	inline PluginBase* create( const std::string& filePath, XMP_Uns32 openFlags, XMP_Uns32 format, XMP_Uns32 handlerFlags, ErrorCallbackBox * errorCallbackBox = 0,	XMP_ProgressTracker::CallbackInfo * progCBInfo = 0 ) const
 	{
-		TFileHandler* instance = new TFileHandler(filePath, openFlags, format, handlerFlags);
+		TFileHandler* instance = new TFileHandler(filePath, openFlags, format, handlerFlags );
 		PluginBase* handler = dynamic_cast<PluginBase*>(instance);
-
+		if ( errorCallbackBox != 0 && errorCallbackBox->wrapperProc != 0 )
+			handler->SetErrorCallback( errorCallbackBox->wrapperProc, errorCallbackBox->clientProc, errorCallbackBox->context, errorCallbackBox->limit );
+		if( progCBInfo != 0 )
+			handler->SetProgressCallback( progCBInfo );
 		return handler;
 	}
 

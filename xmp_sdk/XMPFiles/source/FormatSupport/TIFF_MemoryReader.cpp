@@ -528,8 +528,8 @@ bool TIFF_MemoryReader::GetTag_EncodedString ( XMP_Uns8 ifd, XMP_Uns16 id, std::
 // ====================================
 
 // *** Need to tell TIFF/Exif from TIFF/EP, DNG files are the latter.
-
-void TIFF_MemoryReader::ParseMemoryStream ( const void* data, XMP_Uns32 length, bool copyData /* = true */ )
+// isAlredyLittle is provided for case when data contain no information about Endianess, So need not to check for header
+void TIFF_MemoryReader::ParseMemoryStream ( const void* data, XMP_Uns32 length, bool copyData /* = true */, bool isAlredyLittle /* = false */ )
 {
 	// Get rid of any current TIFF.
 
@@ -560,13 +560,31 @@ void TIFF_MemoryReader::ParseMemoryStream ( const void* data, XMP_Uns32 length, 
 
 	this->tiffLength = length;
 	XMP_Uns32 ifdLimit = this->tiffLength - 6;	// An IFD must start before this offset.
-
-	// Find and process the primary, Exif, GPS, and Interoperability IFDs.
-
-	XMP_Uns32 primaryIFDOffset = this->CheckTIFFHeader ( this->tiffStream, length );
+	XMP_Uns32 primaryIFDOffset = 0;
 	XMP_Uns32 tnailIFDOffset   = 0;
+	// Find and process the primary, Exif, GPS, and Interoperability IFDs.
+	
+	// If already is in little Endian then no need to check for Check TIFF header 
+	if ( isAlredyLittle )
+	{
+		this->nativeEndian = ! kBigEndianHost;
+		this->GetUns16  = GetUns16LE;
+		this->GetUns32  = GetUns32LE;
+		this->GetFloat  = GetFloatLE;
+		this->GetDouble = GetDoubleLE;
 
-	if ( primaryIFDOffset != 0 ) tnailIFDOffset = this->ProcessOneIFD ( primaryIFDOffset, kTIFF_PrimaryIFD );
+		this->PutUns16  = PutUns16LE;
+		this->PutUns32  = PutUns32LE;
+		this->PutFloat  = PutFloatLE;
+		this->PutDouble = PutDoubleLE;
+		tnailIFDOffset = this->ProcessOneIFD ( primaryIFDOffset, kTIFF_PrimaryIFD, true );
+	}
+	else
+	{
+		primaryIFDOffset = this->CheckTIFFHeader ( this->tiffStream, length );
+
+		if ( primaryIFDOffset != 0 ) tnailIFDOffset = this->ProcessOneIFD ( primaryIFDOffset, kTIFF_PrimaryIFD );
+	}
 	
 	// ! Need the thumbnail IFD for checking full Exif APP1 in some JPEG files!
 	if ( tnailIFDOffset != 0 ) {
@@ -611,14 +629,25 @@ void TIFF_MemoryReader::ParseMemoryStream ( const void* data, XMP_Uns32 length, 
 // =================================================================================================
 // TIFF_MemoryReader::ProcessOneIFD
 // ================================
+// ModifiedInitialCheck is provided for case when data contain no header
 
-XMP_Uns32 TIFF_MemoryReader::ProcessOneIFD ( XMP_Uns32 ifdOffset, XMP_Uns8 ifd )
+XMP_Uns32 TIFF_MemoryReader::ProcessOneIFD ( XMP_Uns32 ifdOffset, XMP_Uns8 ifd, bool ModifiedInitialCheck /* = false */ )
 {
 	TweakedIFDInfo& ifdInfo = this->containedIFDs[ifd];
 
-	if ( (ifdOffset < 8) || (ifdOffset > (this->tiffLength - kEmptyIFDLength)) ) {
-		XMP_Error error(kXMPErr_BadTIFF, "Bad IFD offset" );
-		this->NotifyClient ( kXMPErrSev_FileFatal, error );
+	if( ModifiedInitialCheck )
+	{
+		if ((ifdOffset > (this->tiffLength)) ) {
+			XMP_Error error(kXMPErr_BadTIFF, "Bad IFD offset" );
+			this->NotifyClient ( kXMPErrSev_FileFatal, error );
+		}
+	}
+	else 
+	{
+		if ( (ifdOffset < 8) || (ifdOffset > (this->tiffLength - kEmptyIFDLength)) ) {
+			XMP_Error error(kXMPErr_BadTIFF, "Bad IFD offset" );
+			this->NotifyClient ( kXMPErrSev_FileFatal, error );
+		}
 	}
 
 	XMP_Uns8* ifdPtr = this->tiffStream + ifdOffset;

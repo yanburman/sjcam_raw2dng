@@ -23,14 +23,12 @@ extern bool MP3_CheckFormat ( XMP_FileFormat format,
 							  XMP_StringPtr  filePath,
 			                  XMP_IO*    fileRef,
 			                  XMPFiles *     parent );
-
 static const XMP_OptionBits kMP3_HandlerFlags = (kXMPFiles_CanInjectXMP |
 												 kXMPFiles_CanExpand |
 												 kXMPFiles_PrefersInPlace |
 												 kXMPFiles_AllowsOnlyXMP |
-												 kXMPFiles_ReturnsRawPacket|
+												 kXMPFiles_ReturnsRawPacket |
 												 kXMPFiles_CanReconcile);
-
 class MP3_MetaHandler : public XMPFileHandler
 {
 public:
@@ -43,7 +41,6 @@ public:
     void WriteTempFile ( XMP_IO* tempRef );
 
 	void ProcessXMP();
-
 private:
 	////////////////////////////////////////////////////////////////////////////////////
 	// instance vars

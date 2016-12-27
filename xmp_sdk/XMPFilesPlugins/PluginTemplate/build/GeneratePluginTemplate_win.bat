@@ -47,9 +47,9 @@ set GENERATE_ALL=On
 
 :32DLL
 echo "Generating PluginTemplate Dynamic Win32"
-set GENERATOR=Visual Studio 11
+set GENERATOR=Visual Studio 14 2015
 set BITS64=OFF
-set CMakeFolder="vc11/windows"
+set CMakeFolder="vc14/windows"
 set CMake_ARCH=x86
 IF "%GENERATE_ALL%"=="On" (
 	set NEXT_LABEL=64DLL
@@ -59,9 +59,9 @@ GOTO GenerateNow
 
 :64DLL
 echo "Generating PluginTemplate Dynamic x64"
-set GENERATOR=Visual Studio 11 Win64
+set GENERATOR=Visual Studio 14 2015 Win64
 set BITS64=ON
-set CMakeFolder="vc11/windows_x64"
+set CMakeFolder="vc14/windows_x64"
 set CMake_ARCH=x64
 IF "%GENERATE_ALL%"=="On" (
 	set NEXT_LABEL=ok
@@ -94,7 +94,7 @@ exit /B 0
 
 :CLEANALL
 echo "Cleaning..."
-if exist vc11 rmdir /S /Q vc11
+if exist vc14 rmdir /S /Q vc14
 echo "Done"
 pause
 exit /B 0

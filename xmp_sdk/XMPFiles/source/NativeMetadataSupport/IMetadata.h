@@ -237,7 +237,7 @@ template<class T> void IMetadata::setValue( XMP_Uns32 id, const T& value )
 	//
 	// check if the value is "empty"
 	//
-	if( this->isEmptyValue( id, *valueObj ) )
+	if( valueObj == NULL || this->isEmptyValue( id, *valueObj ) )
 	{
 		//
 		// value is "empty", delete it

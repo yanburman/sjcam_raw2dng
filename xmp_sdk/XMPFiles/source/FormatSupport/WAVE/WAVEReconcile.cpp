@@ -10,6 +10,8 @@
 #include "public/include/XMP_Environment.h"	// ! XMP_Environment.h must be the first included header.
 #include "public/include/XMP_Const.h"
 
+#include <string.h>
+
 #include "XMPFiles/source/FormatSupport/WAVE/WAVEReconcile.h"
 #include "XMPFiles/source/FormatSupport/WAVE/DISPMetadata.h"
 #include "XMPFiles/source/FormatSupport/WAVE/INFOMetadata.h"
@@ -25,6 +27,7 @@
 #include "XMPFiles/source/NativeMetadataSupport/MetadataSet.h"
 
 #include "XMPFiles/source/FormatSupport/Reconcile_Impl.hpp"
+
 
 using namespace IFF_RIFF;
 
@@ -57,7 +60,7 @@ static const MetadataPropertyInfo kBextProperties[] =
 	{ NULL }
 };
 
-static const char * kDM_takeNumber = "takeNumber";
+static const char * kDM_shotNumber = "shotNumber";
 static const char * kDM_audioSampleType = "audioSampleType";
 static const char * kDM_scene = "scene";
 static const char * kDM_tapeName = "tapeName";
@@ -68,12 +71,17 @@ static const char * kDM_startTimecode = "startTimecode";
 static const char * kDM_timeFormat = "timeFormat";
 static const char * kDM_timeValue = "timeValue";
 static const char * kDM_good = "good";
+static const char * kIXML_trackList = "trackList";
+static const char * kIXML_channelIndex = "channelIndex";
+static const char * kIXML_interleaveIndex = "interleaveIndex";
+static const char * kIXML_Name = "name";
+static const char * kIXML_Function = "function";
 
 static const MetadataPropertyInfo kiXMLProperties[] =
 {
 //	  XMP NS		XMP Property Name			Native Metadata Identifier				Native Datatype				XMP	Datatype		Delete	Priority	ExportPolicy
 	{ kXMP_NS_DM,	kDM_tapeName,				iXMLMetadata::kTape,					kNativeType_StrUTF8,		kXMPType_Simple,	false,	false,		kExport_Always },	//xmpDM:tapeName <-> iXML:TAPE
-	{ kXMP_NS_DM,	kDM_takeNumber,				iXMLMetadata::kTake,					kNativeType_Uns64,			kXMPType_Simple,	false,	false,		kExport_Always },	//xmpDM:tapeName <-> iXML:TAPE
+	{ kXMP_NS_DM,	kDM_shotNumber,				iXMLMetadata::kTake,					kNativeType_StrUTF8,		kXMPType_Simple,	false,	false,		kExport_Always },	//xmpDM:shotNumber <-> iXML:TAKE
 	{ kXMP_NS_DM,	kDM_scene,					iXMLMetadata::kScene,					kNativeType_StrUTF8,		kXMPType_Simple,	false,	false,		kExport_Always },	//xmpDM:scene <-> iXML:SCENE
 	{ kXMP_NS_DM,	kDM_logComment,				iXMLMetadata::kNote,					kNativeType_StrUTF8,		kXMPType_Simple,	false,	false,		kExport_Always },	//xmpDM:logComment <-> iXML:NOTE
 	{ kXMP_NS_DM,	kDM_projectName,			iXMLMetadata::kProject,					kNativeType_StrUTF8,		kXMPType_Simple,	false,	false,		kExport_Always },	//xmpDM:project <-> iXML:PROJECT
@@ -93,6 +101,7 @@ static const MetadataPropertyInfo kiXMLProperties[] =
 	// special case for timeReference // bext:timeReference <-> iXML:TIMESTAMP_SAMPLES_SINCE_MIDNIGHT_HO and iXML:TIMESTAMP_SAMPLES_SINCE_MIDNIGHT_HI
 	// special case for startTimeCode // xmpDM:startTimecode <-> iXML:TIMECODE_RATE, iXML:TIMECODE_FLAG and bext:timeReference.
 	{ kXMP_NS_BWF,	kBWF_timeStampSampleRate,	iXMLMetadata::kTimeStampSampleRate,		kNativeType_Uns64,			kXMPType_Simple,	false,	false,		kExport_NoDelete },	// bext::timeStampSampleRate <-> iXML
+	// special case for TRACK_LIST // ixml:Track_List <-> ixml:trackList
 	{ NULL }
 };
 
@@ -985,6 +994,37 @@ void IFF_RIFF::WAVEReconcile::exportSpecialXMPToiXML( SXMPMeta & inXMP, IMetadat
 		outNativeMeta.deleteValue( iXMLMetadata::kBWFTimeReferenceHigh );
 		outNativeMeta.deleteValue( iXMLMetadata::kBWFTimeReferenceLow );
 	}
+
+	// track list
+	try {
+		if ( inXMP.DoesPropertyExist( kXMP_NS_iXML, kIXML_trackList ) ) {
+			XMP_OptionBits options( 0 );
+			if ( inXMP.GetProperty( kXMP_NS_iXML, kIXML_trackList, NULL, &options ) &&
+				XMP_OptionIsSet( options, kXMP_PropArrayIsOrdered ) )
+			{
+				XMP_Index count = inXMP.CountArrayItems( kXMP_NS_iXML, kIXML_trackList );
+				std::vector< iXMLMetadata::TrackListInfo > trackListInfo( count );
+				for ( XMP_Index i = 0; i < count; i++ ) {
+					iXMLMetadata::TrackListInfo & trackRef = trackListInfo[i];
+					std::string trackPath;
+					SXMPUtils::ComposeArrayItemPath( kXMP_NS_iXML, kIXML_trackList, i + 1, &trackPath );
+					std::string fieldPath;
+					SXMPUtils::ComposeStructFieldPath( kXMP_NS_iXML, trackPath.c_str(), kXMP_NS_iXML, kIXML_channelIndex, &fieldPath );
+					XMP_Int64 int64Value;
+					inXMP.GetProperty_Int64( kXMP_NS_iXML, fieldPath.c_str(), &int64Value, &options );
+					trackRef.mChannelIndex = int64Value;
+					inXMP.GetStructField( kXMP_NS_iXML, trackPath.c_str(), kXMP_NS_iXML, kIXML_Name, &trackRef.mName, &options );
+					inXMP.GetStructField( kXMP_NS_iXML, trackPath.c_str(), kXMP_NS_iXML, kIXML_Function, &trackRef.mFunction, &options );
+				}
+				outNativeMeta.setArray< iXMLMetadata::TrackListInfo >( iXMLMetadata::kTrackList, trackListInfo.data(), count );
+				inXMP.DeleteProperty( kXMP_NS_iXML, kIXML_trackList );
+			}
+		} else {
+			outNativeMeta.deleteValue( iXMLMetadata::kTrackList );
+		}
+	} catch( ... ) {
+		// do nothing
+	}
 }
 
 bool IFF_RIFF::WAVEReconcile::exportSpecialiXMLToXMP( IMetadata & inNativeMeta, SXMPMeta & outXMP )
@@ -1059,6 +1099,31 @@ bool IFF_RIFF::WAVEReconcile::exportSpecialiXMLToXMP( IMetadata & inNativeMeta, 
 		if ( matchingValueFound )
 		{
 			outXMP.SetProperty( kXMP_NS_BWF, kDM_timeFormat, xmpValue );
+			changed = true;
+		}
+	}
+
+	// special case for iXML:trackList
+	if ( inNativeMeta.valueExists( iXMLMetadata::kTrackList ) )
+	{
+		XMP_Uns32 countOfTracks( 0 );
+		const iXMLMetadata::TrackListInfo * trackInfoArray = 
+			inNativeMeta.getArray< iXMLMetadata::TrackListInfo >( iXMLMetadata::kTrackList, countOfTracks );
+		if ( countOfTracks > 0 && trackInfoArray != NULL ) {
+			outXMP.DeleteProperty( kXMP_NS_iXML, kIXML_trackList );
+			outXMP.SetProperty( kXMP_NS_iXML, kIXML_trackList, 0, kXMP_PropArrayIsOrdered );
+			for ( XMP_Uns32 i = 0; i < countOfTracks; i++ ) {
+				std::string trackPath;
+				SXMPUtils::ComposeArrayItemPath( kXMP_NS_iXML, kIXML_trackList, i + 1, &trackPath );
+				const iXMLMetadata::TrackListInfo & ref = trackInfoArray[i];
+				std::string value;
+				SXMPUtils::ConvertFromInt64( ref.mChannelIndex, "%llu", &value );
+				outXMP.SetStructField( kXMP_NS_iXML, trackPath.c_str(), kXMP_NS_iXML, kIXML_channelIndex, value );
+				if ( ref.mName.size() > 0 )
+					outXMP.SetStructField( kXMP_NS_iXML, trackPath.c_str(), kXMP_NS_iXML, kIXML_Name, ref.mName );
+				if ( ref.mFunction.size() > 0 )
+					outXMP.SetStructField( kXMP_NS_iXML, trackPath.c_str(), kXMP_NS_iXML, kIXML_Function, ref.mFunction );
+			}
 			changed = true;
 		}
 	}

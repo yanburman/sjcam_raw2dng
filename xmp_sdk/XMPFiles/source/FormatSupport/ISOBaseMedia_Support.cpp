@@ -55,7 +55,8 @@ const XMP_Uns8 * GetBoxInfo ( const XMP_Uns8 * boxPtr, const XMP_Uns8 * boxLimit
 	if ( info == 0 ) info = &voidInfo;
 	info->boxType = info->headerSize = 0;
 	info->contentSize = 0;
-	
+	memset( info->idUUID, 0, 16 );
+
 	if ( boxPtr >= boxLimit ) XMP_Throw ( "Bad offset to GetBoxInfo", kXMPErr_InternalFailure );
 	
 	if ( (boxLimit - boxPtr) < 8 ) {	// Is there enough space for a standard box header?
@@ -68,8 +69,22 @@ const XMP_Uns8 * GetBoxInfo ( const XMP_Uns8 * boxPtr, const XMP_Uns8 * boxLimit
 	info->boxType = GetUns32BE ( boxPtr+4 );
 
 	if ( u32Size >= 8 ) {
-		info->headerSize  = 8;	// Normal explicit size case.
-		info->contentSize = u32Size - 8;
+		if( info->boxType == ISOMedia::k_uuid )
+		{
+			if ( (boxLimit - boxPtr) < 24 ) 
+			{	// Is there enough space for a uuid box header?
+				if ( throwErrors ) XMP_Throw ( "No space for UUID box header", kXMPErr_BadFileFormat );
+				info->headerSize = (XMP_Uns32) (boxLimit - boxPtr);
+				return boxLimit;
+			}
+			info->headerSize  = 8 + 16;	//  16  for ID in UUID  
+			memcpy( info->idUUID, boxPtr + 8, 16 );
+		}
+		else
+		{
+			info->headerSize  = 8;	// Normal explicit size case.
+		}
+		info->contentSize = u32Size - info->headerSize;
 	} else if ( u32Size == 0 ) {
 		info->headerSize  = 8;	// The box goes to EoF - treat it as "to limit".
 		info->contentSize = (boxLimit - boxPtr) - 8;
@@ -115,6 +130,7 @@ XMP_Uns64 GetBoxInfo ( XMP_IO* fileRef, const XMP_Uns64 boxOffset, const XMP_Uns
 	if ( info == 0 ) info = &voidInfo;
 	info->boxType = info->headerSize = 0;
 	info->contentSize = 0;
+	memset( info->idUUID, 0, 16 );
 	
 	if ( boxOffset >= boxLimit ) XMP_Throw ( "Bad offset to GetBoxInfo", kXMPErr_InternalFailure );
 	
@@ -131,8 +147,22 @@ XMP_Uns64 GetBoxInfo ( XMP_IO* fileRef, const XMP_Uns64 boxOffset, const XMP_Uns
 	info->boxType = GetUns32BE ( &buffer[4] );
 
 	if ( u32Size >= 8 ) {
-		info->headerSize  = 8;	// Normal explicit size case.
-		info->contentSize = u32Size - 8;
+		if( info->boxType == ISOMedia::k_uuid )
+		{
+			if ( (boxLimit - boxOffset) < 24 ) 
+			{	// Is there enough space for a uuid box header?
+				if ( throwErrors ) XMP_Throw ( "No space for UUID box header", kXMPErr_BadFileFormat );
+				info->headerSize = (XMP_Uns32) (boxLimit - boxOffset);
+				return boxLimit;
+			}
+			info->headerSize  = 8 + 16;	//  16  for ID in UUID  
+			(void) fileRef->ReadAll ( info->idUUID, 16 );
+		}
+		else
+		{
+			info->headerSize  = 8;	// Normal explicit size case.
+		}
+		info->contentSize = u32Size - info->headerSize;
 	} else if ( u32Size == 0 ) {
 		info->headerSize  = 8;	// The box goes to EoF.
 		info->contentSize = fileRef->Length() - (boxOffset + 8);

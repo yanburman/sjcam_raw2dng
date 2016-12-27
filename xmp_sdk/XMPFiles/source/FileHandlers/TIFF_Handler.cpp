@@ -272,8 +272,7 @@ void TIFF_MetaHandler::ProcessXMP()
 	// Process the legacy metadata.
 
 	if ( haveIPTC && (! haveXMP) && (iptcDigestState == kDigestMatches) ) iptcDigestState = kDigestMissing;
-	bool parseIPTC = (iptcDigestState != kDigestMatches) || (! readOnly);
-	if ( parseIPTC ) iptc.ParseMemoryDataSets ( iptcInfo.dataPtr, iptcInfo.dataLen );
+	if (iptcInfo.dataLen) iptc.ParseMemoryDataSets ( iptcInfo.dataPtr, iptcInfo.dataLen );
 	ImportPhotoData ( tiff, iptc, psir, iptcDigestState, &this->xmpObj, options );
 
 	this->containsXMP = true;	// Assume we now have something in the XMP.

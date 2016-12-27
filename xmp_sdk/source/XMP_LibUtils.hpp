@@ -72,6 +72,8 @@ extern "C" void Terminate_LibUtils();
 	#define XMP_Throw_Verbose(msg,e,id) XMP_Throw(msg, id)
 #endif
 
+#define XMP_Error_Throw(error)	{ AnnounceThrow (error.GetErrMsg()); throw error; }
+
 class GenericErrorCallback {
 public:
 	// Abstract base class for XMPCore and XMPFiles internal error notification support. Needed so
@@ -88,18 +90,60 @@ public:
 
 	void Clear() { this->notifications = 0; this->limit = 1; this->topSeverity = kXMPErrSev_Recoverable; };
 
-	bool CheckLimitAndSeverity (XMP_ErrorSeverity severity ) const;
+	bool CheckLimitAndSeverity (XMP_ErrorSeverity severity ) const
+	{
+
+		if ( this->limit == 0 ) return true;	// Always notify if the limit is zero.
+		if ( severity < this->topSeverity ) return false;	// Don't notify, don't count.
+
+		if ( severity > this->topSeverity ) {
+			this->topSeverity = severity;
+			this->notifications = 0;
+		}
+
+		this->notifications += 1;
+		return (this->notifications <= this->limit);
+
+	}	// GenericErrorCallback::CheckLimitAndSeverity
 
 	// Const so they can be used with const XMPMeta and XMPFiles objects.
-	void NotifyClient ( XMP_ErrorSeverity severity, XMP_Error & error, XMP_StringPtr filePath = 0 ) const;
+	void NotifyClient ( XMP_ErrorSeverity severity, XMP_Error & error, XMP_StringPtr filePath = 0 ) const
+	{
+
+		bool notifyClient = CanNotify() && !error.IsNotified();
+		bool returnAndRecover (severity == kXMPErrSev_Recoverable);
+
+		if ( notifyClient ) {
+			error.SetNotified();
+			notifyClient = CheckLimitAndSeverity ( severity );
+			if ( notifyClient ) {
+				returnAndRecover &= ClientCallbackWrapper( filePath, severity, error.GetID(), error.GetErrMsg() );
+			}
+		}
+
+		if ( ! returnAndRecover ) XMP_Error_Throw ( error );
+
+	}	// GenericErrorCallback::NotifyClient
 
 	virtual bool CanNotify ( ) const = 0;
 	virtual bool ClientCallbackWrapper ( XMP_StringPtr filePath, XMP_ErrorSeverity severity, XMP_Int32 cause, XMP_StringPtr messsage ) const = 0;
 
 };
 
-#define XMP_Error_Throw(error)	{ AnnounceThrow (error.GetErrMsg()); throw error; }
+// -------------------------------------------------------------------------------------------------
 
+struct ErrorCallbackBox
+{
+	XMPFiles_ErrorCallbackWrapper	wrapperProc;
+	XMPFiles_ErrorCallbackProc	clientProc;
+	void * context;
+	XMP_Uns32 limit;
+
+	ErrorCallbackBox( XMPFiles_ErrorCallbackWrapper	wrapperProcedure,
+	XMPFiles_ErrorCallbackProc	clientProcedure,
+	void * contextPtr,
+	XMP_Uns32 limit32 ): wrapperProc(wrapperProcedure), clientProc(clientProcedure), context(contextPtr), limit(limit32) { }
+};
 
 // -------------------------------------------------------------------------------------------------
 
@@ -195,8 +239,8 @@ public:
 	#define HaveAtomicIncrDecr 1
 	typedef int32_t XMP_AtomicCounter;
 
-	#define XMP_AtomicIncrement(x)	OSAtomicIncrement32 ( &(x) )
-	#define XMP_AtomicDecrement(x)	OSAtomicDecrement32 ( &(x) )
+	#define XMP_AtomicIncrement(x)	OSAtomicIncrement32Barrier ( &(x) )
+	#define XMP_AtomicDecrement(x)	OSAtomicDecrement32Barrier ( &(x) )
 
 	typedef pthread_mutex_t XMP_BasicMutex;
 

@@ -274,7 +274,7 @@ extern void ToUTF16 ( const UTF8Unit * utf8In, size_t utf8Len, std::string * utf
 	
 	while ( utf8Len > 0 ) {
 		Converter ( utf8In, utf8Len, u16Buffer, kBufferSize, &readCount, &writeCount );
-		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadXML );
+		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadUnicode );
 		utf16Str->append ( (const char *)u16Buffer, writeCount*2 );
 		utf8In  += readCount;
 		utf8Len -= readCount;
@@ -295,7 +295,7 @@ extern void ToUTF16Native ( const UTF8Unit * utf8In, size_t utf8Len, std::string
 	
 	while ( utf8Len > 0 ) {
 		UTF8_to_UTF16Nat ( utf8In, utf8Len, u16Buffer, kBufferSize, &readCount, &writeCount );
-		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadXML );
+		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadUnicode );
 		utf16Str->append ( (const char *)u16Buffer, writeCount*2 );
 		utf8In  += readCount;
 		utf8Len -= readCount;
@@ -319,7 +319,7 @@ extern void ToUTF32 ( const UTF8Unit * utf8In, size_t utf8Len, std::string * utf
 	
 	while ( utf8Len > 0 ) {
 		Converter ( utf8In, utf8Len, u32Buffer, kBufferSize, &readCount, &writeCount );
-		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadXML );
+		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadUnicode );
 		utf32Str->append ( (const char *)u32Buffer, writeCount*4 );
 		utf8In  += readCount;
 		utf8Len -= readCount;
@@ -340,7 +340,7 @@ extern void ToUTF32Native ( const UTF8Unit * utf8In, size_t utf8Len, std::string
 	
 	while ( utf8Len > 0 ) {
 		UTF8_to_UTF32Nat ( utf8In, utf8Len, u32Buffer, kBufferSize, &readCount, &writeCount );
-		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadXML );
+		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadUnicode );
 		utf32Str->append ( (const char *)u32Buffer, writeCount*4 );
 		utf8In  += readCount;
 		utf8Len -= readCount;
@@ -364,7 +364,7 @@ extern void FromUTF16 ( const UTF16Unit * utf16In, size_t utf16Len, std::string 
 	
 	while ( utf16Len > 0 ) {
 		Converter ( utf16In, utf16Len, u8Buffer, kBufferSize, &readCount, &writeCount );
-		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadXML );
+		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadUnicode );
 		utf8Str->append ( (const char *)u8Buffer, writeCount );
 		utf16In  += readCount;
 		utf16Len -= readCount;
@@ -385,7 +385,7 @@ extern void FromUTF16Native ( const UTF16Unit * utf16In, size_t utf16Len, std::s
 	
 	while ( utf16Len > 0 ) {
 		UTF16Nat_to_UTF8 ( utf16In, utf16Len, u8Buffer, kBufferSize, &readCount, &writeCount );
-		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadXML );
+		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadUnicode );
 		utf8Str->append ( (const char *)u8Buffer, writeCount );
 		utf16In  += readCount;
 		utf16Len -= readCount;
@@ -409,7 +409,7 @@ extern void FromUTF32 ( const UTF32Unit * utf32In, size_t utf32Len, std::string 
 	
 	while ( utf32Len > 0 ) {
 		Converter ( utf32In, utf32Len, u8Buffer, kBufferSize, &readCount, &writeCount );
-		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadXML );
+		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadUnicode );
 		utf8Str->append ( (const char *)u8Buffer, writeCount );
 		utf32In  += readCount;
 		utf32Len -= readCount;
@@ -430,7 +430,7 @@ extern void FromUTF32Native ( const UTF32Unit * utf32In, size_t utf32Len, std::s
 	
 	while ( utf32Len > 0 ) {
 		UTF32Nat_to_UTF8 ( utf32In, utf32Len, u8Buffer, kBufferSize, &readCount, &writeCount );
-		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadXML );
+		if ( writeCount == 0 ) UC_Throw ( "Incomplete Unicode at end of string", kXMPErr_BadUnicode );
 		utf8Str->append ( (const char *)u8Buffer, writeCount );
 		utf32In  += readCount;
 		utf32Len -= readCount;

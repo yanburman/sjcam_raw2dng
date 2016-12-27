@@ -718,6 +718,7 @@ void P2_MetaHandler::SetStartTimecodeFromLegacyXML ( XML_NodePtr legacyVideoCont
 				} else if ( p2FrameRate == "50p" ) {
 
 					dmTimeFormat = "50Timecode";
+					this->AdjustTimeCode( p2StartTimecode, false );
 
 				} else if ( p2FrameRate == "59.94p" ) {
 
@@ -726,6 +727,7 @@ void P2_MetaHandler::SetStartTimecodeFromLegacyXML ( XML_NodePtr legacyVideoCont
 					} else if ( XMP_LitMatch ( p2DropFrameFlag, "false" ) ) {
 						dmTimeFormat = "5994NonDropTimecode";
 					}
+					this->AdjustTimeCode( p2StartTimecode, false );
 
 				} else if ( (p2FrameRate == "59.94i") || (p2FrameRate == "29.97p") ) {
 
@@ -767,6 +769,56 @@ void P2_MetaHandler::SetStartTimecodeFromLegacyXML ( XML_NodePtr legacyVideoCont
 
 }	// P2_MetaHandler::SetStartTimecodeFromLegacyXML
 
+// =================================================================================================
+// P2_MetaHandler::AdjustTimeCode
+// ===========================================
+
+void P2_MetaHandler::AdjustTimeCode( std::string & p2Timecode, const XMP_Bool & isXMPtoXMLConversion )
+{
+	/*
+		XMP is storing frame number for 50P and 59.94P as [0-49] and [0-59] respectively,
+		but NRT XML can store frame number for these format as [0-29].
+		So, XMP need to adjust values for these cases.
+	*/
+	try
+	{
+		XMP_Int64 strLength = p2Timecode.length();
+		XMP_Int64 index = strLength - 1;
+		for (; index > 0; --index)
+			if (p2Timecode.at(index) == ':')
+				break;
+		std::string FFValue;
+		if ( index == strLength - 2 )								// HH:MM:SS:F
+			FFValue = p2Timecode.substr(index + 1, 1);
+		else if ( index == strLength - 3 )
+			FFValue = p2Timecode.substr(index + 1, 2);				// HH:MM:SS:FF
+		else
+			throw;													// Invalid format
+		stringstream timeCodeStream (FFValue);
+		XMP_Uns32 frameNumber;
+		timeCodeStream >> frameNumber;
+		if (isXMPtoXMLConversion)									// Conversion from XMP to XML so doing half the value
+		{
+			frameNumber /= 2;
+			XMP_Assert(frameNumber >= 0 && frameNumber < 30);
+		}
+		else														// Conversion from XML to XMP so doubling the value
+		{							
+			XMP_Assert(frameNumber >= 0 && frameNumber < 30);
+			frameNumber *= 2;
+		}
+		timeCodeStream.clear();
+		timeCodeStream << p2Timecode.substr(0, index + 1);
+		if (frameNumber < 10)
+			timeCodeStream << '0';
+		timeCodeStream << frameNumber;
+		p2Timecode = timeCodeStream.str();
+	}
+	catch (...)
+	{
+		XMP_Throw("P2 Invalid Timecode.", kXMPErr_InternalFailure);
+	}
+}	// P2_MetaHandler::AdjustTimeCode
 
 // =================================================================================================
 // P2_MetaHandler::SetGPSPropertyFromLegacyXML
@@ -1235,7 +1287,35 @@ void P2_MetaHandler::UpdateFile ( bool doSafeUpdate )
 					updateLegacyXML = true;
 				}
 			}
+		}
 
+		// Half the startTimeCode frame number value in XML if require so
+		std::string xmpStartTimeCode;
+		bool isTimecodeExists = this->xmpObj.GetStructField(kXMP_NS_DM, "startTimecode", kXMP_NS_DM, "timeValue", &xmpStartTimeCode, 0);
+		if (isTimecodeExists)
+		{
+			std::string frameFormat;
+			this->xmpObj.GetStructField(kXMP_NS_DM, "startTimecode", kXMP_NS_DM, "timeFormat", &frameFormat, 0);
+			if (frameFormat == "50Timecode" || frameFormat == "5994DropTimecode" || frameFormat == "5994NonDropTimecode")
+			{
+				p2Clip = this->p2ClipManager.GetManagedClip();
+				XMP_StringPtr p2NS = p2Clip->GetP2RootNode()->ns.c_str();
+				XML_NodePtr legacyVideoContext = p2Clip->GetEssenceListNode();
+				if (legacyVideoContext != 0)
+				{
+					legacyVideoContext = legacyVideoContext->GetNamedElement(p2NS, "Video");
+					XML_NodePtr legacyProp = legacyVideoContext->GetNamedElement(p2NS, "StartTimecode");
+					if ((legacyProp != 0) && legacyProp->IsLeafContentNode())
+					{
+						AdjustTimeCode( xmpStartTimeCode, true );
+						if (xmpStartTimeCode != legacyProp->GetLeafContentValue())
+						{
+							legacyProp->SetLeafContentValue(xmpStartTimeCode.c_str());
+							updateLegacyXML = true;
+						}
+					}
+				}
+			}
 		}
 
 		std::string newDigest;

@@ -99,6 +99,7 @@ private:
 	void SetStartTimecodeFromLegacyXML  ( XML_NodePtr legacyVideoContext, bool digestFound );
 	void SetGPSPropertyFromLegacyXML  ( XML_NodePtr legacyLocationContext, bool digestFound, XMP_StringPtr propName, XMP_StringPtr legacyPropName );
 	void SetAltitudeFromLegacyXML  ( XML_NodePtr legacyLocationContext, bool digestFound );
+	void AdjustTimeCode( std::string & p2Timecode, const XMP_Bool & isXMPtoXMLConversion );
 
 	XML_Node * ForceChildElement ( XML_Node * parent, XMP_StringPtr localName, XMP_Int32 indent, XMP_Bool insertAtFront );
 

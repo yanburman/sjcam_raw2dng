@@ -9,7 +9,7 @@
 
 # ==============================================================================
 # define minimum cmake version
-cmake_minimum_required(VERSION 2.8.6)
+cmake_minimum_required(VERSION 3.5.1)
 
 # ==============================================================================
 # Shared config for iOS
@@ -21,7 +21,7 @@ set(CMAKE_C_FLAGS "${${COMPONENT}_SHARED_COMPILE_FLAGS} ${${COMPONENT}_EXTRA_C_C
 set(CMAKE_C_FLAGS_DEBUG "${${COMPONENT}_SHARED_COMPILE_DEBUG_FLAGS}")
 set(CMAKE_C_FLAGS_RELEASE "${${COMPONENT}_SHARED_COMPILE_RELEASE_FLAGS}")
 
-set(CMAKE_CXX_FLAGS "${${COMPONENT}_SHARED_COMPILE_FLAGS} ${${COMPONENT}_EXTRA_CXX_COMPILE_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++11 ${${COMPONENT}_SHARED_COMPILE_FLAGS} ${${COMPONENT}_EXTRA_CXX_COMPILE_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${${COMPONENT}_SHARED_COMPILE_DEBUG_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${${COMPONENT}_SHARED_COMPILE_RELEASE_FLAGS}")
 
@@ -96,6 +96,8 @@ function(SetPlatformLinkFlags target linkflags)
 	set_target_properties(${target} PROPERTIES XCODE_ATTRIBUTE_GCC_WARN_SIGN_COMPARE "YES")
 	set_target_properties(${target} PROPERTIES XCODE_ATTRIBUTE_GCC_WARN_UNKNOWN_PRAGMAS "YES")
 	set_target_properties(${target} PROPERTIES XCODE_ATTRIBUTE_GCC_WARN_UNUSED_VALUE "NO")
+	set_target_properties(${target} PROPERTIES XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH "YES")
+	set_target_properties(${target} PROPERTIES XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET "7.0")
 endfunction(SetPlatformLinkFlags)
 
 # ==============================================================================

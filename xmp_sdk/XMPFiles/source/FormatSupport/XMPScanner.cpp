@@ -20,11 +20,7 @@
 
 #include "public/include/XMP_Const.h"
 
-#if TestRunnerBuild
-	#define EnablePacketScanning 1
-#else
-	#include "XMPFiles/source/XMPFiles_Impl.hpp"
-#endif
+
 
 #include "XMPFiles/source/FormatSupport/XMPScanner.hpp"
 
@@ -36,6 +32,12 @@
 	#include <iostream>
 	#include <iomanip>
 	#include <fstream>
+#endif
+
+#if TestRunnerBuild
+#define EnablePacketScanning 1
+#else
+#include "XMPFiles/source/XMPFiles_Impl.hpp"
 #endif
 
 #ifndef UseStringPushBack	// VC++ 6.x does not provide push_back for strings!

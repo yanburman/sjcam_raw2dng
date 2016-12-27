@@ -13,8 +13,6 @@
 #include "public/include/XMP_Environment.h"	// ! XMP_Environment.h must be the first included header.
 #include "public/include/XMP_Const.h"
 
-#include <string.h>
-
 /**
  * The class ValueObject acts as a base class for the two generic classes
  * TValueObject and TValueArray.
@@ -110,7 +108,13 @@ template<class T> inline void TArrayObject<T>::setArray( const T* buffer, XMP_Un
 
 		if( mArray != NULL &&  mSize == numElements )
 		{
-			doSet = ( memcmp( mArray, buffer, numElements*sizeof(T) ) != 0 );
+			doSet = false;
+			for( size_t i = 0; i < mSize; i++ ) {
+				if ( mArray[i] != buffer[i] ) {
+					doSet = true;
+					break;
+				}
+			}
 		}
 
 		if( doSet )
@@ -123,7 +127,9 @@ template<class T> inline void TArrayObject<T>::setArray( const T* buffer, XMP_Un
 			mArray = new T[numElements];
 			mSize  = numElements;
 
-			memcpy( mArray, buffer, numElements*sizeof(T) );
+			for ( size_t i = 0; i < mSize; i++ ) {
+				mArray[i] = buffer[i];
+			}
 
 			mDirty = true;
 		}

@@ -1,5 +1,5 @@
 ; Declares the entry points for the DLL.
-; Highest index: 126 - WXMPMeta_ResetErrorCallbackLimit_1
+; Highest index: 127 - WXMPMeta_GetXMPDOMFactoryInstance_1
 
 LIBRARY   XMPCore
 
@@ -73,6 +73,7 @@ EXPORTS
 	WXMPMeta_SetDefaultErrorCallback_1		@124
 	WXMPMeta_SetErrorCallback_1				@125
 	WXMPMeta_ResetErrorCallbackLimit_1		@126
+	WXMPMeta_GetXMPDOMFactoryInstance_1		@127
 
 	WXMPIterator_PropCTor_1					@62
 	WXMPIterator_TableCTor_1				@63

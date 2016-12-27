@@ -153,7 +153,10 @@ DeclareOneNamespace	( XMP_StringPtr   nsPrefix,
 		for ( ; indent > 0; --indent ) outputStr += indentStr;
 		outputStr += "xmlns:";
 		outputStr += nsPrefix;
-		outputStr[outputStr.size()-1] = '=';	// Change the colon to =.
+		if (outputStr[outputStr.size ( ) - 1] == ':')
+			outputStr[outputStr.size ( ) - 1] = '=';	// Change the colon to =.
+		else
+			outputStr += '=';
 		outputStr += '"';
 		outputStr += nsURI;
 		outputStr += '"';
@@ -575,14 +578,14 @@ SerializeCanonicalRDFProperty ( const XMP_Node * propNode,
 			// This is an array.
 			outputStr += '>';
 			outputStr += newline;
-			EmitRDFArrayTag ( propForm, outputStr, newline, indentStr, indent+1, propNode->children.size(), kIsStartTag );
+			EmitRDFArrayTag ( propForm, outputStr, newline, indentStr, indent+1, static_cast<XMP_Index>(propNode->children.size()), kIsStartTag );
 			if ( XMP_ArrayIsAltText(propNode->options) ) NormalizeLangArray ( (XMP_Node*)propNode );
 			for ( size_t childNum = 0, childLim = propNode->children.size(); childNum < childLim; ++childNum ) {
 				const XMP_Node * currChild = propNode->children[childNum];
 				SerializeCanonicalRDFProperty ( currChild, outputStr, newline, indentStr, indent+2,
 												useCanonicalRDF, kEmitAsNormalValue );
 			}
-			EmitRDFArrayTag ( propForm, outputStr, newline, indentStr, indent+1, propNode->children.size(), kIsEndTag );
+			EmitRDFArrayTag ( propForm, outputStr, newline, indentStr, indent+1, static_cast<XMP_Index>(propNode->children.size()), kIsEndTag );
 		
 		
 		} else if ( ! hasRDFResourceQual ) {
@@ -908,12 +911,12 @@ SerializeCompactRDFElemProps ( const XMP_Node *	parentNode,
 				
 				outputStr += '>';
 				outputStr += newline;
-				EmitRDFArrayTag ( propForm, outputStr, newline, indentStr, indent+1, propNode->children.size(), kIsStartTag );
+				EmitRDFArrayTag ( propForm, outputStr, newline, indentStr, indent+1, static_cast<XMP_Index>(propNode->children.size()), kIsStartTag );
 			
 				if ( XMP_ArrayIsAltText(propNode->options) ) NormalizeLangArray ( (XMP_Node*)propNode );
 				SerializeCompactRDFElemProps ( propNode, outputStr, newline, indentStr, indent+2 );
 
-				EmitRDFArrayTag ( propForm, outputStr, newline, indentStr, indent+1, propNode->children.size(), kIsEndTag );
+				EmitRDFArrayTag ( propForm, outputStr, newline, indentStr, indent+1, static_cast<XMP_Index>(propNode->children.size()), kIsEndTag );
 
 			} else {
 
@@ -1260,7 +1263,7 @@ XMPMeta::SerializeToBuffer ( XMP_VarString * rdfString,
 		padding = 0;
 	} else {
 		if ( padding == 0 ) {
-			padding = kDefaultPad * unicodeUnitSize;
+			padding = static_cast<XMP_StringLen>(kDefaultPad * unicodeUnitSize);
 		} else if ( (padding >> 28) != 0 ) {
 			XMP_Throw ( "Outrageously large padding size", kXMPErr_BadOptions );	// Bigger than 256 MB.
 		}

@@ -9,7 +9,7 @@
 
 # ==============================================================================
 # define minimum cmake version
-cmake_minimum_required(VERSION 2.8.6)
+cmake_minimum_required(VERSION 3.5.1)
 
 # ==============================================================================
 # Shared config for mac
@@ -48,7 +48,7 @@ set(CMAKE_C_FLAGS "${COMMON_SHARED_COMPILE_FLAGS} ${COMMON_EXTRA_C_COMPILE_FLAGS
 set(CMAKE_C_FLAGS_DEBUG "${COMMON_SHARED_COMPILE_DEBUG_FLAGS}")
 set(CMAKE_C_FLAGS_RELEASE "${COMMON_SHARED_COMPILE_RELEASE_FLAGS}")
 
-set(COMMON_SHARED_CXX_COMPILE_FLAGS "${${COMPONENT}_SHARED_CXX_COMPILE_FLAGS} -Wnon-virtual-dtor -Woverloaded-virtual -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter")
+set(COMMON_SHARED_CXX_COMPILE_FLAGS "${${COMPONENT}_SHARED_CXX_COMPILE_FLAGS} -std=c++11 -Wnon-virtual-dtor -Woverloaded-virtual -Wno-unused-variable -Wno-unused-function -Wno-unused-parameter")
 set(CMAKE_CXX_FLAGS "-funsigned-char -fshort-enums -fno-common ${COMMON_SHARED_CXX_COMPILE_FLAGS} ${COMMON_EXTRA_CXX_COMPILE_FLAGS}")
 set(CMAKE_CXX_FLAGS_DEBUG "${COMMON_SHARED_COMPILE_DEBUG_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${COMMON_SHARED_COMPILE_RELEASE_FLAGS}")
@@ -61,6 +61,8 @@ set(COMMON_PLATFORM_BEGIN_WHOLE_ARCHIVE "")
 set(COMMON_PLATFORM_END_WHOLE_ARCHIVE "")
 set(COMMON_DYLIBEXTENSION	"dylib")
 
+# Setting libstdc++ as default library for compilation
+set (CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libstdc++")
 
 find_program(GCCTOOL gcc HINTS "/usr/bin" "${OSX_DEVELOPER_ROOT}/usr/bin")
 if (${GCCTOOL} STREQUAL "GCCTOOL-NOTFOUND")

@@ -137,7 +137,7 @@ namespace ID3_Support {
 		void release();
 		
 		void setFrameValue ( const std::string& rawvalue, bool needDescriptor = false,
-							 bool utf16 = false, bool isXMPPRIVFrame = false, bool needEncodingByte = true );
+							 bool utf16 = false, bool isXMPPRIVFrame = false, bool needEncodingByte = true, bool isAlreadyEncoded = false );
 		
 		XMP_Int64 read ( XMP_IO* file, XMP_Uns8 majorVersion );
 		void write ( XMP_IO* file, XMP_Uns8 majorVersion );

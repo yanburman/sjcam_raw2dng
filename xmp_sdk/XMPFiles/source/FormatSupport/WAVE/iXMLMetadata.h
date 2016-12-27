@@ -28,10 +28,35 @@ namespace IFF_RIFF {
 	class iXMLMetadata : public IMetadata
 	{
 	public:
+
+		class TrackListInfo {
+		public:
+			TrackListInfo() : mChannelIndex( 0 ) {}
+
+			TrackListInfo( XMP_Uns64 channelIndex, const std::string & name, const std::string & function )
+				: mChannelIndex( channelIndex )
+				, mName( name )
+				, mFunction( function ) {}
+
+			bool operator == ( const TrackListInfo & other ) const {
+				return mChannelIndex == other.mChannelIndex &&
+					mName.compare( other.mName ) == 0 &&
+					mFunction.compare( other.mFunction ) == 0;
+			}
+
+			bool operator != ( const TrackListInfo & other ) const {
+				return !( this->operator==( other ) );
+			}
+
+			XMP_Uns64			mChannelIndex;
+			std::string			mName;
+			std::string			mFunction;
+		};
+
 		enum
 		{
 			kTape,								// std::string
-			kTake,								// XMP_Uns64
+			kTake,								// std::string
 			kScene,								// std::string
 			kNote,								// std::string
 			kProject,							// std::string
@@ -54,6 +79,7 @@ namespace IFF_RIFF {
 			kTimeStampSampleRate,				// XMP_Uns64
 			kTimeStampSampleSinceMidnightLow,	// XMP_Uns32
 			kTimeStampSampleSinceMidnightHigh,	// XMP_Uns32
+			kTrackList,							// std::vector< TrackListInfo >
 			kLastEntry
 		};
 
@@ -118,6 +144,10 @@ namespace IFF_RIFF {
 		void UpdateProperties();
 
 		std::string ParseStringValue( XML_Node * parentNode, XMP_Uns32 id );
+		std::string ParseStringValue( XML_Node * parentNode, const char * tagName, bool recoverableError = true );
+		XMP_Uns64 ParseUns64Value( XML_Node * parentNode, const char * tagName );
+
+		void ParseAndSetTrackListInfo( XML_Node * parentNode );
 		void ParseAndSetStringProperty( XML_Node * parentNode, XMP_Uns32 id );
 		void ParseAndSetIntegerProperty( XML_Node * parentNode, XMP_Uns32 id );
 		void ParseAndSetBoolProperty( XML_Node * parentNode, XMP_Uns32 id );
@@ -125,6 +155,7 @@ namespace IFF_RIFF {
 		void UpdateStringProperty( XML_Node * parentNode, XMP_Uns32 id );
 		void UpdateIntegerProperty( XML_Node * parentNode, XMP_Uns32 id );
 		void UpdateBoolProperty( XML_Node * parentNode, XMP_Uns32 id );
+		void UpdateTrackListInfo( XML_Node * parentNode );
 
 		void UpdateXMLNode( XML_Node * parentNode, const char * localName, const std::string &  value );
 		void RemoveXMLNode( XML_Node * parentNode, const char * localName );
@@ -140,7 +171,7 @@ namespace IFF_RIFF {
 		bool validateUMID( ValueObject * value );
 		bool validateTimeCodeFlag( ValueObject * value );
 		bool validateRational( ValueObject * value );
-
+		bool validateTrackListInfo( ValueObject * value );
 	private:
 		// Operators hidden on purpose
 		iXMLMetadata( const iXMLMetadata& ) {};

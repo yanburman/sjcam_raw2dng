@@ -885,7 +885,11 @@ void PostScript_MetaHandler::ParsePSFile()
 					if (CheckBytes ( ioBuf.ptr, Uns8Ptr("iler"), 4 ))
 					{
 						ioBuf.ptr+=4;
-						while(!IsNewline(*ioBuf.ptr)) ++ioBuf.ptr;
+						while ( !IsNewline( *ioBuf.ptr ) )
+						{
+							if ( !CheckFileSpace( fileRef, &ioBuf, 1 ) ) return;
+							++ioBuf.ptr;
+						}
 						setTokenInfo(kPS_Trailer,begStartpos,ioBuf.filePos+ioBuf.ptr-ioBuf.data-begStartpos);
 					}
 				}

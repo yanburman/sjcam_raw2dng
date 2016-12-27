@@ -9,8 +9,23 @@
 #include "public/include/XMP_Environment.h"	// ! This must be the first include!
 #include "XMPCore/source/XMPCore_Impl.hpp"
 
+#include "XMPCore/XMPCoreDefines.h"
 #include "XMPCore/source/XMPUtils.hpp"
-
+#if ENABLE_CPP_DOM_MODEL
+	#include "source/UnicodeInlines.incl_cpp"
+	#include "source/UnicodeConversions.hpp"
+	#include "source/ExpatAdapter.hpp"
+	#include "third-party/zuid/interfaces/MD5.h"
+	#include "XMPCore/Interfaces/IMetadata_I.h"
+	#include "XMPCore/Interfaces/IArrayNode_I.h"
+	#include "XMPCore/Interfaces/ISimpleNode_I.h"
+	#include "XMPCore/Interfaces/INodeIterator_I.h"
+	#include "XMPCore/Interfaces/IPathSegment_I.h"
+	#include "XMPCore/Interfaces/IPath_I.h"
+	#include "XMPCore/Interfaces/INameSpacePrefixMap_I.h"
+	#include "XMPCore/Interfaces/IDOMImplementationRegistry_I.h"
+	#include "XMPCommon/Interfaces/IUTF8String_I.h"
+#endif
 #include <algorithm>	// For binary_search.
 
 #include <time.h>
@@ -127,7 +142,7 @@ ClassifyCharacter ( XMP_StringPtr fullString, size_t offset,
 			*uniChar = (*uniChar << 6) | (UnsByte(fullString[i]) & 0x3F);
 		}
 		
-		XMP_Uns32 upperBits = *uniChar >> 8;	// First filter on just the high order 24 bits.
+		XMP_Uns32 upperBits = static_cast<XMP_Uns32>(*uniChar >> 8);	// First filter on just the high order 24 bits.
 
 		if ( upperBits == 0xFF ) {			// U+FFxx
 
@@ -481,7 +496,7 @@ static int CharStarLess (const char * left, const char * right )
 
 #define IsExternalProperty(s,p) (! IsInternalProperty ( s, p ))
 
-static bool
+bool
 IsInternalProperty ( const XMP_VarString & schema, const XMP_VarString & prop )
 {
 	bool isInternal = false;
@@ -859,6 +874,122 @@ AppendSubtree ( const XMP_Node * sourceNode, XMP_Node * destParent,
 // CatenateArrayItems
 // ------------------
 
+
+#if ENABLE_CPP_DOM_MODEL
+// -------------------------------------------------------------------------------------------------
+// CatenateArrayItems_v2
+// ------------------
+
+/* class static */ void
+XMPUtils::CatenateArrayItems_v2(const XMPMeta & ptr,
+								XMP_StringPtr   schemaNS,
+								XMP_StringPtr   arrayName,
+								XMP_StringPtr   separator,
+								XMP_StringPtr   quotes,
+								XMP_OptionBits  options,
+								XMP_VarString * catedStr)
+{
+	using namespace AdobeXMPCore;
+	using namespace AdobeXMPCommon;
+
+	if(sUseNewCoreAPIs) {
+		const XMPMeta2 & xmpObj = dynamic_cast<const XMPMeta2 &>(ptr);
+		XMP_Assert((schemaNS != 0) && (arrayName != 0)); // ! Enforced by wrapper.
+		XMP_Assert((separator != 0) && (quotes != 0) && (catedStr != 0)); // ! Enforced by wrapper.
+
+		size_t		 strLen, strPos, charLen;
+		UniCharKind	 charKind;
+		UniCodePoint currUCP, openQuote, closeQuote;
+
+		const bool allowCommas = ((options & kXMPUtil_AllowCommas) != 0);
+
+		spINode arrayNode; // ! Move up to avoid gcc complaints.
+		XMP_OptionBits	 arrayForm = 0, arrayOptions = 0;
+		spcINode  currItem;
+
+		// Make sure the separator is OK. It must be one semicolon surrounded by zero or more spaces.
+		// Any of the recognized semicolons or spaces are allowed.
+
+		strPos = 0;
+		strLen = strlen(separator);
+		bool haveSemicolon = false;
+
+		while (strPos < strLen) {
+			ClassifyCharacter(separator, strPos, &charKind, &charLen, &currUCP);
+			strPos += charLen;
+			if (charKind == UCK_semicolon) {
+				if (haveSemicolon) XMP_Throw("Separator can have only one semicolon", kXMPErr_BadParam);
+				haveSemicolon = true;
+			}
+			else if (charKind != UCK_space) {
+				XMP_Throw("Separator can have only spaces and one semicolon", kXMPErr_BadParam);
+			}
+		};
+		if (!haveSemicolon) XMP_Throw("Separator must have one semicolon", kXMPErr_BadParam);
+
+		// Make sure the open and close quotes are a legitimate pair.
+
+		strLen = strlen(quotes);
+		ClassifyCharacter(quotes, 0, &charKind, &charLen, &openQuote);
+		if (charKind != UCK_quote) XMP_Throw("Invalid quoting character", kXMPErr_BadParam);
+
+		if (charLen == strLen) {
+			closeQuote = openQuote;
+		}
+		else {
+			strPos = charLen;
+			ClassifyCharacter(quotes, strPos, &charKind, &charLen, &closeQuote);
+			if (charKind != UCK_quote) XMP_Throw("Invalid quoting character", kXMPErr_BadParam);
+			if ((strPos + charLen) != strLen) XMP_Throw("Quoting string too long", kXMPErr_BadParam);
+		}
+		if (closeQuote != GetClosingQuote(openQuote)) XMP_Throw("Mismatched quote pair", kXMPErr_BadParam);
+
+		// Return an empty result if the array does not exist, hurl if it isn't the right form.
+
+		catedStr->erase();
+
+		XMP_ExpandedXPath arrayPath;
+		ExpandXPath(schemaNS, arrayName, &arrayPath);
+
+		XMPUtils::FindCnstNode((xmpObj.mDOM), arrayPath, arrayNode, &arrayOptions);
+
+		if (!arrayNode) return;
+
+		arrayForm = arrayOptions & kXMP_PropCompositeMask;
+		if ((!(arrayForm & kXMP_PropValueIsArray)) || (arrayForm & kXMP_PropArrayIsAlternate)) {
+			XMP_Throw("Named property must be non-alternate array", kXMPErr_BadParam);
+		}
+		size_t arrayChildCount = XMPUtils::GetNodeChildCount(arrayNode);
+		if (!arrayChildCount) return;
+
+		// Build the result, quoting the array items, adding separators. Hurl if any item isn't simple.
+		// Start the result with the first value, then add the rest with a preceeding separator.
+
+		spcINodeIterator arrayIter = XMPUtils::GetNodeChildIterator(arrayNode);
+
+		if ((XMPUtils::GetIXMPOptions(currItem) & kXMP_PropCompositeMask) != 0) XMP_Throw("Array items must be simple", kXMPErr_BadParam);
+
+		*catedStr = arrayIter->GetNode()->ConvertToSimpleNode()->GetValue()->c_str();
+		ApplyQuotes(catedStr, openQuote, closeQuote, allowCommas);
+
+		//ArrayNodes in the new DOM are homogeneous so need to check types of other items in the arary if the first one is Simple
+		for (arrayIter = arrayIter->Next(); arrayIter; arrayIter = arrayIter->Next()) {
+
+			XMP_VarString tempStr( arrayIter->GetNode()->ConvertToSimpleNode()->GetValue()->c_str());
+			ApplyQuotes(&tempStr, openQuote, closeQuote, allowCommas);
+			*catedStr += separator;
+			*catedStr += tempStr;
+		}
+	}
+	else {
+		return;
+	}
+
+
+}	// CatenateArrayItems_v2
+
+#endif
+// -------------------------------------------------------------------------------------------------
 /* class static */ void
 XMPUtils::CatenateArrayItems ( const XMPMeta & xmpObj,
 							   XMP_StringPtr   schemaNS,
@@ -868,6 +999,19 @@ XMPUtils::CatenateArrayItems ( const XMPMeta & xmpObj,
 							   XMP_OptionBits  options,
 							   XMP_VarString * catedStr )
 {
+
+#if ENABLE_CPP_DOM_MODEL
+	
+	if(sUseNewCoreAPIs) {
+
+		dynamic_cast<const XMPMeta2 &>(xmpObj);
+		CatenateArrayItems_v2(xmpObj, schemaNS, arrayName, separator, quotes, options, catedStr);
+		return;
+
+	}
+	
+#endif
+
 	XMP_Assert ( (schemaNS != 0) && (arrayName != 0) ); // ! Enforced by wrapper.
 	XMP_Assert ( (separator != 0) && (quotes != 0) && (catedStr != 0) ); // ! Enforced by wrapper.
 	
@@ -954,6 +1098,263 @@ XMPUtils::CatenateArrayItems ( const XMPMeta & xmpObj,
 
 
 // -------------------------------------------------------------------------------------------------
+// SeparateArrayItems_v2
+// ------------------
+#if ENABLE_CPP_DOM_MODEL
+/* class static */ void
+XMPUtils::SeparateArrayItems_v2(XMPMeta *	  xmpObj2,
+XMP_StringPtr  schemaNS,
+XMP_StringPtr  arrayName,
+XMP_OptionBits options,
+XMP_StringPtr  catedStr)
+{
+
+#if ENABLE_CPP_DOM_MODEL
+	using namespace AdobeXMPCore;
+	using namespace AdobeXMPCommon;
+	XMPMeta2 * xmpObj = NULL;
+	if(sUseNewCoreAPIs) {
+		xmpObj = dynamic_cast<XMPMeta2 *> (xmpObj2);
+	}
+	
+#endif
+	XMP_Assert((schemaNS != 0) && (arrayName != 0) && (catedStr != 0));	// ! Enforced by wrapper.
+	// TODO - check if the array item name should be arrayname one or karrayitem 
+	// TODO - check the find array in case array doesn't already exist
+	XMP_VarString itemValue;
+	size_t itemStart, itemEnd;
+	size_t nextSize, charSize = 0;
+	UniCharKind	  nextKind, charKind = UCK_normal;
+	UniCodePoint  nextChar, uniChar = 0;
+	XMP_OptionBits arrayOptions = 0;
+
+
+	bool preserveCommas = false;
+	if (options & kXMPUtil_AllowCommas) {
+		preserveCommas = true;
+		options ^= kXMPUtil_AllowCommas;
+	}
+
+	options = VerifySetOptions(options, 0);
+	if (options & ~kXMP_PropArrayFormMask) XMP_Throw("Options can only provide array form", kXMPErr_BadOptions);
+
+	// Find the array node, make sure it is OK. Move the current children aside, to be readded later if kept.
+
+	XMP_ExpandedXPath arrayPath;
+	ExpandXPath(schemaNS, arrayName, &arrayPath);
+	spINode arrayNode;
+	if (XMPUtils::FindCnstNode(xmpObj->mDOM, arrayPath, arrayNode, &arrayOptions)){
+
+		XMP_OptionBits arrayForm = arrayOptions & kXMP_PropArrayFormMask;
+		if ((arrayForm == 0) || (arrayForm & kXMP_PropArrayIsAlternate)) {
+			XMP_Throw("Named property must be non-alternate array", kXMPErr_BadXPath);
+		}
+
+		if ((options != 0) && (options != arrayForm)) XMP_Throw("Mismatch of specified and existing array form", kXMPErr_BadXPath);	// *** Right error?
+	}
+	else {
+		// The array does not exist, try to create it.
+
+		XPathStepInfo  lastPathSegment(arrayPath.back());
+		XMP_VarString arrayStep = lastPathSegment.step;
+		//arrayPath.pop_back();
+		spINode destNode;
+		XMP_Index insertIndex = 0;
+		if (!XMPUtils::FindNode(xmpObj->mDOM, arrayPath, kXMP_CreateNodes, options, destNode, &insertIndex, true)) {
+			XMP_Throw("Failure creating array node", kXMPErr_BadXPath);
+		}
+		std::string arrayNameSpace, arrayName;
+		auto defaultMap = INameSpacePrefixMap::GetDefaultNameSpacePrefixMap();
+		arrayOptions = options;
+		XMPUtils::GetNameSpaceAndNameFromStepValue(lastPathSegment.step, defaultMap, arrayNameSpace, arrayName);
+		//  Need to check Alternate first
+		if (arrayOptions & kXMP_PropArrayIsAlternate) {
+			arrayNode = IArrayNode::CreateAlternativeArrayNode( arrayNameSpace.c_str(), arrayNameSpace.size(), arrayName.c_str(), arrayName.size());
+		}
+		else if (arrayOptions & kXMP_PropArrayIsOrdered) {
+			arrayNode = IArrayNode::CreateOrderedArrayNode( arrayNameSpace.c_str(), arrayNameSpace.size(), arrayName.c_str(), arrayName.size() );
+		}
+		else if (arrayOptions & kXMP_PropArrayIsUnordered) {
+			arrayNode = IArrayNode::CreateUnorderedArrayNode( arrayNameSpace.c_str(), arrayNameSpace.size(), arrayName.c_str(), arrayName.size() );
+		}
+
+		else {
+			XMP_Throw("Failure creating array node", kXMPErr_BadXPath);
+		}
+		if (destNode->GetNodeType() == INode::kNTStructure) {
+
+			destNode->ConvertToStructureNode()->InsertNode(arrayNode);
+		}
+		else if (destNode->GetNodeType() == INode::kNTArray) {
+
+			destNode->ConvertToArrayNode()->AppendNode(arrayNode);
+		}
+		else {
+
+			XMP_Throw("Failure creating array node", kXMPErr_BadXPath);
+		}
+
+		if (!arrayNode) XMP_Throw("Failed to create named array", kXMPErr_BadXPath);
+	}
+
+
+	size_t oldChildCount = XMPUtils::GetNodeChildCount(arrayNode);
+	std::vector<XMP_VarString> oldArrayNodes;
+	std::vector<spINode> qualifiers;
+	
+	// used to handle duplicates
+	std::vector<bool> oldArrayNodeSeen(oldChildCount, false);
+	spcINodeIterator oldArrayChildIter = XMPUtils::GetNodeChildIterator(arrayNode);
+
+	for (; oldArrayChildIter; oldArrayChildIter = oldArrayChildIter->Next()) {
+
+		oldArrayNodes.push_back( oldArrayChildIter->GetNode()->ConvertToSimpleNode()->GetValue()->c_str());
+		if (oldArrayChildIter->GetNode()->HasQualifiers()) {
+
+			qualifiers.push_back(oldArrayChildIter->GetNode()->Clone());
+			/*for ( auto it = oldArrayChildIter->GetNode()->QualifiersIterator(); it; it = it->Next() ) {
+				qualifiers.push_back( it->GetNode()->Clone() );
+				}*/
+		}
+		else {
+			qualifiers.push_back(spINode());
+		}
+		
+	}
+
+	arrayNode->Clear(true, false);
+	// used to avoid typecasting repeatedly!
+	spIArrayNode tempArrayNode = arrayNode->ConvertToArrayNode();
+
+	size_t endPos = strlen(catedStr);
+
+	itemEnd = 0;
+	while (itemEnd < endPos) {
+
+
+
+		for (itemStart = itemEnd; itemStart < endPos; itemStart += charSize) {
+			ClassifyCharacter(catedStr, itemStart, &charKind, &charSize, &uniChar);
+			if ((charKind == UCK_normal) || (charKind == UCK_quote)) break;
+		}
+		if (itemStart >= endPos) break;
+
+		if (charKind != UCK_quote) {
+
+
+
+			for (itemEnd = itemStart; itemEnd < endPos; itemEnd += charSize) {
+
+				ClassifyCharacter(catedStr, itemEnd, &charKind, &charSize, &uniChar);
+
+				if ((charKind == UCK_normal) || (charKind == UCK_quote)) continue;
+				if ((charKind == UCK_comma) && preserveCommas) continue;
+				if (charKind != UCK_space) break;
+
+				if ((itemEnd + charSize) >= endPos) break;	// Anything left?
+				ClassifyCharacter(catedStr, (itemEnd + charSize), &nextKind, &nextSize, &nextChar);
+				if ((nextKind == UCK_normal) || (nextKind == UCK_quote)) continue;
+				if ((nextKind == UCK_comma) && preserveCommas) continue;
+				break;	// Have multiple spaces, or a space followed by a separator.
+
+			}
+
+			itemValue.assign(catedStr, itemStart, (itemEnd - itemStart));
+
+		}
+		else {
+
+			// Accumulate quoted values into a local string, undoubling internal quotes that
+			// match the surrounding quotes. Do not undouble "unmatching" quotes.
+
+			UniCodePoint openQuote = uniChar;
+			UniCodePoint closeQuote = GetClosingQuote(openQuote);
+
+			itemStart += charSize;	// Skip the opening quote;
+			itemValue.erase();
+
+			for (itemEnd = itemStart; itemEnd < endPos; itemEnd += charSize) {
+
+				ClassifyCharacter(catedStr, itemEnd, &charKind, &charSize, &uniChar);
+
+				if ((charKind != UCK_quote) || (!IsSurroundingQuote(uniChar, openQuote, closeQuote))) {
+
+					// This is not a matching quote, just append it to the item value.
+					itemValue.append(catedStr, itemEnd, charSize);
+
+				}
+				else {
+
+					// This is a "matching" quote. Is it doubled, or the final closing quote? Tolerate
+					// various edge cases like undoubled opening (non-closing) quotes, or end of input.
+
+					if ((itemEnd + charSize) < endPos) {
+						ClassifyCharacter(catedStr, itemEnd + charSize, &nextKind, &nextSize, &nextChar);
+					}
+					else {
+						nextKind = UCK_semicolon; nextSize = 0; nextChar = 0x3B;
+					}
+
+					if (uniChar == nextChar) {
+						// This is doubled, copy it and skip the double.
+						itemValue.append(catedStr, itemEnd, charSize);
+						itemEnd += nextSize;	// Loop will add in charSize.
+					}
+					else if (!IsClosingingQuote(uniChar, openQuote, closeQuote)) {
+						// This is an undoubled, non-closing quote, copy it.
+						itemValue.append(catedStr, itemEnd, charSize);
+					}
+					else {
+						// This is an undoubled closing quote, skip it and exit the loop.
+						itemEnd += charSize;
+						break;
+					}
+
+				}
+
+			}	// Loop to accumulate the quoted value.
+
+		}
+
+		// Add the separated item to the array. Keep a matching old value in case it had separators.
+
+		size_t oldChild;
+
+		spISimpleNode newItem;
+		for (oldChild = 1; oldChild <= oldChildCount; ++oldChild) {
+			if (!oldArrayNodeSeen[oldChild - 1] && itemValue == oldArrayNodes[oldChild - 1]) break;
+		}
+
+
+		if (oldChild == oldChildCount + 1) {
+			//	newItem = new XMP_Node ( arrayNode, kXMP_ArrayItemName, itemValue.c_str(), 0 );
+			newItem = ISimpleNode::CreateSimpleNode(arrayNode->GetNameSpace()->c_str(), arrayNode->GetNameSpace()->size(),
+				kXMP_ArrayItemName, AdobeXMPCommon::npos, itemValue.c_str());
+		}
+		else {
+			newItem = ISimpleNode::CreateSimpleNode(arrayNode->GetNameSpace()->c_str(), arrayNode->GetNameSpace()->size(),
+				kXMP_ArrayItemName, AdobeXMPCommon::npos, oldArrayNodes[oldChild - 1].c_str());
+			if (qualifiers[ oldChild - 1] && qualifiers[ oldChild - 1] ->HasQualifiers() ) {
+
+				for (auto it = qualifiers[oldChild - 1] ->QualifiersIterator(); it; it = it->Next()) {
+				
+					newItem->InsertQualifier(it->GetNode()->Clone());
+				}
+			}
+			oldArrayNodeSeen[oldChild - 1] = true;	// ! Don't match again, let duplicates be seen.
+		}
+
+		tempArrayNode->AppendNode(newItem);
+
+	}	// Loop through all of the returned items.
+
+	// Delete any of the old children that were not kept.
+
+
+}	// SeparateArrayItems_v2
+#endif
+
+// -------------------------------------------------------------------------------------------------
 // SeparateArrayItems
 // ------------------
 
@@ -964,6 +1365,13 @@ XMPUtils::SeparateArrayItems ( XMPMeta *	  xmpObj,
 							   XMP_OptionBits options,
 							   XMP_StringPtr  catedStr )
 {
+
+#if ENABLE_CPP_DOM_MODEL
+	if (sUseNewCoreAPIs) {
+		SeparateArrayItems_v2(xmpObj, schemaNS, arrayName, options, catedStr);
+		return;
+	}
+#endif
 	XMP_Assert ( (schemaNS != 0) && (arrayName != 0) && (catedStr != 0) );	// ! Enforced by wrapper.
 	
 	XMP_VarString itemValue;
@@ -987,7 +1395,7 @@ XMPUtils::SeparateArrayItems ( XMPMeta *	  xmpObj,
 	
 	XMP_ExpandedXPath arrayPath;
 	ExpandXPath ( schemaNS, arrayName, &arrayPath );
-	XMP_Node * arrayNode = FindNode ( &xmpObj->tree, arrayPath, kXMP_ExistingOnly );
+	XMP_Node * arrayNode = ::FindNode( &xmpObj->tree, arrayPath, kXMP_ExistingOnly );
 	
 	if ( arrayNode != 0 ) {
 		// The array exists, make sure the form is compatible. Zero arrayForm means take what exists.
@@ -998,7 +1406,7 @@ XMPUtils::SeparateArrayItems ( XMPMeta *	  xmpObj,
 		if ( (options != 0) && (options != arrayForm) ) XMP_Throw ( "Mismatch of specified and existing array form", kXMPErr_BadXPath );	// *** Right error?
 	} else {
 		// The array does not exist, try to create it.
-		arrayNode = FindNode ( &xmpObj->tree, arrayPath, kXMP_CreateNodes, (options | kXMP_PropValueIsArray) );
+		arrayNode = ::FindNode( &xmpObj->tree, arrayPath, kXMP_CreateNodes, (options | kXMP_PropValueIsArray) );
 		if ( arrayNode == 0 ) XMP_Throw ( "Failed to create named array", kXMPErr_BadXPath );
 	}
 
@@ -1131,6 +1539,14 @@ XMPUtils::ApplyTemplate ( XMPMeta *	      workingXMP,
 						  const XMPMeta & templateXMP,
 						  XMP_OptionBits  actions )
 {
+
+#if ENABLE_CPP_DOM_MODEL
+	if (sUseNewCoreAPIs) {
+		ApplyTemplate_v2(workingXMP, templateXMP, actions);
+		return;
+	}
+#endif
+
 	bool doClear   = XMP_OptionIsSet ( actions, kXMPTemplate_ClearUnnamedProperties );
 	bool doAdd     = XMP_OptionIsSet ( actions, kXMPTemplate_AddNewProperties );
 	bool doReplace = XMP_OptionIsSet ( actions, kXMPTemplate_ReplaceExistingProperties );
@@ -1246,6 +1662,15 @@ XMPUtils::RemoveProperties ( XMPMeta *		xmpObj,
 							 XMP_StringPtr	propName,
 							 XMP_OptionBits options )
 {
+
+#if ENABLE_CPP_DOM_MODEL
+	if (sUseNewCoreAPIs) {
+
+		RemoveProperties_v2(xmpObj, schemaNS, propName, options);
+		return;
+	}
+#endif
+
 	XMP_Assert ( (schemaNS != 0) && (propName != 0) );	// ! Enforced by wrapper.
 	
 	const bool doAll = XMP_TestOption (options, kXMPUtil_DoAllProperties );
@@ -1262,7 +1687,7 @@ XMPUtils::RemoveProperties ( XMPMeta *		xmpObj,
 		ExpandXPath ( schemaNS, propName, &expPath );
 		
 		XMP_NodePtrPos propPos;
-		XMP_Node * propNode = FindNode ( &(xmpObj->tree), expPath, kXMP_ExistingOnly, kXMP_NoOptions, &propPos );
+		XMP_Node * propNode = ::FindNode( &(xmpObj->tree), expPath, kXMP_ExistingOnly, kXMP_NoOptions, &propPos );
 		if ( propNode != 0 ) {
 			if ( doAll || IsExternalProperty ( expPath[kSchemaStep].step, expPath[kRootPropStep].step ) ) {
 				XMP_Node * parent = propNode->parent;	// *** Should have XMP_Node::RemoveChild(pos).
@@ -1298,7 +1723,7 @@ XMPUtils::RemoveProperties ( XMPMeta *		xmpObj,
 			for ( ; currAlias != endAlias; ++currAlias ) {
 				if ( strncmp ( currAlias->first.c_str(), nsPrefix, nsLen ) == 0 ) {
 					XMP_NodePtrPos actualPos;
-					XMP_Node * actualProp = FindNode ( &xmpObj->tree, currAlias->second, kXMP_ExistingOnly, kXMP_NoOptions, &actualPos );
+					XMP_Node * actualProp = ::FindNode( &xmpObj->tree, currAlias->second, kXMP_ExistingOnly, kXMP_NoOptions, &actualPos );
 					if ( actualProp != 0 ) {
 						XMP_Node * rootProp = actualProp;
 						while ( ! XMP_NodeIsSchema ( rootProp->parent->options ) ) rootProp = rootProp->parent;
@@ -1348,6 +1773,15 @@ XMPUtils::DuplicateSubtree ( const XMPMeta & source,
 							 XMP_StringPtr	 destRoot,
 							 XMP_OptionBits	 options )
 {
+
+#if ENABLE_CPP_DOM_MODEL
+	if(sUseNewCoreAPIs) {
+		(void)dynamic_cast<const XMPMeta2 &>(source);
+		return XMPUtils::DuplicateSubtree_v2(source, dest, sourceNS, sourceRoot, destNS, destRoot, options);
+	}
+
+#endif
+
 	IgnoreParam(options);
 	
 	bool fullSourceTree = false;
@@ -1379,7 +1813,7 @@ XMPUtils::DuplicateSubtree ( const XMPMeta & source,
 		// The destination must be an existing empty struct, copy all of the source top level as fields.
 
 		ExpandXPath ( destNS, destRoot, &destPath );
-		destNode = FindNode ( &dest->tree, destPath, kXMP_ExistingOnly );
+		destNode = ::FindNode( &dest->tree, destPath, kXMP_ExistingOnly );
 
 		if ( (destNode == 0) || (! XMP_PropIsStruct ( destNode->options )) ) {
 			XMP_Throw ( "Destination must be an existing struct", kXMPErr_BadXPath );
@@ -1461,10 +1895,10 @@ XMPUtils::DuplicateSubtree ( const XMPMeta & source,
 		sourceNode = FindConstNode ( &source.tree, sourcePath );
 		if ( sourceNode == 0 ) XMP_Throw ( "Can't find source subtree", kXMPErr_BadXPath );
 		
-		destNode = FindNode ( &dest->tree, destPath, kXMP_ExistingOnly );	// Dest must not yet exist.
+		destNode = ::FindNode ( &dest->tree, destPath, kXMP_ExistingOnly );	// Dest must not yet exist.
 		if ( destNode != 0 ) XMP_Throw ( "Destination subtree must not exist", kXMPErr_BadXPath );
 		
-		destNode = FindNode ( &dest->tree, destPath, kXMP_CreateNodes );	// Now create the dest.
+		destNode = ::FindNode ( &dest->tree, destPath, kXMP_CreateNodes );	// Now create the dest.
 		if ( destNode == 0 ) XMP_Throw ( "Can't create destination root node", kXMPErr_BadXPath );
 		
 		// Make sure the destination is not within the source! The source can't be inside the destination

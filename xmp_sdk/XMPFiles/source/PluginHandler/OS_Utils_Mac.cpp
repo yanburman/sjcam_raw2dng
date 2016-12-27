@@ -267,27 +267,27 @@ bool GetResourceDataFromModule(
 
 	if ( !url.IsNull() )
 	{
-		typedef AutoCFRef<CFDataRef> AutoCFData;
 		typedef AutoCFRef<CFNumberRef> AutoCFNumber;
-		AutoCFData resourceData;
-		SInt32 errorCode = 0;
+		typedef AutoCFRef<CFErrorRef> AutoCFError;
+		typedef AutoCFRef<CFReadStreamRef> AutoCFReadStream;
+		AutoCFError cfError;
 		AutoCFNumber length;
-		*length = reinterpret_cast<CFNumberRef> ( ::CFURLCreatePropertyFromResource( kCFAllocatorDefault, *url, kCFURLFileLength, &errorCode ) );
 
-		if ( !errorCode )
+		if ( ::CFURLCopyResourcePropertyForKey(*url, kCFURLFileSizeKey, &length, &(*cfError)) && !length.IsNull())
 		{
 			SInt64 sizeOfFile = 0;
 			success = ::CFNumberGetValue( *length, kCFNumberSInt64Type, &sizeOfFile );
+
 			// presumingly we don't want to load more than 2GByte at once (!)
-			if ( success && sizeOfFile < std::numeric_limits<XMP_Int32>::max() )
+			if ( success && sizeOfFile != 0 && sizeOfFile < std::numeric_limits<XMP_Int32>::max() )
 			{
-				success = ::CFURLCreateDataAndPropertiesFromResource( kCFAllocatorDefault, *url, &(*resourceData), NULL, NULL, &errorCode );
-				if ( success && errorCode == 0 )
+				AutoCFReadStream readStream(::CFReadStreamCreateWithFile(kCFAllocatorDefault, *url));
+				if( *readStream != NULL && CFReadStreamOpen(*readStream) )
 				{
-					outBuffer.resize( sizeOfFile );
-					CFRange range = CFRangeMake (0, sizeOfFile );
-					::CFDataGetBytes( *resourceData, range, reinterpret_cast< UInt8 * > (&outBuffer[0]) );
-					return true;
+					outBuffer.assign(sizeOfFile, NULL);
+					success = ( ::CFReadStreamRead(*readStream,reinterpret_cast< UInt8 * > (&outBuffer[0]), sizeOfFile) != -1 );
+					::CFReadStreamClose(*readStream);
+					return success;
 				}
 			}
 		}

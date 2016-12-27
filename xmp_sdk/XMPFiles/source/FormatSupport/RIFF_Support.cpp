@@ -22,6 +22,8 @@
 #include "XMPFiles/source/FormatSupport/RIFF_Support.hpp"
 #include "XMPFiles/source/FormatSupport/Reconcile_Impl.hpp"
 
+#include <sstream>
+
 #define MIN(a, b)       ((a) < (b) ? (a) : (b))
 
 using namespace RIFF;
@@ -36,6 +38,9 @@ XMP_Int32 MAX_BEXT_SIZE = 100 * 1024 * 1024;
 // CR8R, PrmL have fixed sizes
 XMP_Int32 CR8R_SIZE = 0x5C;
 XMP_Int32 PRML_SIZE = 0x122;
+
+// IDIT chunk size
+XMP_Int32 IDIT_SIZE = 0x1A;
 
 static const char* sHexChars =    "0123456789ABCDEF";
 
@@ -290,6 +295,89 @@ static void importBextChunkToXMP( RIFF_MetaHandler* handler, ValueChunk* bextChu
 	}
 } // importBextChunkToXMP
 
+static XMP_Int32 GetMonth( const char * valuePtr )
+{
+	// This will check 3 characters (4,5,6) of the input and return corresponding months as 1,2,...,12
+	// else it will return 0
+	// Input should as follows : wda mon dd hh:mm:ss yyyy\n\0
+	char firstChar = tolower( valuePtr[ 4 ] );
+	char secondChar = tolower( valuePtr[ 5 ] );
+	char thirdChar = tolower( valuePtr[ 6 ] );
+	if ( firstChar == 'j' &&  secondChar == 'a' && thirdChar == 'n' )
+		return 1;
+	if ( firstChar == 'f' &&  secondChar == 'e' && thirdChar == 'b' )
+		return 2;
+	if ( firstChar == 'm' && secondChar == 'a' )
+	{
+		if ( thirdChar == 'r' )
+			return 3;
+		if ( thirdChar == 'y' )
+			return 5;
+	}
+	if ( firstChar == 'a' &&  secondChar == 'p' && thirdChar == 'r' )
+		return 4;
+	if ( firstChar == 'j' && secondChar == 'u' )
+	{
+		if ( thirdChar == 'n' )
+			return 6;
+		if ( thirdChar == 'l' )
+			return 7;
+	}
+	if ( firstChar == 'a' &&  secondChar == 'u' && thirdChar == 'g' )
+		return 8;
+	if ( firstChar == 's' &&  secondChar == 'e' && thirdChar == 'p' )
+		return 9;
+	if ( firstChar == 'o' &&  secondChar == 'c' && thirdChar == 't' )
+		return 10;
+	if ( firstChar == 'n' &&  secondChar == 'o' && thirdChar == 'v' )
+		return 11;
+	if ( firstChar == 'd' &&  secondChar == 'e' && thirdChar == 'c' )
+		return 12;
+	return 0;
+}
+
+static XMP_Uns32 GatherUnsignedInt ( const char * strPtr, size_t count )
+{
+	XMP_Uns32 value = 0;
+	const char * strEnd = strPtr + count;
+
+	while ( strPtr < strEnd ) {
+		if ( *strPtr == ' ' )	++strPtr;
+		else break;
+	}
+
+	while ( strPtr < strEnd ) {
+		char ch = *strPtr;
+		if ( (ch < '0') || (ch > '9') ) break;
+		value = value*10 + (ch - '0');
+		++strPtr;
+	}
+
+	return value;
+
+}	// GatherUnsignedInt
+
+static void importIditChunkToXMP( RIFF_MetaHandler* handler, ValueChunk* iditChunk )
+{
+	// if there iss a IDIT chunk, there is data...
+	handler->containsXMP = true; // very important for treatment on caller level
+
+	// Size has been already checked in calling function
+	XMP_Enforce( iditChunk->oldSize == IDIT_SIZE + 8 );
+	const char * valuePtr = iditChunk->oldValue.c_str();
+	XMP_Enforce( valuePtr[ IDIT_SIZE - 2 ] == 0x0A );
+	XMP_Enforce( valuePtr[ 13 ] == ':' && valuePtr[ 16 ] == ':' );
+	XMP_DateTime dateTime;
+	dateTime.month = GetMonth( valuePtr );
+	dateTime.day = GatherUnsignedInt( valuePtr + 8, 2 );
+	dateTime.hour = GatherUnsignedInt( valuePtr + 11, 2 );
+	dateTime.minute = GatherUnsignedInt( valuePtr + 14, 2 );
+	dateTime.second = GatherUnsignedInt( valuePtr + 17, 2 );
+	dateTime.year = GatherUnsignedInt( valuePtr + 20, 4 );
+	handler->xmpObj.SetProperty_Date( kXMP_NS_EXIF, "DateTimeOriginal", dateTime );
+
+} // importIditChunkToXMP
+
 static void importPrmLToXMP( RIFF_MetaHandler* handler, ValueChunk* prmlChunk )
 {
 	bool haveXMP = false;
@@ -540,6 +628,13 @@ void importProperties( RIFF_MetaHandler* handler )
 		} // if size sufficient
 	} // handler->dispChunk
 
+	// IDIT chunk --------------------------------------------------------------
+	if ( handler->parent->format == kXMP_AVIFile &&	// Only for AVI file
+		 handler->iditChunk != 0 && handler->iditChunk->oldSize == IDIT_SIZE + 8 )	// Including header size i.e, ID + size
+	{
+		importIditChunkToXMP( handler, handler->iditChunk );
+	}
+
 } // importProperties
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -613,7 +708,7 @@ static void exportXMPtoBextChunk( RIFF_MetaHandler* handler, ValueChunk** bextCh
 	// prepare buffer, need to know CodingHistory size as the only variable
 	XMP_Int32 bextBufferSize = MIN_BEXT_SIZE - 8; // -8 because of header
 	std::string value;
-	if ( xmp->GetProperty( bextCodingHistory.ns, bextCodingHistory.prop, &value, kXMP_NoOptions ))
+	if ( xmp->GetProperty( bextCodingHistory.ns, bextCodingHistory.prop, &value, (XMP_OptionBits *) kXMP_NoOptions ))
 	{
 		bextBufferSize += ((XMP_StringLen)value.size()) + 1 ; // add to size (and a trailing zero)
 	}
@@ -625,35 +720,35 @@ static void exportXMPtoBextChunk( RIFF_MetaHandler* handler, ValueChunk** bextCh
 
 	// grab props, write into buffer, remove from XMP ///////////////////////////
 	// bextDescription ------------------------------------------------
-	if ( xmp->GetProperty( bextDescription.ns, bextDescription.prop, &value, kXMP_NoOptions ) )
+	if ( xmp->GetProperty( bextDescription.ns, bextDescription.prop, &value, (XMP_OptionBits *) kXMP_NoOptions ) )
 	{
 		setBextField( &value, (XMP_Uns8*) buffer, 0, 256 );
 		xmp->DeleteProperty( bextDescription.ns, bextDescription.prop)					;
 		chunkUsed = true;
 	}
 	// bextOriginator -------------------------------------------------
-	if ( xmp->GetProperty( bextOriginator.ns , bextOriginator.prop, &value, kXMP_NoOptions ) )
+	if ( xmp->GetProperty( bextOriginator.ns , bextOriginator.prop, &value, (XMP_OptionBits *) kXMP_NoOptions ) )
 	{
 		setBextField( &value, (XMP_Uns8*) buffer, 256, 32 );
 		xmp->DeleteProperty( bextOriginator.ns , bextOriginator.prop );
 		chunkUsed = true;
 	}
 	// bextOriginatorRef ----------------------------------------------
-	if ( xmp->GetProperty( bextOriginatorRef.ns , bextOriginatorRef.prop, &value, kXMP_NoOptions ) )
+	if ( xmp->GetProperty( bextOriginatorRef.ns , bextOriginatorRef.prop, &value, (XMP_OptionBits *) kXMP_NoOptions ) )
 	{
 		setBextField( &value, (XMP_Uns8*) buffer, 256+32, 32 );
 		xmp->DeleteProperty( bextOriginatorRef.ns , bextOriginatorRef.prop );
 		chunkUsed = true;
 	}
 	// bextOriginationDate --------------------------------------------
-	if ( xmp->GetProperty( bextOriginationDate.ns , bextOriginationDate.prop, &value, kXMP_NoOptions ) )
+	if ( xmp->GetProperty( bextOriginationDate.ns , bextOriginationDate.prop, &value, (XMP_OptionBits *) kXMP_NoOptions ) )
 	{
 		setBextField( &value, (XMP_Uns8*) buffer, 256+32+32, 10 );
 		xmp->DeleteProperty( bextOriginationDate.ns , bextOriginationDate.prop );
 		chunkUsed = true;
 	}
 	// bextOriginationTime --------------------------------------------
-	if ( xmp->GetProperty( bextOriginationTime.ns , bextOriginationTime.prop, &value, kXMP_NoOptions ) )
+	if ( xmp->GetProperty( bextOriginationTime.ns , bextOriginationTime.prop, &value, (XMP_OptionBits *) kXMP_NoOptions ) )
 	{
 		setBextField( &value, (XMP_Uns8*) buffer, 256+32+32+10, 8 );
 		xmp->DeleteProperty( bextOriginationTime.ns , bextOriginationTime.prop );
@@ -661,7 +756,7 @@ static void exportXMPtoBextChunk( RIFF_MetaHandler* handler, ValueChunk** bextCh
 	}
 	// bextTimeReference ----------------------------------------------
 	// thanx to friendly byte order, all 8 bytes can be written in one go:
-	if ( xmp->GetProperty( bextTimeReference.ns, bextTimeReference.prop, &value, kXMP_NoOptions ) )
+	if ( xmp->GetProperty( bextTimeReference.ns, bextTimeReference.prop, &value, (XMP_OptionBits *) kXMP_NoOptions ) )
 	{
 		try
 		{
@@ -684,7 +779,7 @@ static void exportXMPtoBextChunk( RIFF_MetaHandler* handler, ValueChunk** bextCh
 	xmp->DeleteProperty( bextVersion.ns, bextVersion.prop );
 
 	// bextUMID -------------------------------------------------------
-	if ( xmp->GetProperty( bextUMID.ns, bextUMID.prop, &value, kXMP_NoOptions ) )
+	if ( xmp->GetProperty( bextUMID.ns, bextUMID.prop, &value, (XMP_OptionBits *) kXMP_NoOptions ) )
 	{
 		std::string rawStr;
 
@@ -703,7 +798,7 @@ static void exportXMPtoBextChunk( RIFF_MetaHandler* handler, ValueChunk** bextCh
 	}
 
 	// bextCodingHistory ----------------------------------------------
-	if ( xmp->GetProperty( bextCodingHistory.ns, bextCodingHistory.prop, &value, kXMP_NoOptions ) )
+	if ( xmp->GetProperty( bextCodingHistory.ns, bextCodingHistory.prop, &value, (XMP_OptionBits *) kXMP_NoOptions ) )
 	{
 		std::string ascii;
 		convertToASCII( value.data(), (XMP_StringLen) value.size() , &ascii, (XMP_StringLen) value.size() );
@@ -809,6 +904,237 @@ static void exportXMPtoCr8rChunk ( RIFF_MetaHandler* handler, ValueChunk** cr8rC
 
 }
 
+// Returns numbers of leap years between 1800 and provided year value. Both end values will be inclusive for getting this field.
+// For leap year this will be handled later in GetIDITString() function
+static XMP_Uns32 GetLeapYearsNumber( const XMP_Uns32 & year )
+{
+
+	XMP_Uns32 numLeapYears = ( year / 4 );
+	numLeapYears -= ( year / 100 );
+	numLeapYears += ( ( year + 200 ) / 400 );	// 200 is added becuase our base is 1800 which give modulas 200 by divinding with 400
+	return numLeapYears;
+
+}	//GetLeapYearsNumber
+
+static XMP_Uns32 GetDays( const XMP_Int32 & month, const bool &isLeapYear )
+{
+	// Adding number of days as per last month of the provided year
+	// Leap year case is handled later
+	XMP_Uns32 numDays = 0;
+	switch ( month )
+	{
+	case 2:
+		numDays = 31;
+		break;
+	case 3:
+		numDays = 31 + 28;
+		break;
+	case 4:
+		numDays = 31 + 28 + 31;
+		break;
+	case 5:
+		numDays = 31 + 28 + 31 + 30;
+		break;
+	case 6:
+		numDays = 31 + 28 + 31 + 30 + 31;
+		break;
+	case 7:
+		numDays = 31 + 28 + 31 + 30 + 31 + 30;
+		break;
+	case 8:
+		numDays = 31 + 28 + 31 + 30 + 31 + 30 + 31;
+		break;
+	case 9:
+		numDays = 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31;
+		break;
+	case 10:
+		numDays = 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30;
+		break;
+	case 11:
+		numDays = 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31;
+		break;
+	case 12:
+		numDays = 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30;
+		break;
+	default:
+		break;
+	}
+
+	// Adding one day for leap year and month above than feb
+	if ( isLeapYear == true && month > 2 )
+		numDays += 1;
+
+	return numDays;
+
+} // GetDays
+
+static const std::string GetIDITString( const XMP_DateTime & targetDate )
+{
+	// Date 1 Jan 1800 is treating as base date for handling this issue
+	// 1800 is chosen becuase of consistency in calender after 1752
+
+	XMP_Uns64 numOfDays = 0;	// Specifies number of days after 1 jan 1800
+	XMP_Uns32 year = targetDate.year - 1800;
+
+	// 2000 was the first exception when year dividing by 100 was still a leap year
+	bool isLeapYear = ( year % 4 != 0 ) ? false : ( year % 100 != 0 ) ? true : ( ( year % 400 != 200 ) ? false : true );
+
+	// Adding days according to normal year and adjusting days for leap years
+	numOfDays = 365 * year;
+	numOfDays += GetLeapYearsNumber( year );
+
+	// Adding days according to the month
+	numOfDays += GetDays( targetDate.month, isLeapYear );
+	
+	// GetLeapYearsNumber() function is also considering provided year for calculating number of leap numbers between provided year
+	// and 1800. This consideration is done by inclusive both end values. So both GetLeapYearsNumber() and GetDays() would have added
+	// extra day for higher end year for leap year.
+	// So, we need to decrease one day from number of days field
+	if ( isLeapYear )
+		--numOfDays;
+
+	// Adding days according to provided month
+	numOfDays += targetDate.day;	
+
+	// Weekday starting from Wednesday i.e., Wed will be the first day of the week.
+	// This day was choosen because 1 Jan 1800 was Wednesday
+	XMP_Uns8 weekDayNum = numOfDays % 7;
+	std::string weekDay;
+	switch ( weekDayNum )
+	{
+	case 0:
+		weekDay = "Tue";
+		break;
+	case 1:
+		weekDay = "Wed";
+		break;
+	case 2:
+		weekDay = "Thu";
+		break;
+	case 3:
+		weekDay = "Fri";
+		break;
+	case 4:
+		weekDay = "Sat";
+		break;
+	case 5:
+		weekDay = "Sun";
+		break;
+	case 6:
+		weekDay = "Mon";
+		break;
+	default:
+		break;
+	}
+
+	// Stream to convert into IDIT format
+	std::stringstream iditStream;
+	iditStream << weekDay;
+	iditStream.put( ' ' );
+	
+	// IDIT needs 3 character codes for month
+	const char * monthArray[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+	iditStream << monthArray[ targetDate.month - 1 ];
+	iditStream.put( ' ' );
+
+	if ( targetDate.day < 10 )
+		iditStream.put( '0' );
+	iditStream << targetDate.day;
+	iditStream.put( ' ' );
+
+	if ( targetDate.hour < 10 )
+		iditStream.put( '0' );
+	iditStream << targetDate.hour;
+	iditStream.put( ':' );
+
+	if ( targetDate.minute < 10 )
+		iditStream.put( '0' );
+	iditStream << targetDate.minute;
+	iditStream.put( ':' );
+
+	if ( targetDate.second < 10 )
+		iditStream.put( '0' );
+	iditStream << targetDate.second;
+	iditStream.put( ' ' );
+
+	// No need to handle casese for year 1 to 999
+	/*
+	if ( targetDate.year < 10 )
+		iditStream << "   ";
+	else if ( targetDate.year < 100 )
+		iditStream << "  ";
+	else if ( targetDate.year < 1000 )
+		iditStream << " ";
+	*/
+	// Year will be in the range of 1800-3999
+	iditStream << targetDate.year;
+
+	// Adding new line charcter for IDIT
+	iditStream.put( '\n' );
+
+	return iditStream.str();
+
+}	// GetIDITString
+
+static void exportXMPtoIDITChunk( RIFF_MetaHandler* handler )
+{
+	// exif:DateTimeOriginal -> IDIT chunk
+	ContainerChunk * hdlrChunk = handler->listHdlrChunk;
+	if ( hdlrChunk == 0 )
+		XMP_Throw( "Header of AVI file (hdlr chunk) must exists", kXMPErr_BadFileFormat );
+
+	XMP_DateTime dateTime;
+	bool propExists = handler->xmpObj.GetProperty_Date( kXMP_NS_EXIF, "DateTimeOriginal", &dateTime, 0 );
+	if ( !propExists )
+	{
+		if ( handler->iditChunk != 0 )
+		{
+			// Exception would have thrown if we don't find hdlr chunk for AVI file
+			XMP_Assert( hdlrChunk != 0 );
+			bool isSuccess = hdlrChunk->removeValue( kChunk_IDIT );
+			if ( !isSuccess )
+				XMP_Throw( "Removal of IDIT block fails", kXMPErr_InternalFailure );
+			handler->iditChunk = 0;
+			hdlrChunk->hasChange = true;				
+		}
+		// Else no need to do anything
+	}
+	else
+	{
+		if ( dateTime.year < 1800 || dateTime.year > 3999 )
+			XMP_Throw( "For IDIT block, XMP currently supports years in between 1800 and 3999 (Both inclusive).", kXMPErr_InternalFailure );
+
+		/*
+		Conversion need to be done from XMP date time to IDIT structure.
+		XMP_DateTime accepts any value but IDIT needs to have weekday, month-day, month, year and time.
+		*/
+
+		// Silently modifying dateTime for invalid dates.
+		if ( dateTime.month < 1 )
+			dateTime.month = 1;
+		if ( dateTime.month > 12 )
+			dateTime.month = 12;
+		if ( dateTime.day < 1 )
+			dateTime.day = 1;
+		if ( dateTime.day > 31 )
+			dateTime.day = 31;
+
+		const std::string iditString = GetIDITString( dateTime );
+
+		// If no IDIT exits then create one
+		if ( handler->iditChunk == 0 )
+			handler->iditChunk = new ValueChunk( hdlrChunk, std::string(), kChunk_IDIT );
+		else if ( strncmp( iditString.c_str(), handler->iditChunk->oldValue.c_str(), IDIT_SIZE ) == 0 )		// Equal
+			return;
+
+		// Setting the IDIT value
+		handler->iditChunk->hasChange = true;
+		handler->iditChunk->SetValue( iditString, true );
+
+	}
+
+}	// exportXMPtoIDITChunk
+
 static void exportXMPtoListChunk( XMP_Uns32 id, XMP_Uns32 containerType,
 						   RIFF_MetaHandler* handler, ContainerChunk** listChunk, Mapping mapping[])
 {
@@ -887,12 +1213,12 @@ void exportAndRemoveProperties ( RIFF_MetaHandler* handler )
 
 	exportXMPtoCr8rChunk ( handler, &handler->cr8rChunk );
 
-	// 1/4 BWF Bext extension chunk -----------------------------------------------
+	// 1/5 BWF Bext extension chunk -----------------------------------------------
 	if ( handler->parent->format == kXMP_WAVFile ) {	// applies only to WAV
 		exportXMPtoBextChunk ( handler, &handler->bextChunk );
 	}
 
-	// 2/4 DISP chunk
+	// 2/5 DISP chunk
 	if ( handler->parent->format == kXMP_WAVFile ) {	// create for WAVE only
 
 		std::string actualLang, xmpValue;
@@ -928,11 +1254,15 @@ void exportAndRemoveProperties ( RIFF_MetaHandler* handler )
 
 	}
 
-	// 3/4 LIST:INFO
+	// 3/5 LIST:INFO
 	exportXMPtoListChunk ( kChunk_LIST, kType_INFO, handler, &handler->listInfoChunk, listInfoProps );
 
-	// 4/4 LIST:Tdat
+	// 4/5 LIST:Tdat
 	exportXMPtoListChunk ( kChunk_LIST, kType_Tdat, handler, &handler->listTdatChunk, listTdatProps );
+
+	// 5/5 LIST:HDRL:IDIT
+	if ( handler->parent->format == kXMP_AVIFile )
+		exportXMPtoIDITChunk ( handler );
 
 }
 

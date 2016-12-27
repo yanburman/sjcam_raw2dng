@@ -27,6 +27,8 @@
 #include "source/UnicodeConversions.hpp"
 #include "source/UnicodeConversions.cpp"
 
+//#define ENABLE_XMP_CPP_INTERFACE 1;
+
 using namespace std;
 
 #if WIN_ENV

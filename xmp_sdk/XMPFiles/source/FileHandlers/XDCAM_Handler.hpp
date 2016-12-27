@@ -24,25 +24,10 @@
 ///
 // =================================================================================================
 
-extern XMPFileHandler * XDCAM_MetaHandlerCTor ( XMPFiles * parent );
-
-extern bool XDCAM_CheckFormat ( XMP_FileFormat format,
-								const std::string & rootPath,
-								const std::string & gpName,
-								const std::string & parentName,
-								const std::string & leafName,
-								XMPFiles * parent );
-
-static const XMP_OptionBits kXDCAM_HandlerFlags = (kXMPFiles_CanInjectXMP |
-												   kXMPFiles_CanExpand |
-												   kXMPFiles_CanRewrite |
-												   kXMPFiles_PrefersInPlace |
-												   kXMPFiles_CanReconcile |
-												   kXMPFiles_AllowsOnlyXMP |
-												   kXMPFiles_ReturnsRawPacket |
-												   kXMPFiles_HandlerOwnsFile |
-												   kXMPFiles_AllowsSafeUpdate |
-												   kXMPFiles_FolderBasedFormat);
+inline bool IsDigit( char c )
+{
+	return c >= '0' && c <= '9';
+}
 
 class XDCAM_MetaHandler : public XMPFileHandler
 {
@@ -50,8 +35,7 @@ public:
 
 	bool GetFileModDate ( XMP_DateTime * modDate );
 
-	void FillMetadataFiles ( std::vector<std::string> * metadataFiles );
-	void FillAssociatedResources ( std::vector<std::string> * resourceList );
+	virtual void FillAssociatedResources ( std::vector<std::string> * resourceList ) {};
 	bool IsMetadataWritable ( ) ;
 
 	void CacheFileData();
@@ -66,31 +50,31 @@ public:
 	XDCAM_MetaHandler ( XMPFiles * _parent );
 	virtual ~XDCAM_MetaHandler();
 
+protected:
+
+	XDCAM_MetaHandler() : expat(0), clipMetadata(0) {};	// Hidden on purpose.
+
+	virtual bool MakeClipFilePath ( std::string * path, XMP_StringPtr suffix, bool checkFile = false ) { return false; }
+	virtual void SetPathVariables ( const std::string & clientPath )  { }
+	virtual bool GetMediaProMetadata ( SXMPMeta * xmpObjPtr, const std::string& clipUMID, bool digestFound ) {
+		return false;
+	}
+	bool MakeMediaproPath ( std::string * path, bool checkFile = false );
+	virtual bool GetClipUmid ( std::string &clipUmid ) { return false; }
+	void readXMLFile( XMP_StringPtr filePath,ExpatAdapter* &expat );
+	bool RefersClipUmid ( std::string clipUmid , XMP_StringPtr editInfoPath )  ;
+	std::string rootPath, clipName, sidecarPath;
+	
+	std::string mNRTFilePath;
+	std::string oldSidecarPath;
+
 private:
 
-	XDCAM_MetaHandler() : isFAM(false), expat(0), clipMetadata(0) {};	// Hidden on purpose.
-
-	bool MakeClipFilePath ( std::string * path, XMP_StringPtr suffix, bool checkFile = false );
-	bool MakeMediaproPath ( std::string * path, bool checkFile = false );
+	void FillMetadataFiles ( std::vector<std::string> * metadataFiles );
 	void MakeLegacyDigest ( std::string * digestStr );
 	void CleanupLegacyXML();
-	void SetSidecarPath();
-	
-	void readXMLFile( XMP_StringPtr filePath,ExpatAdapter* &expat );
-    bool GetClipUmid ( std::string &clipUmid ) ;
-	bool IsClipsPlanning ( std::string clipUmid , XMP_StringPtr planPath ) ;
-	bool RefersClipUmid ( std::string clipUmid , XMP_StringPtr editInfoPath )  ;
-	bool GetInfoFilesFAM ( std::vector<std::string> &InfoList, std::string pathToFolder) ;
-	bool GetPlanningFilesFAM ( std::vector<std::string> &planInfoList, std::string pathToFolder) ;
-	bool GetEditInfoFilesSAM ( std::vector<std::string> &editInfoList ) ;
-	void FillFAMAssociatedResources ( std::vector<std::string> * resourceList );
-	void FillSAMAssociatedResources ( std::vector<std::string> * resourceList );
 
-	bool GetMediaProMetadata ( SXMPMeta * xmpObjPtr, const std::string& clipUMID, bool digestFound );	
-
-	std::string rootPath, clipName, xdcNS, legacyNS, sidecarPath;
-
-	bool isFAM;
+	std::string xdcNS, legacyNS;
 
 	ExpatAdapter * expat;
 	XML_Node * clipMetadata;	// ! Don't delete, points into the Expat tree.

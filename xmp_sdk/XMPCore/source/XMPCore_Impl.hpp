@@ -58,9 +58,27 @@ typedef XMP_AliasMap::const_iterator	XMP_cAliasMapPos;
 
 extern XMP_Int32 sXMP_InitCount;
 
+typedef void * (*XMP_AllocateProc) (size_t size);
+
+typedef void(*XMP_DeleteProc)   (void * ptr);
+
+#if ! XMP_StaticBuild
+
+	extern XMP_AllocateProc sXMP_MemAlloc;
+	extern XMP_DeleteProc   sXMP_MemFree;
+
+	#define malloc(size) (*sXMP_MemAlloc) ( size )
+	#define free(addr)   (*sXMP_MemFree) ( addr )
+
+#endif
+
+
+extern XMP_Bool sUseNewCoreAPIs;
 extern XMP_NamespaceTable * sRegisteredNamespaces;
 
 extern XMP_AliasMap * sRegisteredAliasMap;
+
+extern XMP_ReadWriteLock * sDefaultNamespacePrefixMapLock;
 
 #define WtoXMPMeta_Ref(xmpRef)	(const XMPMeta &) (*((XMPMeta*)(xmpRef)))
 #define WtoXMPMeta_Ptr(xmpRef)	((XMPMeta*)(xmpRef))
@@ -151,9 +169,9 @@ extern WXMP_Result		void_wResult;
 #define kXMP_ExistingOnly	false
 
 #define FindConstSchema(t,u)	FindSchemaNode ( const_cast<XMP_Node*>(t), u, kXMP_ExistingOnly, 0 )
-#define FindConstChild(p,c)		FindChildNode ( const_cast<XMP_Node*>(p), c, kXMP_ExistingOnly, 0 )
+#define FindConstChild(p,c)		::FindChildNode ( const_cast<XMP_Node*>(p), c, kXMP_ExistingOnly, 0 )
 #define FindConstQualifier(p,c)	FindQualifierNode ( const_cast<XMP_Node*>(p), c, kXMP_ExistingOnly, 0 )
-#define FindConstNode(t,p)		FindNode ( const_cast<XMP_Node*>(t), p, kXMP_ExistingOnly, 0 )
+#define FindConstNode(t,p)		::FindNode ( const_cast<XMP_Node*>(t), p, kXMP_ExistingOnly, 0 )
 
 extern XMP_OptionBits
 VerifySetOptions ( XMP_OptionBits options, XMP_StringPtr propValue );
@@ -167,11 +185,15 @@ ExpandXPath	( XMP_StringPtr			schemaNS,
 			  XMP_StringPtr			propPath,
 			  XMP_ExpandedXPath *	expandedXPath );
 
+typedef bool (*PrefixSearchFnPtr) ( void * privateData, XMP_StringPtr nsURI, XMP_StringPtr * namespacePrefix, XMP_StringLen * prefixSize );
+
 extern XMP_Node *
 FindSchemaNode ( XMP_Node *		  xmpTree,
 				 XMP_StringPtr	  nsURI,
 				 bool			  createNodes,
-				 XMP_NodePtrPos * ptrPos = 0 );
+				 XMP_NodePtrPos * ptrPos = 0,
+				 PrefixSearchFnPtr prefixSearchFnPtr = NULL,
+				 void * privateData = NULL );
 
 extern XMP_Node *
 FindChildNode ( XMP_Node *		 parent,
@@ -229,7 +251,7 @@ static inline bool
 IsPathPrefix ( XMP_StringPtr fullPath, XMP_StringPtr prefix )
 {
 	bool isPrefix = false;
-	XMP_StringLen prefixLen = strlen(prefix);
+	XMP_StringLen prefixLen = static_cast< XMP_StringLen >( strlen(prefix) );
 	if ( XMP_LitNMatch ( prefix, fullPath, prefixLen ) ) {
 		char separator = fullPath[prefixLen];
 		if ( (separator == 0) || (separator == '/') ||
@@ -334,6 +356,8 @@ public:
 
 	void GetLocalURI ( XMP_StringPtr * uriStr, XMP_StringLen * uriSize ) const;
 
+	void GetFullQualifiedName( XMP_StringPtr * uriStr, XMP_StringLen * uriSize, XMP_StringPtr * nameStr, XMP_StringLen * nameSize ) const;
+
 	void RemoveChildren()
 	{
 		for ( size_t i = 0, vLim = children.size(); i < vLim; ++i ) {
@@ -358,6 +382,8 @@ public:
 		this->RemoveChildren();
 		this->RemoveQualifiers();
 	}
+
+	void SetValue( XMP_StringPtr value );
 
 	virtual ~XMP_Node() { RemoveChildren(); RemoveQualifiers(); };
 

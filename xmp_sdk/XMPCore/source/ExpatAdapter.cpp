@@ -142,7 +142,7 @@ void ExpatAdapter::ParseBuffer ( const void * buffer, size_t length, bool last /
 		length = 1;
 	}
 	
-	status = XML_Parse ( this->parser, (const char *)buffer, length, last );
+	status = XML_Parse ( this->parser, (const char *)buffer, static_cast< XMP_StringLen >( length ), last );
 	
 	#if BanAllEntityUsage
 		if ( this->isAborted ) {
@@ -275,7 +275,12 @@ static void StartNamespaceDeclHandler ( void * userData, XMP_StringPtr prefix, X
 	#endif
 	
 	if ( XMP_LitMatch ( uri, "http://purl.org/dc/1.1/" ) ) uri = "http://purl.org/dc/elements/1.1/";
-	(void) thiz->registeredNamespaces->Define ( uri, prefix, 0, 0 );
+	if (thiz->registeredNamespaces == sRegisteredNamespaces) {
+		(void)XMPMeta::RegisterNamespace(uri, prefix, 0, 0);
+	}
+	else {
+		(void)thiz->registeredNamespaces->Define(uri, prefix, 0, 0);
+	}
 
 }	// StartNamespaceDeclHandler
 

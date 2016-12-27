@@ -2,14 +2,12 @@ The XMP Toolkit uses an open-source system to manage the build process. XMP Tool
 
 To use CMake:
 
-1. Obtain a copy of the CMake for the current platform (Windows, Mac, or Linux) from the location :
-http://www.cmake.org/cmake/resources/software.html
-The minimum version of CMake required for this release is 2.8.6
+1. The minimum version of CMake required for this release is 3.5.2
 
-Download the latest CMake ditribution zipped package from the above link corresponding to the current platform. For example, for the CMake version 2.8.12.2 the distribution names for different platforms are:
-Windows	----	cmake-2.8.12.2-win32-x86.zip 
-Mac OSX ----	cmake-2.8.12.2-Darwin64-universal.tar.gz
-Linux   ----    cmake-2.8.12.2-Linux-i386.tar.gz
+Download the following recommended CMake distribution zipped package from the following links corresponding to the current platform (Windows, Mac, or Linux)
+Windows	----	https://cmake.org/files/v3.5/cmake-3.5.2-win32-x86.zip
+Mac OSX ----	https://cmake.org/files/v3.5/cmake-3.5.2-Darwin-x86_64.tar.gz
+Linux   ----    https://cmake.org/files/v3.5/cmake-3.5.2-Linux-i386.tar.gz
 
 2. For Windows and Linux copy the folders /bin and /share into <xmpsdk>/tools/cmake/
    For Mac:

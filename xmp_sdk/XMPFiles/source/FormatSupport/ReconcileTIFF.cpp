@@ -306,9 +306,7 @@ size_t PhotoDataUtils::GetNativeInfo ( const IPTC_Manager & iptc, XMP_Uns8 id, i
 {
 	size_t iptcCount = 0;
 
-	if ( (digestState == kDigestDiffers) || ((digestState == kDigestMissing) && (! haveXMP)) ) {
-		iptcCount = iptc.GetDataSet ( id, info );
-	}
+	iptcCount = iptc.GetDataSet ( id, info );
 	
 	if ( ignoreLocalText && (iptcCount > 0) && (! iptc.UsingUTF8()) ) {
 		// Check to see if the new value(s) should be ignored.
@@ -2283,11 +2281,10 @@ static void Import3WayDateTime ( XMP_Uns16 exifTag, const TIFF_Manager & exif, c
 	haveXMP   = xmp->GetProperty ( xmpNS, xmpProp, &xmpValue, 0 );
 	iptcCount = PhotoDataUtils::GetNativeInfo ( iptc, iptcDS, iptcDigestState, haveXMP, &iptcInfo );
 	haveIPTC = (iptcCount > 0);
-	XMP_Assert ( (iptcDigestState == kDigestMatches) ? (! haveIPTC) : true );
 	haveExif  = (! haveXMP) && (! haveIPTC) && PhotoDataUtils::GetNativeInfo ( exif, kTIFF_ExifIFD, exifTag, &exifInfo );
 	XMP_Assert ( (! (haveExif & haveXMP)) & (! (haveExif & haveIPTC)) );
 
-	if ( haveIPTC ) {
+	if ( haveIPTC && ((iptcDigestState == kDigestDiffers) || (!haveXMP && !haveExif)) ) {
 
 		PhotoDataUtils::ImportIPTC_Date ( iptcDS, iptc, xmp );
 
@@ -2360,7 +2357,6 @@ void PhotoDataUtils::Import3WayItems ( const TIFF_Manager & exif, const IPTC_Man
 	haveXMP   = xmp->GetLocalizedText ( kXMP_NS_DC, "rights", "", "x-default", 0, &xmpValue, 0 );
 	iptcCount = PhotoDataUtils::GetNativeInfo ( iptc, kIPTC_CopyrightNotice, iptcDigestState, haveXMP, &iptcInfo );
 	haveIPTC  = (iptcCount > 0);
-	XMP_Assert ( (iptcDigestState == kDigestMatches) ? (! haveIPTC) : true );
 	haveExif  = (! haveXMP) && (! haveIPTC) && PhotoDataUtils::GetNativeInfo ( exif, kTIFF_PrimaryIFD, kTIFF_Copyright, &exifInfo );
 	XMP_Assert ( (! (haveExif & haveXMP)) & (! (haveExif & haveIPTC)) );
 
@@ -2370,7 +2366,7 @@ void PhotoDataUtils::Import3WayItems ( const TIFF_Manager & exif, const IPTC_Man
 		}
 	}
 	
-	if ( haveIPTC ) {
+	if ( haveIPTC  && ((iptcDigestState == kDigestDiffers) || (!haveXMP && !haveExif)) ) {
 		PhotoDataUtils::ImportIPTC_LangAlt ( iptc, xmp, kIPTC_CopyrightNotice, kXMP_NS_DC, "rights" );
 	} else if ( haveExif && PhotoDataUtils::IsValueDifferent ( exifInfo, xmpValue, &exifValue ) ) {
 		xmp->SetLocalizedText ( kXMP_NS_DC, "rights", "", "x-default", exifValue.c_str() );
@@ -2383,11 +2379,10 @@ void PhotoDataUtils::Import3WayItems ( const TIFF_Manager & exif, const IPTC_Man
 	haveXMP   = xmp->GetLocalizedText ( kXMP_NS_DC, "description", "", "x-default", 0, &xmpValue, 0 );
 	iptcCount = PhotoDataUtils::GetNativeInfo ( iptc, kIPTC_Description, iptcDigestState, haveXMP, &iptcInfo );
 	haveIPTC  = (iptcCount > 0);
-	XMP_Assert ( (iptcDigestState == kDigestMatches) ? (! haveIPTC) : true );
 	haveExif  = (! haveXMP) && (! haveIPTC) && PhotoDataUtils::GetNativeInfo ( exif, kTIFF_PrimaryIFD, kTIFF_ImageDescription, &exifInfo );
 	XMP_Assert ( (! (haveExif & haveXMP)) & (! (haveExif & haveIPTC)) );
 	
-	if ( haveIPTC ) {
+	if ( haveIPTC && ((iptcDigestState == kDigestDiffers) || (!haveXMP && !haveExif)) )  {
 		PhotoDataUtils::ImportIPTC_LangAlt ( iptc, xmp, kIPTC_Description, kXMP_NS_DC, "description" );
 	} else if ( haveExif && PhotoDataUtils::IsValueDifferent ( exifInfo, xmpValue, &exifValue ) ) {
 		xmp->SetLocalizedText ( kXMP_NS_DC, "description", "", "x-default", exifValue.c_str() );
@@ -2401,11 +2396,10 @@ void PhotoDataUtils::Import3WayItems ( const TIFF_Manager & exif, const IPTC_Man
 	haveExif  = PhotoDataUtils::GetNativeInfo ( exif, kTIFF_PrimaryIFD, kTIFF_Artist, &exifInfo );
 	iptcCount = PhotoDataUtils::GetNativeInfo ( iptc, kIPTC_Creator, iptcDigestState, haveXMP, &iptcInfo );
 	haveIPTC  = (iptcCount > 0);
-	XMP_Assert ( (iptcDigestState == kDigestMatches) ? (! haveIPTC) : true );
 	haveExif  = (! haveXMP) && (! haveIPTC) && PhotoDataUtils::GetNativeInfo ( exif, kTIFF_PrimaryIFD, kTIFF_Artist, &exifInfo );
 	XMP_Assert ( (! (haveExif & haveXMP)) & (! (haveExif & haveIPTC)) );
 
-	if ( haveIPTC ) {
+	if ( haveIPTC && ((iptcDigestState == kDigestDiffers) || (!haveXMP && !haveExif)) )  {
 		PhotoDataUtils::ImportIPTC_Array ( iptc, xmp, kIPTC_Creator, kXMP_NS_DC, "creator" );
 	} else if ( haveExif && PhotoDataUtils::IsValueDifferent ( exifInfo, xmpValue, &exifValue ) ) {
 		SXMPUtils::SeparateArrayItems ( xmp, kXMP_NS_DC, "creator",

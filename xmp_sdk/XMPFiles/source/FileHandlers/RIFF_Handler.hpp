@@ -57,11 +57,12 @@ public:
 	// state variables, needed during parsing
 	XMP_Uns8  level;
 
-	RIFF::ContainerChunk *listInfoChunk, *listTdatChunk;
+	RIFF::ContainerChunk *listInfoChunk, *listTdatChunk,*listHdlrChunk;
 	RIFF::ValueChunk* dispChunk;
 	RIFF::ValueChunk* bextChunk;
 	RIFF::ValueChunk* cr8rChunk;
 	RIFF::ValueChunk* prmlChunk;
+	RIFF::ValueChunk* iditChunk;
 	RIFF::XMPChunk* xmpChunk;
 	RIFF::ContainerChunk* lastChunk;
 	bool hasListInfoINAM; // needs to be known for the special 3-way merge around dc:title

@@ -179,8 +179,8 @@ static inline bool IsXMPUUID ( XMP_IO * fileRef,XMP_Uns64 contentSize, bool unmo
 //
 // An MPEG-4 or modern QuickTime file is an instance of an ISO Base Media file, ISO 14496-12 and -14.
 // A classic QuickTime file has the same physical box structure, but somewhat different box types.
-// The ISO files must begin with an 'ftyp' box containing 'mp41', 'mp42', 'f4v ', or 'qt  ' in the
-// compatible brands.
+// The ISO files must begin with an 'ftyp' box containing 'mp41', 'mp42', 'f4v ', 'qt  ', 'isom','3gp4',
+// '3g2a','3g2b' or '3g2c' in the compatible brands.
 //
 // The general box structure is:
 //
@@ -259,8 +259,11 @@ bool MPEG4_CheckFormat ( XMP_FileFormat format,
 				parent->format = kXMP_MOVFile;
 				parent->tempUI32 = MOOV_Manager::kFileIsModernQT;
 				return true;
-			} else if ( (brand == ISOMedia::k_mp41) || (brand == ISOMedia::k_mp42) || 
-				(brand == ISOMedia::k_f4v) || ( brand == ISOMedia::k_avc1 ) ) {
+			}
+			else if ( ( brand == ISOMedia::k_mp41 ) || ( brand == ISOMedia::k_mp42 ) ||
+				( brand == ISOMedia::k_f4v ) || ( brand == ISOMedia::k_avc1 ) || ( brand == ISOMedia::k_isom ) ||
+				( brand == ISOMedia::k_3gp4 ) || ( brand == ISOMedia::k_3g2a ) || ( brand == ISOMedia::k_3g2b ) ||
+				( brand == ISOMedia::k_3g2c ) ) {
 				haveCompatibleBrand = true;	// Need to keep looking in case 'qt  ' follows.
 			}
 
@@ -1774,7 +1777,7 @@ static void AttemptFileRepair ( XMP_IO* qtFile, XMP_Int64 fileSpace, QTErrorMode
 	}
 
 	AtomInfo info;
-	XMP_Int64 headerSize;
+	XMP_Int64 headerSize(0);
 
 	// Process the top level atoms until an error is found.
 
@@ -2062,7 +2065,7 @@ void MPEG4_MetaHandler::CacheFileData()
 	bool xmpOnly = XMP_OptionIsSet ( openFlags, kXMPFiles_OpenOnlyXMP );
 	bool haveISOFile = (this->fileMode == MOOV_Manager::kFileIsNormalISO);
 
-	bool uuidFound = (! haveISOFile);			// Ignore the XMP 'uuid' box for QuickTime files.
+	bool xmpUuidFound = (! haveISOFile);			// Ignore the XMP 'uuid' box for QuickTime files.
 	bool moovIgnored = (xmpOnly & haveISOFile);	// Ignore the 'moov' box for XMP-only ISO files.
 	bool moovFound = moovIgnored;
 
@@ -2089,24 +2092,24 @@ void MPEG4_MetaHandler::CacheFileData()
 			this->moovBoxPos = boxPos;
 			this->moovBoxSize = (XMP_Uns32)fullMoovSize;
 			moovFound = true;
-			if ( uuidFound ) break;	// Exit the loop when both are found.
+			if ( xmpUuidFound ) break;	// Exit the loop when both are found.
 
-		} else if ( (! uuidFound) && (currBox.boxType == ISOMedia::k_uuid) && IsXMPUUID(fileRef,currBox.contentSize) ) {
+		} else if ( (! xmpUuidFound) && (currBox.boxType == ISOMedia::k_uuid) && ( memcmp( currBox.idUUID, ISOMedia::k_xmpUUID, 16 ) == 0 ) ) {
 
 			XMP_Uns64 fullUuidSize = currBox.headerSize + currBox.contentSize;
 			if ( fullUuidSize > moovBoxSizeLimit ) {	// From here on we know 32-bit offsets are safe.
 				XMP_Throw ( "Oversize XMP 'uuid' box", kXMPErr_EnforceFailure );
 			}
 
-			this->packetInfo.offset = boxPos + currBox.headerSize + 16;	// The 16 is for the UUID.
-			this->packetInfo.length = (XMP_Int32) (currBox.contentSize - 16);
+			this->packetInfo.offset = boxPos + currBox.headerSize ;
+			this->packetInfo.length = (XMP_Int32) (currBox.contentSize);
 
 			this->xmpPacket.assign ( this->packetInfo.length, ' ' );
 			fileRef->ReadAll ( (void*)this->xmpPacket.data(), this->packetInfo.length );
 
 			this->xmpBoxPos = boxPos;
 			this->xmpBoxSize = (XMP_Uns32)fullUuidSize;
-			uuidFound = true;
+			xmpUuidFound = true;
 			if ( moovFound ) break;	// Exit the loop when both are found.
 
 		}
@@ -2679,7 +2682,7 @@ void MPEG4_MetaHandler::OptimizeFileLayout()
 			needsOptimization = mdatFound;
 			if ( xmpFound ) break;	// Don't need to look further.
 
-		} else if ( currBox.boxType == ISOMedia::k_uuid && IsXMPUUID(originalFile,currBox.contentSize) ) {
+		} else if ( currBox.boxType == ISOMedia::k_uuid && ( memcmp( currBox.idUUID, ISOMedia::k_xmpUUID, 16 ) == 0 ) ) {
 
 			xmpFound = true;
 			xmpIndex = boxCount-1;	// Need later for optimization.
@@ -3009,7 +3012,7 @@ void MPEG4_MetaHandler::UpdateFile ( bool doSafeUpdate )
 		// The uuid form of XMP has the 16-byte UUID in front of the XMP packet. Form the complete
 		// box (including size/type header) for UpdateTopLevelBox.
 		RawDataBlock uuidBox;
-		XMP_Uns32 uuidSize = 4+4 + 16 + (XMP_Uns32)this->xmpPacket.size();
+		XMP_Uns32 uuidSize = 4 + 4 + 16 + (XMP_Uns32)this->xmpPacket.size();
 		uuidBox.assign ( uuidSize, 0 );
 		PutUns32BE ( uuidSize, &uuidBox[0] );
 		PutUns32BE ( ISOMedia::k_uuid, &uuidBox[4] );

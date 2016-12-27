@@ -52,12 +52,15 @@ static XMPFileHandler* Plugin_MetaHandlerCTor ( FileHandlerSharedPtr handler, XM
 	SessionRef object;
 	WXMP_Error error;
 
-	if( (!handler) || (! handler->load()) ) 
+	if( (handler == 0) || (! handler->load()) ) 
 	{
 		XMP_Throw ( "Plugin not loaded", kXMPErr_InternalFailure );
 	}
-
-	handler->getModule()->getPluginAPIs()->mInitializeSessionProc ( handler->getUID().c_str(), parent->GetFilePath().c_str(), (XMP_Uns32)parent->format, (XMP_Uns32)handler->getHandlerFlags(), (XMP_Uns32)parent->openFlags, &object, &error );
+	
+	if( handler->getModule()->getPluginAPIs()->mInitializeSessionV2Proc )
+		handler->getModule()->getPluginAPIs()->mInitializeSessionV2Proc ( handler->getUID().c_str(), parent->GetFilePath().c_str(), (XMP_Uns32)parent->format, (XMP_Uns32)handler->getHandlerFlags(), (XMP_Uns32)parent->openFlags, &object, &error, ErrorCallbackBox( parent->errorCallback.wrapperProc, parent->errorCallback.clientProc, parent->errorCallback.context, parent->errorCallback.limit ), parent->progressTracker->GetCallbackInfo() );
+	else
+		handler->getModule()->getPluginAPIs()->mInitializeSessionProc ( handler->getUID().c_str(), parent->GetFilePath().c_str(), (XMP_Uns32)parent->format, (XMP_Uns32)handler->getHandlerFlags(), (XMP_Uns32)parent->openFlags, &object, &error );
 	CheckError ( error );
 
 	FileHandlerInstance* instance = new FileHandlerInstance ( object, handler, parent );
@@ -82,7 +85,7 @@ static XMPFileHandler* Plugin_MetaHandlerCTor_Replacement( XMPFiles * parent )
 
 static bool Plugin_CheckFileFormat ( FileHandlerSharedPtr handler, XMP_StringPtr filePath, XMP_IO * fileRef, XMPFiles * parent )
 {
-	if ( handler ) {
+	if ( handler != 0 ) {
 
 		// call into plugin if owning handler or if manifest has no CheckFormat entry
 		if ( fileRef == 0 || handler->getCheckFormatSize() == 0) {
@@ -187,7 +190,7 @@ static bool Plugin_CheckFolderFormat( FileHandlerSharedPtr handler,
 {
 	XMP_Bool result = false;
 
-	if ( handler ) 
+	if ( handler != 0 ) 
 	{
 		WXMP_Error error;
 		CheckSessionFolderFormatProc checkProc = handler->getModule()->getPluginAPIs()->mCheckFolderFormatProc;
@@ -398,12 +401,12 @@ void PluginManager::initialize( const std::string& pluginDir, const std::string&
 			XMP_FileFormat format = it->first;
 			FileHandlerPair handlers = it->second;
 
-			if( handlers.mStandardHandler )
+			if( handlers.mStandardHandler != NULL )
 			{
 				registerHandler( format, handlers.mStandardHandler );
 			}
 
-			if( handlers.mReplacementHandler )
+			if( handlers.mReplacementHandler != NULL )
 			{
 				registerHandler( format, handlers.mReplacementHandler );
 			}

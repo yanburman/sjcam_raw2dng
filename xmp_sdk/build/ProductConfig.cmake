@@ -18,7 +18,7 @@
 
 # ==============================================================================
 # define minimum cmake version
-cmake_minimum_required(VERSION 2.8.0)
+cmake_minimum_required(VERSION 3.5.1)
 
 # ==============================================================================
 # Product Config for XMP Toolkit
@@ -29,7 +29,11 @@ if (UNIX)
 		
 		if (APPLE_IOS)
 			set(XMP_PLATFORM_SHORT "ios")
-			set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_32_BIT)")
+			if(XMP_BUILD_STATIC)
+				set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_INCLUDING_64_BIT)")
+			else()
+				set(CMAKE_OSX_ARCHITECTURES "$(ARCHS_STANDARD_64_BIT)")
+			endif()
 			add_definitions(-DIOS_ENV=1)			
 
 			# shared flags
@@ -77,14 +81,22 @@ if (UNIX)
 
 		#There were getting set from SetupTargetArchitecture. 
 		if(APPLE_IOS)
-			set(XMP_CPU_FOLDERNAME	"$(ARCHS_STANDARD_32_BIT)")
+			set(XMP_CPU_FOLDERNAME	"$(ARCHS)")
 		else()
 			if(CMAKE_CL_64)
 				set(XMP_BITDEPTH		"64")
-				set(XMP_CPU_FOLDERNAME	"intel_64")
+				if(CMAKE_LIBCPP)
+					set(XMP_CPU_FOLDERNAME	"intel_64_libcpp")
+				else()
+					set(XMP_CPU_FOLDERNAME	"intel_64")
+				endif()
 			else()
 				set(XMP_BITDEPTH		"32")
-				set(XMP_CPU_FOLDERNAME	"intel")
+				if(CMAKE_LIBCPP)
+					set(XMP_CPU_FOLDERNAME	"intel_libcpp")
+				else()
+					set(XMP_CPU_FOLDERNAME	"intel")
+				endif()
 			endif()
 		endif()
 
@@ -108,11 +120,11 @@ if (UNIX)
 				set(XMP_EXTRA_COMPILE_FLAGS "-m64")
 				set(XMP_EXTRA_LINK_FLAGS "-m64")
 				set(XMP_PLATFORM_FOLDER "i80386linux_x64") # add XMP_BUILDMODE_DIR to follow what other platforms do
-				set(XMP_GCC_LIBPATH /user/unicore/i80386linux_x64/compiler/gcc4.4.4/linux2.6_64/lib64)
+				set(XMP_GCC_LIBPATH /user/unicore/i80386linux_x64/compiler/gcc4.8.2/linux3.10_64/lib64)
 			else()
 				set(XMP_EXTRA_LINK_FLAGS "-m32 -mtune=i686")
 				set(XMP_PLATFORM_FOLDER "i80386linux") # add XMP_BUILDMODE_DIR to follow what other platforms do
-				set(XMP_GCC_LIBPATH /user/unicore/i80386linux/compiler/gcc4.4.4/linux2.6_32/lib)
+				set(XMP_GCC_LIBPATH /user/unicore/i80386linux/compiler/gcc4.8.2/linux3.10_32/lib)
 			endif()
 		else()
 			# running toolchain
@@ -120,17 +132,17 @@ if (UNIX)
 				set(XMP_EXTRA_COMPILE_FLAGS "-m64")
 				set(XMP_EXTRA_LINK_FLAGS "-m64")
 				set(XMP_PLATFORM_FOLDER "i80386linux_x64") # add XMP_BUILDMODE_DIR to follow what other platforms do
-				set(XMP_GCC_LIBPATH /user/unicore/i80386linux_x64/compiler/gcc4.4.4/linux2.6_64/lib64)
+				set(XMP_GCC_LIBPATH /user/unicore/i80386linux_x64/compiler/gcc4.8.2/linux3.10_64/lib64)
 			else()
 				set(XMP_EXTRA_COMPILE_FLAGS "-m32 -mtune=i686")
 				set(XMP_EXTRA_LINK_FLAGS "-m32")
 				set(XMP_PLATFORM_FOLDER "i80386linux") # add XMP_BUILDMODE_DIR to follow what other platforms do
-				set(XMP_GCC_LIBPATH /user/unicore/i80386linux/compiler/gcc4.4.4/linux2.6_32/lib)
+				set(XMP_GCC_LIBPATH /user/unicore/i80386linux/compiler/gcc4.8.2/linux3.10_32/lib)
 			endif()
 
 			set(XMP_EXTRA_BUILDMACHINE	"Cross compiling")
 		endif()
-		set(XMP_PLATFORM_VERSION "linux2.6") # add XMP_BUILDMODE_DIR to follow what other platforms do
+		set(XMP_PLATFORM_VERSION "linux3.10") # add XMP_BUILDMODE_DIR to follow what other platforms do
 
 		add_definitions(-DUNIX_ENV=1)
 		# Linux -------------------------------------------
@@ -139,12 +151,16 @@ if (UNIX)
 		#set(CMAKE_C_COMPILER "/user/unicore/i80386linux/compiler/gcc4.4.4/linux2.6_32/bin/gcc")
 		#set(CMAKE_CXX_COMPILER "/user/unicore/i80386linux/compiler/gcc4.4.4/linux2.6_32/bin/gcc")
 		#set(XMP_GCC_LIBPATH /user/unicore/i80386linux/compiler/gcc4.4.4/linux2.6_32/lib)
-		if(${XMP_ENABLE_SECURE_SETTINGS} MATCHES "ON")
-			set(XMP_PLATFORM_LINK "-z defs -Xlinker -Bsymbolic -Wl,--no-undefined ${XMP_EXTRA_LINK_FLAGS} ${XMP_TOOLCHAIN_LINK_FLAGS} -lrt -ldl -luuid -lpthread ${XMP_GCC_LIBPATH}/libssp.a")
-		else()
-			set(XMP_PLATFORM_LINK "-z defs -Xlinker -Bsymbolic -Wl,--no-undefined ${XMP_EXTRA_LINK_FLAGS} ${XMP_TOOLCHAIN_LINK_FLAGS} -lrt -ldl -luuid -lpthread")
-		endif()
-		set(XMP_SHARED_COMPILE_FLAGS "-Wno-multichar -Wno-implicit -D_FILE_OFFSET_BITS=64 -funsigned-char  ${XMP_EXTRA_COMPILE_FLAGS} ${XMP_TOOLCHAIN_COMPILE_FLAGS}")
+
+if(CMAKE_CL_64)
+                set(XMPCORE_UUIDLIB_PATH "-L${XMPROOT_DIR}/XMPCore/third-party/uuid/lib64")
+else()
+                set(XMPCORE_UUIDLIB_PATH "-L${XMPROOT_DIR}/XMPCore/third-party/uuid/lib")
+endif()
+
+
+		set(XMP_PLATFORM_LINK "-z defs -Xlinker -Bsymbolic -Wl,--no-undefined  ${XMPCORE_UUIDLIB_PATH} ${XMP_EXTRA_LINK_FLAGS} ${XMP_TOOLCHAIN_LINK_FLAGS} -lrt -ldl -luuid -lpthread ${XMP_GCC_LIBPATH}/libssp.a")
+		set(XMP_SHARED_COMPILE_FLAGS "-Wno-multichar -D_FILE_OFFSET_BITS=64 -funsigned-char  ${XMP_EXTRA_COMPILE_FLAGS} ${XMP_TOOLCHAIN_COMPILE_FLAGS}")
 		set(XMP_SHARED_COMPILE_DEBUG_FLAGS " ")
 		set(XMP_SHARED_COMPILE_RELEASE_FLAGS "-fwrapv ")
 

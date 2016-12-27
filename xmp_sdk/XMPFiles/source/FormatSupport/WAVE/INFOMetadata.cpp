@@ -152,7 +152,7 @@ XMP_Uns64 INFOMetadata::serialize( XMP_Uns8** outBuffer )
 		{
 			TValueObject<std::string>* strObj = dynamic_cast<TValueObject<std::string>*>(iter->second);
 
-			XMP_Uns32 chunkSize = kChunkHeaderSize + strObj->getValue().length();
+			XMP_Uns32 chunkSize = kChunkHeaderSize + strObj->getValue().length() + 1;	// 1 byte is added for NULL termination string
 
 			if( chunkSize & 1 )
 			{
@@ -194,7 +194,7 @@ XMP_Uns64 INFOMetadata::serialize( XMP_Uns8** outBuffer )
 				TValueObject<std::string>* strObj = dynamic_cast<TValueObject<std::string>*>(iter->second);
 				std::string value	= strObj->getValue();
 				XMP_Uns32 id		= iter->first;
-				XMP_Uns32 size		= value.length();
+				XMP_Uns32 size		= value.length() + 1;		// Null terminated string
 
 				if( size & 1 && strObj->hasChanged() )
 				{
@@ -221,7 +221,7 @@ XMP_Uns64 INFOMetadata::serialize( XMP_Uns8** outBuffer )
 				memcpy( buffer+offset+kSizeChunkID, &size, kSizeChunkSize );
 				//size has been changed in little endian format. Change it back to bigendina
 				size	= LE.getUns32( &size );
-				memcpy( buffer+offset+kChunkHeaderSize, value.c_str(), size );
+				memcpy( buffer+offset+kChunkHeaderSize, value.c_str(), value.length() );
 
 				//
 				// update pointer

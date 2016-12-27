@@ -13,7 +13,6 @@
 
 #include "XMPCore/source/XMPCore_Impl.hpp"
 #include "XMPCore/source/XMPIterator.hpp"
-
 #if XMP_WinBuild
 	#pragma warning ( disable : 4101 ) // unreferenced local variable
 	#pragma warning ( disable : 4189 ) // local variable is initialized but not referenced
@@ -46,7 +45,11 @@ WXMPIterator_PropCTor_1 ( XMPMetaRef     xmpRef,
 		const XMPMeta & xmpObj = WtoXMPMeta_Ref ( xmpRef );
 		XMP_AutoLock metaLock ( &xmpObj.lock, kXMP_ReadLock );
 		
-		XMPIterator * iter = new XMPIterator ( xmpObj, schemaNS, propName, options );
+		XMPIterator * iter = NULL;
+		if (!iter) {
+
+			iter = new XMPIterator(xmpObj, schemaNS, propName, options);
+		}
 		++iter->clientRefs;
 		XMP_Assert ( iter->clientRefs == 1 );
 		wResult->ptrResult = XMPIteratorRef ( iter );

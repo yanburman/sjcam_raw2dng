@@ -21,6 +21,27 @@
 #include "source/UnicodeConversions.hpp"
 #include "source/ExpatAdapter.hpp"
 
+
+#include "XMPCore/XMPCoreDefines.h"
+#if ENABLE_CPP_DOM_MODEL
+#include "third-party/zuid/interfaces/MD5.h"
+#include "XMPCore/Interfaces/IMetadata_I.h"
+#include "XMPCore/Interfaces/IPathSegment_I.h"
+#include "XMPCore/Interfaces/IPath_I.h"
+#include "XMPCore/Interfaces/INameSpacePrefixMap_I.h"
+#include "XMPCore/Interfaces/IDOMImplementationRegistry_I.h"
+#include "XMPCore/XMPCoreFwdDeclarations_I.h"
+#include "XMPCore/XMPCoreFwdDeclarations.h"
+#include "XMPCore/Interfaces/IStructureNode_I.h"
+#include "XMPCore/Interfaces/ISimpleNode_I.h"
+#include "XMPCore/Interfaces/IArrayNode_I.h"
+#include "XMPCore/Interfaces/INodeIterator.h"
+#include "XMPCore/Interfaces/ICoreObjectFactory.h"
+#include "XMPCommon/Interfaces/IUTF8String_I.h"
+#include "XMPCore/Interfaces/INode_I.h"
+#endif 
+
+
 #if XMP_DebugBuild
 	#include <iostream>
 #endif
@@ -45,6 +66,30 @@ using namespace std;
 
 typedef unsigned char XMP_CLTMatch;
 
+#if XMP_MARKER_EXTENSIBILITY_BACKWARD_COMPATIBILITY
+extern "C" {
+	void ReleaseXMP_Node(void * node) {
+		if (node) {
+			XMP_Node * ptr = (XMP_Node *)node;
+			delete ptr;
+			ptr = NULL;
+		}
+	}
+}
+
+#if ENABLE_CPP_DOM_MODEL
+extern "C" {
+	void ReleaseIStructureNode(void * node) {
+		if (node) {
+			AdobeXMPCore::pIStructureNode_base ptr = ( AdobeXMPCore::pIStructureNode_base )node;
+			ptr->Release();
+			node = NULL;
+		}
+	}
+}
+#endif
+#endif
+
 enum {	// Values for XMP_CLTMatch.
 	kXMP_CLT_NoValues,
 	kXMP_CLT_SpecificMatch,
@@ -68,14 +113,18 @@ enum {	// Values for XMP_CLTMatch.
 // -------------------------------------------------------------------------------------------------
 // SetNodeValue
 // ------------
-
 static inline void
-SetNodeValue ( XMP_Node * node, XMP_StringPtr value )
+	SetNodeValue ( XMP_Node * node, XMP_StringPtr value )
+{
+	node->SetValue( value );
+}	//SetNodeValue
+
+void XMP_Node::SetValue( XMP_StringPtr value )
 {
 
 	#if XMP_DebugBuild	// ! Hack to force an assert.
-		if ( (node->name == "xmp:TestAssertNotify") && XMP_LitMatch ( value, "DoIt!" ) ) {
-			XMP_Assert ( node->name != "xmp:TestAssertNotify" );
+		if ( (this->name == "xmp:TestAssertNotify") && XMP_LitMatch ( value, "DoIt!" ) ) {
+			XMP_Assert ( this->name != "xmp:TestAssertNotify" );
 		}
 	#endif
 	
@@ -98,21 +147,21 @@ SetNodeValue ( XMP_Node * node, XMP_StringPtr value )
 		if ( *chPtr != 0 ) {
 			XMP_Uns32 cp = GetCodePoint ( (const XMP_Uns8 **) &chPtr );	// Throws for bad UTF-8.
 			if ( (cp == 0xFFFE) || (cp == 0xFFFF) ) {
-				XMP_Throw ( "U+FFFE and U+FFFF are not allowed in XML", kXMPErr_BadXML );
+				XMP_Throw ( "U+FFFE and U+FFFF are not allowed in XML", kXMPErr_BadUnicode );
 			}
 		}
 
 	}
 
-	if ( XMP_PropIsQualifier(node->options) && (node->name == "xml:lang") ) NormalizeLangValue ( &newValue );
+	if ( XMP_PropIsQualifier(this->options) && (this->name == "xml:lang") ) NormalizeLangValue ( &newValue );
 
-	node->value.swap ( newValue );
+	this->value.swap ( newValue );
 
 	#if 0	// *** XMP_DebugBuild
-		node->_valuePtr = node->value.c_str();
+		this->_valuePtr = this->value.c_str();
 	#endif
 	
-}	// SetNodeValue
+}	// XMP_Node::SetValue
 
 
 // -------------------------------------------------------------------------------------------------
@@ -168,7 +217,7 @@ DoSetArrayItem ( XMP_Node *		arrayNode,
 				 XMP_OptionBits options )
 {
 	XMP_OptionBits itemLoc = options & kXMP_PropArrayLocationMask;
-	XMP_Index      arraySize = arrayNode->children.size();
+	XMP_Index      arraySize = static_cast<XMP_Index>( arrayNode->children.size() );
 	
 	options &= ~kXMP_PropArrayLocationMask;
 	options = VerifySetOptions ( options, itemValue );
@@ -377,7 +426,7 @@ XMPMeta::GetProperty ( XMP_StringPtr	schemaNS,
 	if ( propNode == 0 ) return false;
 	
 	*propValue = propNode->value.c_str();
-	*valueSize = propNode->value.size();
+	*valueSize = static_cast<XMP_StringLen>( propNode->value.size() );
 	*options   = propNode->options;
 	
 	return true;
@@ -819,9 +868,9 @@ XMPMeta::GetLocalizedText ( XMP_StringPtr	 schemaNS,
 	if ( match == kXMP_CLT_NoValues ) return false;
 	
 	*actualLang = itemNode->qualifiers[0]->value.c_str();
-	*langSize   = itemNode->qualifiers[0]->value.size();
+	*langSize   = static_cast<XMP_Index>( itemNode->qualifiers[0]->value.size() );
 	*itemValue  = itemNode->value.c_str();
-	*valueSize  = itemNode->value.size();
+	*valueSize  = static_cast<XMP_Index>( itemNode->value.size() );
 	*options    = itemNode->options;
 
 	return true;

@@ -376,7 +376,7 @@ static void GetAbortAPI( Abort_API* abortAPI )
 //		StandardHandler_API
 //
 
-static XMPErrorID CheckFormatStandardHandler( SessionRef session, XMP_FileFormat format, StringPtr path, XMP_Bool & checkOK, WXMP_Error* wError )
+static XMPErrorID CheckFormatStandardHandlerInternal( SessionRef session, XMP_FileFormat format, StringPtr path, XMP_Bool & checkOK, WXMP_Error* wError, XMPFiles * standardClient = NULL )
 {
 	if( wError == NULL )	return kXMPErr_BadParam;
 
@@ -400,14 +400,23 @@ static XMPErrorID CheckFormatStandardHandler( SessionRef session, XMP_FileFormat
 		{
 			if( hdlInfo->checkProc != NULL )
 			{
+				bool xmpFilesCreated = false;
+				if ( standardClient == NULL )
+				{
+					standardClient = new XMPFiles();
+					xmpFilesCreated = true;
+				}
+
 				try
 				{
 					//
 					// setup temporary XMPFiles instance
 					//
-					XMPFiles standardClient;
-					standardClient.format = format;
-					standardClient.SetFilePath( path );
+					if ( xmpFilesCreated )
+					{
+						standardClient->format = format;
+						standardClient->SetFilePath( path );
+					}
 
 					if( hdlInfo->flags & kXMPFiles_FolderBasedFormat )
 					{
@@ -447,7 +456,7 @@ static XMPErrorID CheckFormatStandardHandler( SessionRef session, XMP_FileFormat
 								// The case that a logical path to a clip has been passed, which does not point to a real file 
 								if( Host_IO::GetFileMode( path ) == Host_IO::kFMode_DoesNotExist )
 								{
-									checkOK = CheckProc( hdlInfo->format, rootPath, gpName, parentName, leafName, &standardClient );
+									checkOK = CheckProc( hdlInfo->format, rootPath, gpName, parentName, leafName, standardClient );
 								}
 								else
 								{
@@ -463,7 +472,7 @@ static XMPErrorID CheckFormatStandardHandler( SessionRef session, XMP_FileFormat
 										gpName = origGPName;	// ! XDCAM-FAM has just 1 level of inner folder, preserve the "MyMovie" case.
 									}
 
-									checkOK = CheckProc( hdlInfo->format, rootPath, gpName, parentName, leafName, &standardClient );
+									checkOK = CheckProc( hdlInfo->format, rootPath, gpName, parentName, leafName, standardClient );
 								}
 							}
 							else
@@ -483,14 +492,24 @@ static XMPErrorID CheckFormatStandardHandler( SessionRef session, XMP_FileFormat
 						//
 						CheckFileFormatProc CheckProc = (CheckFileFormatProc) (hdlInfo->checkProc);
 						XMPFiles_IO* io = XMPFiles_IO::New_XMPFiles_IO ( path, true );
-						checkOK = CheckProc( hdlInfo->format, path, io, &standardClient );
+						checkOK = CheckProc( hdlInfo->format, path, io, standardClient );
 						delete io;
 					}
 
 					wError->mErrorID = kXMPErr_NoError;
+					if ( xmpFilesCreated )
+					{
+						delete standardClient;
+						standardClient = NULL;
+					}
 				}
 				catch( ... )
 				{
+					if ( xmpFilesCreated )
+					{
+						delete standardClient;
+						standardClient = NULL;
+					}
 					HandleException( wError );
 				}
 			}
@@ -508,7 +527,12 @@ static XMPErrorID CheckFormatStandardHandler( SessionRef session, XMP_FileFormat
 	return wError->mErrorID;
 }
 
-static XMPErrorID GetXMPStandardHandler( SessionRef session, XMP_FileFormat format, StringPtr path, XMPMetaRef xmpRef, XMP_Bool * xmpExists, WXMP_Error* wError )
+static XMPErrorID CheckFormatStandardHandler( SessionRef session, XMP_FileFormat format, StringPtr path, XMP_Bool & checkOK, WXMP_Error* wError )
+{
+	return CheckFormatStandardHandlerInternal( session, format, path, checkOK, wError );
+}
+
+static XMPErrorID GetXMPStandardHandlerInternal( SessionRef session, XMP_FileFormat format, StringPtr path, XMPMetaRef xmpRef, XMP_Bool * xmpExists, WXMP_Error* wError, XMP_OptionBits flags = 0, XMP_StringPtr *packet = NULL, XMP_PacketInfo *packetInfo = NULL, ErrorCallbackBox * errorCallback = NULL, XMP_ProgressTracker::CallbackInfo * progCBInfoPtr = NULL )
 {
 	if( wError == NULL )	return kXMPErr_BadParam;
 
@@ -533,34 +557,58 @@ static XMPErrorID GetXMPStandardHandler( SessionRef session, XMP_FileFormat form
 			// check format first
 			//
 			XMP_Bool suc = kXMP_Bool_False;
+			if( flags == 0 )
+					flags = kXMPFiles_OpenForRead;
+			//
+			// setup temporary XMPFiles instance
+			//
+			XMPFiles standardClient;
+			standardClient.format = format;
+			standardClient.SetFilePath( path );
+			standardClient.openFlags = flags;
+			
+			if ( errorCallback != NULL )
+			{
+				standardClient.SetErrorCallback( errorCallback->wrapperProc, errorCallback->clientProc, errorCallback->context, errorCallback->limit );
+			}
+			if ( progCBInfoPtr != NULL && progCBInfoPtr->wrapperProc != NULL )
+			{
+				standardClient.SetProgressCallback( *progCBInfoPtr );
+			}
 
-			XMPErrorID errorID = CheckFormatStandardHandler( session, format, path, suc, wError );
+			XMPErrorID errorID = kXMPErr_NoError;
+			if ( flags & kXMPFiles_ForceGivenHandler )
+			{
+				suc = ConvertBoolToXMP_Bool( true );
+				wError->mErrorID	= kXMPErr_NoError;
+			}
+			else
+				errorID = CheckFormatStandardHandlerInternal( session, format, path, suc, wError, &standardClient );
 
 			if( errorID == kXMPErr_NoError && ConvertXMP_BoolToBool( suc ) )
 			{
-				//
-				// setup temporary XMPFiles instance
-				//
-				XMPFiles standardClient;
-				standardClient.format = format;
-				standardClient.SetFilePath( path );
-
 				SXMPMeta meta( xmpRef );
-			
+
 				try
 				{
-					//
-					// open with passed handler info
-					//
-					suc = standardClient.OpenFile( *hdlInfo, path, kXMPFiles_OpenForRead );
+					suc = standardClient.OpenFile( *hdlInfo, path, flags );
 
 					if( suc )
 					{
-						//
-						// read meta data
-						//
-						suc = standardClient.GetXMP( &meta );
-
+						XMP_StringPtr oldStr;
+						XMP_StringLen length = 0;
+						suc = standardClient.GetXMP( &meta, &oldStr, &length, packetInfo );
+						if( length != 0 && packet != NULL )
+						{
+							StringPtr buffer = NULL;
+							CreateBuffer( &buffer, length + 1, wError);	
+							if( wError->mErrorID != kXMPErr_NoError ) 
+								return wError->mErrorID;
+								
+							memcpy( buffer, oldStr, length );
+							buffer[length] = '\0';
+							*packet = buffer;
+						}
 						if( xmpExists != NULL )		*xmpExists = suc;
 					}
 				}
@@ -569,9 +617,6 @@ static XMPErrorID GetXMPStandardHandler( SessionRef session, XMP_FileFormat form
 					HandleException( wError );
 				}
 
-				//
-				// close and cleanup
-				//
 				try
 				{
 					standardClient.CloseFile();
@@ -601,6 +646,11 @@ static XMPErrorID GetXMPStandardHandler( SessionRef session, XMP_FileFormat form
 	return wError->mErrorID;
 }
 
+static XMPErrorID GetXMPStandardHandler( SessionRef session, XMP_FileFormat format, StringPtr path, XMPMetaRef xmpRef, XMP_Bool * xmpExists, WXMP_Error* wError )
+{
+	return GetXMPStandardHandlerInternal( session, format, path, xmpRef, xmpExists, wError );
+}
+
 static XMPErrorID GetXMPStandardHandler_V2( SessionRef session, XMP_FileFormat format, StringPtr path, XMP_StringPtr* xmpStr, XMP_Bool * xmpExists, WXMP_Error* wError )
 {
 	SXMPMeta meta;
@@ -621,6 +671,334 @@ static XMPErrorID GetXMPStandardHandler_V2( SessionRef session, XMP_FileFormat f
 	return wError->mErrorID ;
 }
 
+static XMPErrorID GetXMPStandardHandler_V3( SessionRef session, XMP_FileFormat format, StringPtr path, XMP_StringPtr* xmpStr, XMP_Bool * xmpExists, WXMP_Error* wError, XMP_OptionBits flags, XMP_StringPtr* packet, XMP_PacketInfo* packetInfo, ErrorCallbackBox * errorCallback, XMP_ProgressTracker::CallbackInfo * progCBInfoPtr )
+{
+	SXMPMeta meta;
+    std::string xmp;
+	GetXMPStandardHandlerInternal( session, format, path, meta.GetInternalRef(), xmpExists, wError, flags, packet, packetInfo, errorCallback, progCBInfoPtr ) ;
+	if( wError->mErrorID != kXMPErr_NoError )
+		return wError->mErrorID;
+
+	meta.SerializeToBuffer( &xmp, kXMP_NoOptions, 0);
+	XMP_Uns32 length = (XMP_Uns32)xmp.size() + 1 ;
+	StringPtr buffer = NULL;
+	CreateBuffer( &buffer, length , wError);	
+	if( wError->mErrorID != kXMPErr_NoError ) 
+		return wError->mErrorID;
+
+	memcpy( buffer, xmp.c_str(), length );
+	*xmpStr = buffer; // callee function should free the memory.
+	return wError->mErrorID ;
+}
+
+static XMPErrorID PutXMPStandardHandler( SessionRef session, XMP_FileFormat format, StringPtr path, const XMP_StringPtr xmpStr, WXMP_Error* wError , XMP_OptionBits flags, ErrorCallbackBox * errorCallback, XMP_ProgressTracker::CallbackInfo * progCBInfoPtr )
+{
+	if( wError == NULL )	return kXMPErr_BadParam;
+
+	wError->mErrorID	= kXMPErr_InternalFailure;
+	wError->mErrorMsg	= NULL;
+
+	//
+	// find FileHandlerInstance associated to session reference
+	//
+	FileHandlerInstancePtr instance = PluginManager::getHandlerInstance( session );
+	
+	if( instance != NULL && PluginManager::getHandlerPriority( instance ) == PluginManager::kReplacementHandler )
+	{
+		//
+		// find previous file handler for file format identifier
+		//
+		XMPFileHandlerInfo* hdlInfo = HandlerRegistry::getInstance().getStandardHandlerInfo( format );
+
+		if( hdlInfo != NULL && HandlerRegistry::getInstance().isReplaced( format ) )
+		{
+			//
+			// check format first
+			//
+			XMP_Bool suc = kXMP_Bool_False;
+			if( flags == 0 )
+				flags = kXMPFiles_OpenForUpdate;
+			XMPFiles standardClient;
+			standardClient.format = format;
+			standardClient.SetFilePath( path );
+			standardClient.openFlags = flags ;
+			
+			if ( errorCallback != NULL )
+			{
+				standardClient.SetErrorCallback( errorCallback->wrapperProc, errorCallback->clientProc, errorCallback->context, errorCallback->limit );
+			}
+			if ( progCBInfoPtr != NULL && progCBInfoPtr->wrapperProc != NULL )
+			{
+				standardClient.SetProgressCallback( *progCBInfoPtr );
+			}
+
+			XMPErrorID errorID = kXMPErr_NoError;
+			if ( flags & kXMPFiles_ForceGivenHandler )
+			{
+				suc = ConvertBoolToXMP_Bool( true );
+				wError->mErrorID	= kXMPErr_NoError;
+			}
+			else
+				errorID = CheckFormatStandardHandlerInternal( session, format, path, suc, wError, &standardClient );
+
+			if( errorID == kXMPErr_NoError && ConvertXMP_BoolToBool( suc ) )
+			{
+				try
+				{
+					// open with passed handler info
+					suc = standardClient.OpenFile( *hdlInfo, path, flags );
+					size_t length = strnlen( xmpStr, Max_XMP_Uns32 );
+
+					if( suc && length != 0 && length <= Max_XMP_Uns32 )
+					{
+						// insert xmp into file
+						SXMPMeta meta( xmpStr, static_cast<XMP_Uns32>( length ));
+						standardClient.PutXMP( meta );
+					}
+					// close and cleanup
+					standardClient.CloseFile();
+				}
+				catch( ... )
+				{
+					HandleException( wError );
+				}
+				
+			}
+			else if( errorID == kXMPErr_NoError )
+			{
+				wError->mErrorID = kXMPErr_BadFileFormat;
+				wError->mErrorMsg = "Standard handler can't process file format";
+			}
+		}
+		else
+		{
+			wError->mErrorID = kXMPErr_NoFileHandler;
+			wError->mErrorMsg = "No standard handler available";
+		}
+	}
+	else
+	{
+		wError->mErrorMsg = "Standard file handler can't call prior handler";
+	}
+
+	return wError->mErrorID;
+}
+
+static XMPErrorID GetFileModDateStandardHandler( SessionRef session, XMP_FileFormat format, StringPtr path, XMP_DateTime * modDate, XMP_Bool * isSuccess, WXMP_Error* wError, XMP_OptionBits flags )
+{
+	*isSuccess = false;
+	if( wError == NULL )	return kXMPErr_BadParam;
+
+	wError->mErrorID	= kXMPErr_InternalFailure;
+	wError->mErrorMsg	= NULL;
+
+	//
+	// find FileHandlerInstance associated to session reference
+	//
+	FileHandlerInstancePtr instance = PluginManager::getHandlerInstance( session );
+	
+	if( instance != NULL && PluginManager::getHandlerPriority( instance ) == PluginManager::kReplacementHandler )
+	{
+		//
+		// find previous file handler for file format identifier
+		//
+		XMPFileHandlerInfo* hdlInfo = HandlerRegistry::getInstance().getStandardHandlerInfo( format );
+
+		if( hdlInfo != NULL && HandlerRegistry::getInstance().isReplaced( format ) )
+		{
+			//
+			// check format first
+			//
+			XMP_Bool suc = kXMP_Bool_False;
+			
+			XMPErrorID errorID = kXMPErr_NoError;
+			if ( flags & kXMPFiles_ForceGivenHandler )
+			{
+				suc = ConvertBoolToXMP_Bool( true );
+				wError->mErrorID	= kXMPErr_NoError;
+			}
+			else
+				errorID = CheckFormatStandardHandlerInternal( session, format, path, suc, wError );
+
+			if( errorID == kXMPErr_NoError && ConvertXMP_BoolToBool( suc ) )
+			{
+				
+				try
+				{
+					*isSuccess = XMPFiles::GetFileModDate( *hdlInfo, path, modDate, flags );	
+				}
+				catch( ... )
+				{
+					HandleException( wError );
+				}				
+			}
+			else if( errorID == kXMPErr_NoError )
+			{
+				wError->mErrorID = kXMPErr_BadFileFormat;
+				wError->mErrorMsg = "Standard handler can't process file format";
+			}
+		}
+		else
+		{
+			wError->mErrorID = kXMPErr_NoFileHandler;
+			wError->mErrorMsg = "No standard handler available";
+		}
+	}
+	else
+	{
+		wError->mErrorMsg = "Standard file handler can't call prior handler";
+	}
+
+	return wError->mErrorID;
+}
+
+static XMPErrorID IsMetadataWritableStandardHandler( SessionRef session, XMP_FileFormat format, StringPtr path, XMP_Bool * isWritable, WXMP_Error* wError, XMP_OptionBits flags )
+{
+	if( wError == NULL )	return kXMPErr_BadParam;
+
+	wError->mErrorID	= kXMPErr_InternalFailure;
+	wError->mErrorMsg	= NULL;
+
+	//
+	// find FileHandlerInstance associated to session reference
+	//
+	FileHandlerInstancePtr instance = PluginManager::getHandlerInstance( session );
+	
+	if( instance != NULL && PluginManager::getHandlerPriority( instance ) == PluginManager::kReplacementHandler )
+	{
+		//
+		// find previous file handler for file format identifier
+		//
+		XMPFileHandlerInfo* hdlInfo = HandlerRegistry::getInstance().getStandardHandlerInfo( format );
+
+		if( hdlInfo != NULL && HandlerRegistry::getInstance().isReplaced( format ) )
+		{
+			//
+			// check format first
+			//
+			XMP_Bool suc = kXMP_Bool_False;
+			
+			XMPErrorID errorID = kXMPErr_NoError;
+			if ( flags & kXMPFiles_ForceGivenHandler )
+			{
+				suc = ConvertBoolToXMP_Bool( true );
+				wError->mErrorID	= kXMPErr_NoError;
+			}
+			else
+				errorID = CheckFormatStandardHandlerInternal( session, format, path, suc, wError );
+
+			if( errorID == kXMPErr_NoError && ConvertXMP_BoolToBool( suc ) )
+			{
+				try
+				{
+					(void)XMPFiles::IsMetadataWritable( *hdlInfo, path, isWritable, flags );
+				}
+				catch( ... )
+				{
+					HandleException( wError );
+				}				
+			}
+			else if( errorID == kXMPErr_NoError )
+			{
+				wError->mErrorID = kXMPErr_BadFileFormat;
+				wError->mErrorMsg = "Standard handler can't process file format";
+			}
+		}
+		else
+		{
+			wError->mErrorID = kXMPErr_NoFileHandler;
+			wError->mErrorMsg = "No standard handler available";
+		}
+	}
+	else
+	{
+		wError->mErrorMsg = "Standard file handler can't call prior handler";
+	}
+
+	return wError->mErrorID;
+}
+
+static XMPErrorID GetAssociatedResourcesStandardHandler( SessionRef session, XMP_FileFormat format, StringPtr path, void * resourceList, SetClientStringVectorProc SetClientStringVector, WXMP_Error* wError, XMP_OptionBits flags )
+{
+	if( wError == NULL )	return kXMPErr_BadParam;
+
+	wError->mErrorID	= kXMPErr_InternalFailure;
+	wError->mErrorMsg	= NULL;
+
+	//
+	// find FileHandlerInstance associated to session reference
+	//
+	FileHandlerInstancePtr instance = PluginManager::getHandlerInstance( session );
+	
+	if( instance != NULL && PluginManager::getHandlerPriority( instance ) == PluginManager::kReplacementHandler )
+	{
+		//
+		// find previous file handler for file format identifier
+		//
+		XMPFileHandlerInfo* hdlInfo = HandlerRegistry::getInstance().getStandardHandlerInfo( format );
+
+		if( hdlInfo != NULL && HandlerRegistry::getInstance().isReplaced( format ) )
+		{
+			//
+			// check format first
+			//
+			XMP_Bool suc = kXMP_Bool_False;
+			
+			XMPErrorID errorID = kXMPErr_NoError;
+			if ( flags & kXMPFiles_ForceGivenHandler )
+			{
+				suc = ConvertBoolToXMP_Bool( true );
+				wError->mErrorID	= kXMPErr_NoError;
+			}
+			else
+				errorID = CheckFormatStandardHandlerInternal( session, format, path, suc, wError );
+
+			if( errorID == kXMPErr_NoError && ConvertXMP_BoolToBool( suc ) )
+			{
+				try
+				{
+					bool isSuccess;
+
+					// Host XMPFile library is providing a new vector of string and will use that for getting list of associated resources using standard handler 
+					std::vector<std::string> resList;
+					( *SetClientStringVector )( resourceList, 0, 0 );
+					isSuccess = XMPFiles::GetAssociatedResources( *hdlInfo, path, &resList, flags );
+					if ( isSuccess && (! resList.empty()) )
+					{
+						const size_t fileCount = resList.size();
+						std::vector<XMP_StringPtr> ptrArray;
+						ptrArray.reserve ( fileCount );
+						for ( size_t index = 0; index < fileCount; ++index )
+							ptrArray.push_back( resList[ index ].c_str() );
+						
+						// Filling list of resources into plugin provided vector of strings using plugin provided method of creating vector of strings
+						( *SetClientStringVector ) ( resourceList, ptrArray.data(), static_cast<XMP_Uns32>( fileCount ) );
+					} 
+				}
+				catch( ... )
+				{
+					HandleException( wError );
+				}				
+			}
+			else if( errorID == kXMPErr_NoError )
+			{
+				wError->mErrorID = kXMPErr_BadFileFormat;
+				wError->mErrorMsg = "Standard handler can't process file format";
+			}
+		}
+		else
+		{
+			wError->mErrorID = kXMPErr_NoFileHandler;
+			wError->mErrorMsg = "No standard handler available";
+		}
+	}
+	else
+	{
+		wError->mErrorMsg = "Standard file handler can't call prior handler";
+	}
+
+	return wError->mErrorID;
+}
 
 static void GetStandardHandlerAPI( StandardHandler_API* standardHandlerAPI )
 {
@@ -632,6 +1010,10 @@ static void GetStandardHandlerAPI( StandardHandler_API* standardHandlerAPI )
 
 }
 
+//
+//
+//
+///////////////////////////////////////////////////////////////////////////////
 
 static XMPErrorID RequestAPISuite( const char* apiName, XMP_Uns32 apiVersion, void** apiSuite, WXMP_Error* wError )
 {
@@ -655,14 +1037,39 @@ static XMPErrorID RequestAPISuite( const char* apiName, XMP_Uns32 apiVersion, vo
 	{
 		*apiSuite = (void*) &RequestAPISuite;
 	}
-	else if ( ! strcmp( apiName, "StandardHandler" ) && apiVersion == 2 ) 
+	else if ( ! strcmp( apiName, "StandardHandler" ) )
 	{
-		static const StandardHandler_API_V2 standardHandlerAPI =
-		{
+		static const StandardHandler_API_V3 standardHandlerAPI(
 			&CheckFormatStandardHandler,
-			&GetXMPStandardHandler_V2
-		};
-		*apiSuite=(void*)&standardHandlerAPI;
+			&GetXMPStandardHandler_V2,
+			&GetXMPStandardHandler_V3,
+			&PutXMPStandardHandler,
+			&GetFileModDateStandardHandler,
+			&GetAssociatedResourcesStandardHandler,
+			&IsMetadataWritableStandardHandler
+			);
+
+		switch ( apiVersion )
+		{
+		case 2:
+			{
+				const StandardHandler_API_V2 * ptr = &standardHandlerAPI;
+				*apiSuite = (void *) ptr;
+			}
+			break;
+
+		case 3:
+			{
+				*apiSuite = (void *) &standardHandlerAPI;
+			}
+			break;
+
+		default:
+			*apiSuite = NULL;
+			wError->mErrorID = kXMPErr_Unimplemented;
+			break;
+
+		}
 	}
 	else
 	{

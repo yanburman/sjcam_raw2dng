@@ -21,6 +21,8 @@
 #include <stdexcept>
 #include <cerrno>
 
+//#define ENABLE_XMP_CPP_INTERFACE 1; 
+
 #if XMP_WinBuild
 	#pragma warning ( disable : 4127 )	// conditional expression is constant
 	#pragma warning ( disable : 4996 )	// '...' was declared deprecated

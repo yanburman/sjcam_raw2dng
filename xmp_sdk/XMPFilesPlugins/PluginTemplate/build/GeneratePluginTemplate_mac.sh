@@ -62,19 +62,16 @@ Generate
 }
 
 echo "Enter your choice:"
-echo "1. Clean All"
-echo "2. Generate PLuginTemplate 32"
-echo "3. Generate PluginTemplate 64"
-echo "4. Generate All"
+echo "1. Clean"
+echo "2. Generate PluginTemplate 64"
+
 
 
 read choice
 
 case $choice in
 1) clean; break;;
-2) PLuginTemplate32;;
-3) PLuginTemplate64;;
-4) PLuginTemplate32; PLuginTemplate64;;
+2) PLuginTemplate64;;
 *) echo "ERROR: Invalid Choice, Exiting"; exit 1;;
 esac
 

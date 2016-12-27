@@ -62,6 +62,7 @@ global:
 	WXMPMeta_SetDefaultErrorCallback_1;
 	WXMPMeta_SetErrorCallback_1;
 	WXMPMeta_ResetErrorCallbackLimit_1;
+	WXMPMeta_GetXMPDOMFactoryInstance_1;
 
 	WXMPIterator_PropCTor_1;
 	WXMPIterator_TableCTor_1;

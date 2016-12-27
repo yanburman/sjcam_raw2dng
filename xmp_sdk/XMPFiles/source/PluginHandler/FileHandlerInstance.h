@@ -37,6 +37,8 @@ public:
 	virtual void FillMetadataFiles ( std::vector<std::string> * metadataFiles );
 	virtual void FillAssociatedResources ( std::vector<std::string> * resourceList );
 	virtual bool IsMetadataWritable ( );
+	virtual void SetErrorCallback ( ErrorCallbackBox errorCallbackBox );
+	virtual void SetProgressCallback ( XMP_ProgressTracker::CallbackInfo * progCBInfoPtr );
 
 	inline SessionRef				GetSession() const	{ return mObject; }
 	inline FileHandlerSharedPtr		GetHandlerInfo() const	{ return mHandler; }

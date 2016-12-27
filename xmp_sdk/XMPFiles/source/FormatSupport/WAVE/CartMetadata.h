@@ -58,6 +58,14 @@ public:
 	struct StoredCartTimer {
 		XMP_Uns32 usage;
 		XMP_Uns32 value;
+
+		bool operator == (const StoredCartTimer & other ) const {
+			return usage == other.usage && value == other.value;
+		}
+
+		bool operator != ( const StoredCartTimer & other ) const {
+			return usage != other.usage || value != other.value;
+		}
 	};
 
 	enum { kPostTimerLength = 8 };

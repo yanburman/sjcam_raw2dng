@@ -9,14 +9,14 @@
 
 # ==============================================================================
 # define minimum cmake version
-cmake_minimum_required(VERSION 2.8.6)
+cmake_minimum_required(VERSION 3.5.1)
 
 # ==============================================================================
 # Function: architecture related settings
 # ==============================================================================
 function(SetupTargetArchitecture)
 	if(APPLE_IOS)
-		set(${COMPONENT}_CPU_FOLDERNAME	"$(ARCHS_STANDARD_32_BIT)" PARENT_SCOPE)
+		set(${COMPONENT}_CPU_FOLDERNAME	"$(ARCHS)" PARENT_SCOPE)
 	else()
 		if(CMAKE_CL_64)
 			set(${COMPONENT}_BITDEPTH		"64" PARENT_SCOPE)
@@ -81,6 +81,10 @@ function(SetupCompilerFlags)
 		if(${${COMPONENT}_VERSIONING_GCC_VERSION} LESS 413)
 			# only remove inline hidden...
 			string(REGEX REPLACE "-fvisibility-inlines-hidden" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+		endif()
+		if(${${COMPONENT}_VERSIONING_GCC_VERSION} EQUAL 482)
+			#include path -I ${GNU_BASE}/include/c++/4.8.2/x86_64-unknown-linux-gnu
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I ${CMAKE_FIND_ROOT_PATH}/include/c++/4.8.2/x86_64-unknown-linux-gnu")
 		endif()
 	endif()
 	

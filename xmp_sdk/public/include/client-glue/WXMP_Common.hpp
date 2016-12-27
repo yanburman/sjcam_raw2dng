@@ -83,6 +83,10 @@ extern "C" {
     InvokeCheck(WCallProto);                  \
     XMPDocOpsRef result = XMPDocOpsRef(wResult.ptrResult)
 
+#define  WrapCheckNewMetadata(result,WCallProto) \
+    InvokeCheck(WCallProto);                  \
+    void * result = wResult.ptrResult
+
 #define WrapCheckBool(result,WCallProto) \
     InvokeCheck(WCallProto);             \
     bool result = bool(wResult.int32Result)

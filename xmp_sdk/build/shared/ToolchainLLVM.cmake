@@ -14,5 +14,5 @@
 set(CMAKE_XCODE_ATTRIBUTE_GCC_VERSION "com.apple.compilers.llvm.clang.1_0")
 
 # SDK and deployment 
-set(XMP_OSX_SDK		 	10.8)
-set(XMP_OSX_TARGET	 	10.7)
+set(XMP_OSX_SDK		 	10.11)
+set(XMP_OSX_TARGET	 	10.9)

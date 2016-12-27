@@ -69,8 +69,10 @@
 	const char AEOEUE_UTF8_CSTRING[]={0xC3, 0x84, 0xC3, 0x96, 0xC3, 0x9C,'\0'};
 	const std::string AEOEUE_UTF8(AEOEUE_UTF8_CSTRING);
 	const std::string AEOEUE_UTF8_BUGINESE("<C3 84 C3 96 C3 9C>");
+	const std::string AEOEUE_UTF8_BUGINESE_EVEN ( "<C3 84 C3 96 C3 9C 00>" );
 
 	const std::string AEOEUE_WIN_LOCAL_BUGINESE("<C4 D6 DC>");
+	const std::string AEOEUE_WIN_LOCAL_BUGINESE_EVEN ( "<C4 D6 DC 00>" );
 	const std::string AEOEUE_MAC_LOCAL_BUGINESE("<80 85 86>");
 
 	const std::string AEOEUE_WIN_MOJIBAKE_BUGINESE("<E2 82 AC E2 80 A6 E2 80 A0>");

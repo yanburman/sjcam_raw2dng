@@ -14,10 +14,13 @@
 
 #include "XMPFiles/source/XMPFiles_Impl.hpp"
 #include "XMPFiles/source/FormatSupport/Reconcile_Impl.hpp"
+#include "source/UnicodeConversions.hpp"
 #include "source/XMPFiles_IO.hpp"
 #include "source/XIO.hpp"
 
 #include "XMPFiles/source/FileHandlers/MP3_Handler.hpp"
+
+#include <sstream>
 
 // =================================================================================================
 /// \file MP3_Handler.cpp
@@ -204,7 +207,10 @@ void MP3_MetaHandler::CacheFileData()
 	// read frames
 	
 	XMP_Uns32 xmpID = XMP_V23_ID;
-	if ( this->majorVersion == 2 ) xmpID = XMP_V22_ID;
+	if ( this->majorVersion == 2 )
+	{
+		xmpID = XMP_V22_ID;
+	}
 
 	while ( file->Offset() < this->oldTagSize ) {
 
@@ -442,10 +448,9 @@ void MP3_MetaHandler::ProcessXMP()
         if ( xmpObj.GetProperty_Date ( kXMP_NS_XMP, "CreateDate", &oldDateTime, 0 ) )
         {
 
-            haveNewDateTime = haveNewDateTime && 
-                                                        ( (newDateTime.year != oldDateTime.year) ||
-                                                            ( (newDateTime.month != 0 ) && ( (newDateTime.day != oldDateTime.day) || (newDateTime.month != oldDateTime.month) ) ) ||
-                                                            ( newDateTime.hasTime && ( (newDateTime.hour != oldDateTime.hour) || (newDateTime.minute != oldDateTime.minute) ) ) );
+            haveNewDateTime = haveNewDateTime && ( (newDateTime.year != oldDateTime.year) || ( (newDateTime.month != 0 )
+							  && ( (newDateTime.day != oldDateTime.day) || (newDateTime.month != oldDateTime.month) ) )
+							  || ( newDateTime.hasTime && ( (newDateTime.hour != oldDateTime.hour) || (newDateTime.minute != oldDateTime.minute) ) ) );
         }
             // NOTE: no further validation nessesary the function "SetProperty_Date" will care about validating date and time
             // any exception will be caught and block import
@@ -727,3 +732,4 @@ void MP3_MetaHandler::WriteTempFile ( XMP_IO* tempRef )
 	IgnoreParam(tempRef);
 	XMP_Throw ( "MP3_MetaHandler::WriteTempFile: Not supported", kXMPErr_Unimplemented );
 }	// MP3_MetaHandler::WriteTempFile
+

@@ -13,6 +13,8 @@ if (NOT DEFINED CMAKE_CL_64)
    message(FATAL_ERROR "Must define CMAKE_CL_64 to some value")
 endif (NOT DEFINED CMAKE_CL_64)
 
+set(BUILDING_XMPCOMMON_AS_STATIC "1")
+
 # Our project
 project(sjcam_raw2dng)
 

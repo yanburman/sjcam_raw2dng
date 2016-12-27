@@ -19,13 +19,16 @@
 #ifndef __Plugin_Handler_hpp__
 #define __Plugin_Handler_hpp__	1
 #include "PluginConst.h"
+#include "PluginUtils.h"
+#include "source/XMP_ProgressTracker.hpp"
 
 // versioning
 #define XMP_PLUGIN_VERSION_1	1	// CS6
 #define XMP_PLUGIN_VERSION_2	2	//
 #define XMP_PLUGIN_VERSION_3	3	// CS7
+#define XMP_PLUGIN_VERSION_4	4
 
-#define XMP_PLUGIN_VERSION		XMP_PLUGIN_VERSION_3
+#define XMP_PLUGIN_VERSION		XMP_PLUGIN_VERSION_4
 
 namespace XMP_PLUGIN
 {
@@ -97,6 +100,23 @@ typedef XMPErrorID (*SetHostAPIProc)( HostAPIRef hostAPI, WXMP_Error * wError );
  *  @return					kXMPErr_NoError on success otherwise error id of the failure.
  */
 typedef XMPErrorID (*InitializeSessionProc)( XMP_StringPtr uid, XMP_StringPtr filePath, XMP_Uns32 format, XMP_Uns32 handlerFlags, XMP_Uns32 openFlags, SessionRef * session, WXMP_Error * wError );
+
+/** 
+ *  Function pointer to the function InitializeSession which will be called
+ *  at the time of creating instance of the file handler with /param uid for file /param filePath.
+ *
+ *  @param uid				Unique identifier string (uid) of the file handler whose instance is to be created.
+ *  @param filePath			FilePath of the file which is to be opened.
+ *  @param format			File format id for the session
+ *	@param handlerFlags		Handler flags as defined in the plugin manifest
+ *  @param openFlags		Flags that describe the desired access.
+ *  @param session			Pointer to a file Handler instance.
+ *  @param errorCallback	Pointer to error callback info
+ *  @param progCBInfoPtr	Points to the progress callback notification information
+ *  @return					kXMPErr_NoError on success otherwise error id of the failure.
+ */
+typedef XMPErrorID (*InitializeSessionV2Proc)( XMP_StringPtr uid, XMP_StringPtr filePath, XMP_Uns32 format, XMP_Uns32 handlerFlags, XMP_Uns32 openFlags, SessionRef * session, WXMP_Error * wError,
+											  ErrorCallbackBox errorCallbackBox, XMP_ProgressTracker::CallbackInfo * progCBInfo );
 
 /** 
  *  Function pointer to the function TerminateSession which will be called
@@ -246,6 +266,19 @@ typedef XMPErrorID (*FillAssociatedResourcesProc)( SessionRef session, StringVec
 typedef XMPErrorID (*ImportToXMPStringProc)( SessionRef session, XMP_StringPtr* xmpStr , WXMP_Error * wError );
 
 /** 
+ *  Function pointer to the function ImportToXMP. Any non metadata from a file that is supposed 
+ *  to be mapped into a XMP namespace should be added to the XMP packet using this function.
+ *
+ *  @param session		File Handler instance.
+ *  @param xmpStr		A pointer to a buffer which contain the xmpData.
+ *  @param wError		WXMP_Error structure which will be filled by the API if any error occurs.
+ *  @param packet		Returns existed XMP packet present in the file, if available
+ *  @param packetInfo	Returns packet information of existed XMP packet in the file, if available
+ *  @return				kXMPErr_NoError on success otherwise error id of the failure.
+ */
+typedef XMPErrorID (*ImportToXMPStringWithPacketProc)( SessionRef session, XMP_StringPtr* xmpStr , WXMP_Error * wError, XMP_StringPtr* packet, XMP_PacketInfo * packetInfo );
+
+/** 
  *  Function pointer to the function ExportFromXMP. The XMP packet is supposed to be 
  *  written to the file. If the packet contains any data that should be mapped back to
  *  native (non-XMP) metadata values then that should happen here.
@@ -267,6 +300,23 @@ typedef XMPErrorID (*ExportFromXMPStringProc)( SessionRef session, XMP_StringPtr
  */
 typedef XMPErrorID (*IsMetadataWritableProc)( SessionRef session, XMP_Bool * result, WXMP_Error * wError );
 
+/** 
+ *  Function pointer to the function SetErrorCallback. This function will set ErrorCallbackNotification for the plugins 
+ *
+ *  @param session					File Handler instance.
+ *  @param errorCallback			Pointer to Error Callback notification.
+ *  @return							kXMPErr_NoError on success otherwise error id of the failure.
+ */
+typedef XMPErrorID (*SetErrorCallbackproc)( SessionRef session, ErrorCallbackBox errorCallbackBox, WXMP_Error * wError );
+
+/** 
+ *  Function pointer to the function SetProgressCallback. This function will set ProgressCallback for the plugins. This needs to be set by plugin 
+ *
+ *  @param session					File Handler instance.
+ *  @param progCBInfoPtr			Pointer to Progress Callback information.
+ *  @return							kXMPErr_NoError on success otherwise error id of the failure.
+ */
+typedef XMPErrorID (*SetProgressCallbackproc)( SessionRef session, XMP_ProgressTracker::CallbackInfo * progCBInfoPtr, WXMP_Error * wError );
 
 /** @struct PluginAPI
  *  @brief This is a Plugin API structure.
@@ -312,6 +362,12 @@ struct PluginAPI
 
 	// version 3
 	IsMetadataWritableProc			mIsMetadataWritableProc;
+
+	// version 4
+	ImportToXMPStringWithPacketProc mImportToXMPStringWithPacketProc;
+	SetErrorCallbackproc			mSetErrorCallbackproc;
+	InitializeSessionV2Proc			mInitializeSessionV2Proc;
+	SetProgressCallbackproc			mSetProgressCallbackproc;
 };
 
 

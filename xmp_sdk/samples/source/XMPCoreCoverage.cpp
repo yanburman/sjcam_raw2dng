@@ -27,6 +27,8 @@
 #include "public/include/XMP.hpp"
 #include "public/include/XMP.incl_cpp"
 
+//#define ENABLE_XMP_CPP_INTERFACE 1;
+
 using namespace std;
 
 #if WIN_ENV

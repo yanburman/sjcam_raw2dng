@@ -97,6 +97,8 @@ const FileExtMapping kFileExtMap[] =
 	  { "m4v",  kXMP_MPEG4File },
 	  { "m4a",  kXMP_MPEG4File },
 	  { "f4v",  kXMP_MPEG4File },
+	  { "3gp",  kXMP_MPEG4File },
+	  { "3g2",  kXMP_MPEG4File },
 	  { "ses",  kXMP_SESFile },
 	  { "cel",  kXMP_CELFile },
 	  { "wma",  kXMP_WMAVFile },
@@ -123,6 +125,7 @@ const FileExtMapping kFileExtMap[] =
 	  { "xml",  kXMP_XMLFile },
 	  { "txt",  kXMP_TextFile },
 	  { "text", kXMP_TextFile },
+	  { "svg",  kXMP_SVGFile },
 
 	  { "psd",  kXMP_PhotoshopFile },
 	  { "ai",   kXMP_IllustratorFile },
@@ -146,10 +149,8 @@ const FileExtMapping kFileExtMap[] =
 
 // Files known to contain XMP but have no smart handling, here or elsewhere.
 const char * kKnownScannedFiles[] =
-	{ "gif",	// GIF, public format but no smart handler.
-	  "ai",		// Illustrator, actually a PDF file.
+	{ "ai",		// Illustrator, actually a PDF file.
 	  "ait",	// Illustrator template, actually a PDF file.
-	  "svg",	// SVG, an XML file.
 	  "aet",	// After Effects template project file.
 	  "ffx",	// After Effects filter preset file.
 	  "aep",	// After Effects project file in proprietary format

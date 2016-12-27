@@ -35,45 +35,6 @@ extern "C" void Terminate_LibUtils(){
 }
 
 // =================================================================================================
-// Error notifications
-// =================================================================================================
-
-bool GenericErrorCallback::CheckLimitAndSeverity ( XMP_ErrorSeverity severity ) const
-{
-
-	if ( this->limit == 0 ) return true;	// Always notify if the limit is zero.
-	if ( severity < this->topSeverity ) return false;	// Don't notify, don't count.
-
-	if ( severity > this->topSeverity ) {
-		this->topSeverity = severity;
-		this->notifications = 0;
-	}
-
-	this->notifications += 1;
-	return (this->notifications <= this->limit);
-
-}	// GenericErrorCallback::CheckLimitAndSeverity
-
-// =================================================================================================
-
-void GenericErrorCallback::NotifyClient ( XMP_ErrorSeverity severity, XMP_Error & error, XMP_StringPtr filePath /*= 0 */ ) const
-{
-	bool notifyClient = CanNotify() && !error.IsNotified();
-	bool returnAndRecover (severity == kXMPErrSev_Recoverable);
-
-	if ( notifyClient ) {
-		error.SetNotified();
-		notifyClient = CheckLimitAndSeverity ( severity );
-		if ( notifyClient ) {
-			returnAndRecover &= ClientCallbackWrapper( filePath, severity, error.GetID(), error.GetErrMsg() );
-		}
-	}
-
-	if ( ! returnAndRecover ) XMP_Error_Throw ( error );
-
-}
-
-// =================================================================================================
 // Thread synchronization locks
 // =================================================================================================
 

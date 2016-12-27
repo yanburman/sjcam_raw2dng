@@ -24,10 +24,19 @@ list (APPEND INTERNAL_HEADER_FILES
 	)
 source_group("Header Files\\Private\\XMPCore" FILES ${INTERNAL_HEADER_FILES})
 
-file (GLOB PRIVATE_XMPCOMMON_HEADERS ${XMPROOT_DIR}/XMPCommon/ImplHeaders/*.h)
-source_group("Header Files\\Private\\XMPCommon" FILES ${PRIVATE_XMPCOMMON_HEADERS})
+if (INCLUDE_CPP_DOM_SOURCE)
+	file (GLOB_RECURSE PRIVATE_XMPCOMMON_HEADERS ${XMPROOT_DIR}/XMPCommon/*.h)
+	source_group("Header Files\\Private\\XMPCommon" FILES ${PRIVATE_XMPCOMMON_HEADERS})
 
-file (GLOB PRIVATE_XMPCORE_HEADERS ${XMPROOT_DIR}/XMPCore/headers/*.h ${XMPROOT_DIR}/XMPCore/Interfaces/*.h)
+	file (GLOB_RECURSE PRIVATE_XMPCOMMON_SOURCES ${XMPROOT_DIR}/XMPCommon/source/*.cpp)
+	source_group("Source Files\\Private\\XMPCommon" FILES ${PRIVATE_XMPCOMMON_SOURCES})
+endif (INCLUDE_CPP_DOM_SOURCE)
+
+file (GLOB PRIVATE_XMPCORE_HEADERS 
+	${XMPROOT_DIR}/XMPCore/*.h 
+	${XMPROOT_DIR}/XMPCore/ImplHeaders/*.h 
+	${XMPROOT_DIR}/XMPCore/headers/*.h 
+	${XMPROOT_DIR}/XMPCore/Interfaces/*.h )
 source_group("Header Files\\Private\\XMPCore" FILES ${PRIVATE_XMPCORE_HEADERS})
 	
 file (GLOB_RECURSE PUBLIC_CLIENTGLUE_HEADER_FILES ${XMPROOT_DIR}/public/include/client-glue/*.*)
@@ -44,14 +53,30 @@ list (REMOVE_ITEM PUBLIC_HEADER_FILES
 	)
 source_group("Header Files\\Public" FILES ${PUBLIC_HEADER_FILES})
 
-file (GLOB_RECURSE PUBLIC_XMPCOMMON_HEADERS ${XMPROOT_DIR}/public/include/XMPCommon/*.h ${XMPROOT_DIR}/XMPCommon/*.h)
+file (GLOB_RECURSE PUBLIC_XMPCOMMON_HEADERS ${XMPROOT_DIR}/public/include/XMPCommon/*.h )
 source_group("Header Files\\Public\\XMPCommon" FILES ${PUBLIC_XMPCOMMON_HEADERS})
+
+file (GLOB_RECURSE PUBLIC_XMPCOMMON_SOURCES ${XMPROOT_DIR}/public/include/XMPCommon/source/*.cpp )
+source_group("Source Files\\Public\\XMPCommon" FILES ${PUBLIC_XMPCOMMON_SOURCES})
 
 file (GLOB_RECURSE PUBLIC_XMPCORE_HEADERS ${XMPROOT_DIR}/public/include/XMPCore/*.h)
 source_group("Header Files\\Public\\XMPCore" FILES ${PUBLIC_XMPCORE_HEADERS})
 
+file (GLOB_RECURSE PUBLIC_XMPCORE_SOURCES ${XMPROOT_DIR}/public/include/XMPCore/source/*.cpp )
+source_group("Source Files\\Public\\XMPCore" FILES ${PUBLIC_XMPCORE_SOURCES})
+
 file (GLOB ABIWRAPPER_SOURCE_FILES ${SOURCE_ROOT}/WXMP*.cpp)
 source_group("Source Files\\ABI Wrappers" FILES ${ABIWRAPPER_SOURCE_FILES})
+
+if (INCLUDE_CPP_DOM_SOURCE)
+	file (GLOB PRIVATE_XMPCORE_ISOURCE_FILES ${SOURCE_ROOT}/*_I.cpp)
+	file (GLOB PRIVATE_XMPCORE_IMPLSOURCE_FILES ${SOURCE_ROOT}/*Impl.cpp)
+	list (REMOVE_ITEM PRIVATE_XMPCORE_IMPLSOURCE_FILES ${SOURCE_ROOT}/XMPCore_Impl.cpp)
+	source_group("Source Files\\Private\\XMPCore" FILES ${PRIVATE_XMPCORE_ISOURCE_FILES} ${PRIVATE_XMPCORE_IMPLSOURCE_FILES})
+else (INCLUDE_CPP_DOM_SOURCE)
+	file (GLOB PRIVATE_XMPCORE_IMPLSOURCE_FILES ${SOURCE_ROOT}/CoreObjectFactoryImpl.cpp)
+	source_group("Source Files\\Private\\XMPCore" FILES ${PRIVATE_XMPCORE_IMPLSOURCE_FILES})
+endif (INCLUDE_CPP_DOM_SOURCE)
 
 #XMP Core classes
 file (GLOB CORECLASS_SOURCE_FILES ${SOURCE_ROOT}/XMP*.cpp)
@@ -64,11 +89,12 @@ list (APPEND THIRDPARTY_SOURCE_FILES
 	${TP_EXPAT_PATH}/xmlrole.c
 	${TP_EXPAT_PATH}/xmltok.c
 	)
-list (APPEND THIRDPARTY_SOURCE_FILES ${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/expat_config.h)
+if(WIN32)
+	list (APPEND THIRDPARTY_SOURCE_FILES ${RESOURCE_ROOT}/win/expat_config.h)
+else()
+	list (APPEND THIRDPARTY_SOURCE_FILES ${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/expat_config.h)
+endif()
 source_group("Source Files\\Third Party" FILES ${THIRDPARTY_SOURCE_FILES})
-
-file (GLOB XMPCOMMON_SOURCES ${XMPROOT_DIR}/XMPCommon/source/*.cpp)
-source_group("Source Files\\Private\\XMPCommon" FILES ${XMPCOMMON_SOURCES})
 
 list (APPEND UTILITY_SOURCE_FILES
 	${SOURCE_ROOT}/ExpatAdapter.cpp
@@ -81,13 +107,17 @@ list (APPEND UTILITY_SOURCE_FILES
 source_group("Source Files\\Utilities" FILES ${UTILITY_SOURCE_FILES})
 
 #resource files
-file (GLOB RESOURCE_FILES ${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/*.*)
+if (WIN32)
+	file (GLOB RESOURCE_FILES ${RESOURCE_ROOT}/win/*.*)
+else ()
+	file (GLOB RESOURCE_FILES ${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/*.*)
+endif()
 if(WIN32 AND ${XMP_BUILD_STATIC})
 	list(REMOVE_ITEM RESOURCE_FILES ${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/${TARGET_NAME}.rc)
 endif()
 source_group("Resource Files" FILES ${RESOURCE_FILES})
 
-if (WIN32 OR (UNIX AND APPLE))
+if (WIN32 OR UNIX)
 	list(APPEND SOURCE_FILES 
 		${PUBLIC_CLIENTGLUE_HEADER_FILES}
 		${PUBLIC_HEADER_FILES}
@@ -97,48 +127,35 @@ if (WIN32 OR (UNIX AND APPLE))
 		${CORECLASS_SOURCE_FILES}
 		${THIRDPARTY_SOURCE_FILES}
 		${UTILITY_SOURCE_FILES}
+		${PRIVATE_XMPCORE_ISOURCE_FILES}
+		${PRIVATE_XMPCORE_IMPLSOURCE_FILES}
 		${PRIVATE_XMPCOMMON_HEADERS}
+		${PRIVATE_XMPCOMMON_SOURCES}
 		${PRIVATE_XMPCORE_HEADERS}
 		${PUBLIC_XMPCOMMON_HEADERS}
+		${PUBLIC_XMPCOMMON_SOURCES}
 		${PUBLIC_XMPCORE_HEADERS}
-		${XMPCOMMON_SOURCES}
+		${PUBLIC_XMPCORE_SOURCES}
 		${RESOURCE_FILES}
 	)
-else()
-	list (REMOVE_ITEM CORECLASS_SOURCE_FILES
-		${SOURCE_ROOT}/XMPArrayNode_v1_Impl.cpp
-		${SOURCE_ROOT}/XMPArrayNodeIterator_v1_Impl.cpp
-		${SOURCE_ROOT}/XMPCoreObjectFactory_Impl.cpp
-		${SOURCE_ROOT}/XMPMetadata_v1_Impl.cpp
-		${SOURCE_ROOT}/XMPNode_v1_Impl.cpp
-		${SOURCE_ROOT}/XMPPathSegment_v1_Impl.cpp
-		${SOURCE_ROOT}/XMPPath_v1_Impl.cpp
-		${SOURCE_ROOT}/XMPQName_v1_Impl.cpp
-		${SOURCE_ROOT}/XMPQualifiers_v1_Impl.cpp
-		${SOURCE_ROOT}/XMPSimpleNode_v1_Impl.cpp
-		${SOURCE_ROOT}/XMPStructNode_v1_Impl.cpp
-		${SOURCE_ROOT}/XMPStructNodeIterator_v1_Impl.cpp
-	)
-	
-	list(APPEND SOURCE_FILES 
-		${PUBLIC_CLIENTGLUE_HEADER_FILES}
-		${PUBLIC_HEADER_FILES}
-		${INTERNAL_HEADER_FILES}
-		${ABIWRAPPER_SOURCE_FILES}
-		${ABIWRAPPER_SOURCE_FILES}
-		${CORECLASS_SOURCE_FILES}
-		${THIRDPARTY_SOURCE_FILES}
-		${UTILITY_SOURCE_FILES}
-		${RESOURCE_FILES}
-	)
-
 endif()
+
 # include directories
 include_directories(${XMPROOT_DIR})
 include_directories(${XMPROOT_DIR}/public/include)
 include_directories(${XMPROOT_DIR}/third-party/expat/public/lib)
 include_directories(${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT})
+if(UNIX AND NOT APPLE AND NOT ${XMP_BUILD_STATIC})
+include_directories(${XMPROOT_DIR}/XMPCore/third-party/uuid/include)
+endif()
+if (WIN32)
+	include_directories(${RESOURCE_ROOT}/win)
+else ()
+	include_directories(${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT})
+endif ()
 
+#additional link directory
+link_directories(${OUTPUT_DIR})
 
 
 # ==============================================================================
@@ -151,26 +168,47 @@ if (UNIX AND APPLE AND NOT ${XMP_BUILD_STATIC})
 	else()
 		set (INFO_PLIST_FLAGS "-DNDEBUG=1")
 	endif()
-	
-	add_custom_target(${TARGET_NAME}InfoPlist
-		COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}
-		COMMAND if [ $(CONFIGURATION) != Debug ]; then
-			${GCCTOOL} -E -P -x c ${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/${TARGET_NAME}.plist
-			-F${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/
-			-DPRODUCT_NAME=${TARGET_NAME} -DMAC_ENV=1 -DNDEBUG=1
-			-include ${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/${TARGET_NAME}PList.h
-			-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/Info.plist
-			\; else
-			${GCCTOOL} -E -P -x c ${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/${TARGET_NAME}.plist
-			-F${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/
-			-DPRODUCT_NAME=${TARGET_NAME} -DMAC_ENV=1 -DDEBUG=1
-			-include ${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/${TARGET_NAME}PList.h
-			-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/Info.plist
-			\; fi
-		COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/../CMakeFiles/${TARGET_NAME}.dir/Info.plist
-		COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/Info.plist ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/../CMakeFiles/${TARGET_NAME}.dir/Info.plist
-		COMMENT "Preprocessing Info-plist"
-	)
+	if(NOT APPLE_IOS)
+		add_custom_target(${TARGET_NAME}InfoPlist
+			COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}
+			COMMAND if [ $(CONFIGURATION) != Debug ]; then
+				${GCCTOOL} -E -P -x c ${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/${TARGET_NAME}.plist
+				-F${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/
+				-DPRODUCT_NAME=${TARGET_NAME} -DMAC_ENV=1 -DNDEBUG=1
+				-include ${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/${TARGET_NAME}PList.h
+				-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/Info.plist
+				\; else
+				${GCCTOOL} -E -P -x c ${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/${TARGET_NAME}.plist
+				-F${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/
+				-DPRODUCT_NAME=${TARGET_NAME} -DMAC_ENV=1 -DDEBUG=1
+				-include ${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/${TARGET_NAME}PList.h
+				-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/Info.plist
+				\; fi
+			COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/../CMakeFiles/${TARGET_NAME}.dir/Info.plist
+			COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/Info.plist ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/../CMakeFiles/${TARGET_NAME}.dir/Info.plist
+			COMMENT "Preprocessing Info-plist"
+		)
+	else()
+		add_custom_target(${TARGET_NAME}InfoPlist
+			COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}
+			COMMAND if [ $(CONFIGURATION) != Debug ]; then
+				${GCCTOOL} -E -P -x c ${RESOURCE_ROOT}/ios/${TARGET_NAME}.plist
+				-F${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/
+				-DPRODUCT_NAME=${TARGET_NAME} -DIOS_ENV=1 -DNDEBUG=1
+				-include ${RESOURCE_ROOT}/ios/${TARGET_NAME}PList.h
+				-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/Info.plist
+				\; else
+				${GCCTOOL} -E -P -x c ${RESOURCE_ROOT}/ios/${TARGET_NAME}.plist
+				-F${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/
+				-DPRODUCT_NAME=${TARGET_NAME} -DIOS_ENV=1 -DDEBUG=1
+				-include ${RESOURCE_ROOT}/ios/${TARGET_NAME}PList.h
+				-o ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/Info.plist
+				\; fi
+			COMMAND rm -f ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/../CMakeFiles/${TARGET_NAME}.dir/Info.plist
+			COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/Info.plist ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/../CMakeFiles/${TARGET_NAME}.dir/Info.plist
+			COMMENT "Preprocessing Info-plist"
+		)
+	endif()
 	set(DEPENDENCY_LIST "ALL:${TARGET_NAME}InfoPlist")
 else ()
 	set(DEPENDENCY_LIST "")
@@ -183,7 +221,7 @@ set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME  ${XMPCORE_LIB})
 
 # ==============================================================================
 # Link dependencies
-set(FRAMEWORK_LIST "Mac:CoreFoundation" "Mac:CoreServices")
+set(FRAMEWORK_LIST "ALL:CoreFoundation" "Mac:CoreServices")
 AddMacFramework(${TARGET_NAME} FRAMEWORK_LIST)
 
 
@@ -193,6 +231,10 @@ else(WIN32)
 	if(UNIX AND NOT APPLE)
 		SetWinLinkFlags(${TARGET_NAME} "-Xlinker --version-script -Xlinker \"${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/${TARGET_NAME}.exp\"" "")
 	else()
+		if(APPLE_IOS AND NOT XMP_BUILD_STATIC)
+			set_target_properties(${TARGET_NAME} PROPERTIES XCODE_ATTRIBUTE_DYLIB_INSTALL_NAME_BASE "@rpath")
+			set_target_properties(${TARGET_NAME} PROPERTIES XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.adobe.Adobe${TARGET_NAME}")
+		endif()
 		set_target_properties(${TARGET_NAME} PROPERTIES BUILD_WITH_INSTALL_RPATH ON INSTALL_NAME_DIR "@executable_path/../Frameworks")
 		SetWinLinkFlags(${TARGET_NAME} "-unexported_symbols_list \"${RESOURCE_ROOT}/${XMP_PLATFORM_SHORT}/XMPCore.unexp\"" "${XMPCORE_LIB}")
 		set_target_properties(${TARGET_NAME} PROPERTIES XCODE_ATTRIBUTE_GCC_SYMBOLS_PRIVATE_EXTERN "YES")
@@ -208,7 +250,12 @@ SetOutputPath(${OUTPUT_DIR} 0)
 # ==============================================================================
 if(UNIX)
 	if (NOT APPLE)
-		if (NOT ${XMP_BUILD_STATIC})
+		if (${XMP_BUILD_STATIC})
+			add_custom_command (TARGET ${TARGET_NAME}
+				POST_BUILD
+				COMMAND  mv ${OUTPUT_DIR}/lib${XMPCORE_LIB}.a  ${OUTPUT_DIR}/${XMPCORE_LIB}.ar
+			)
+		else()
 			if((${CMAKE_BUILD_TYPE} MATCHES "Debug") OR (${CMAKE_BUILD_TYPE} MATCHES "debug") )
 				add_custom_command (TARGET ${TARGET_NAME}
 					POST_BUILD

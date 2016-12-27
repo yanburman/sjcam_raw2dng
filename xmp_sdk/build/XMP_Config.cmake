@@ -9,7 +9,7 @@
 
 # ==============================================================================
 # define minimum cmake version
-cmake_minimum_required(VERSION 2.8.6)
+cmake_minimum_required(VERSION 3.5.1)
 
 # ==============================================================================
 # XMP config for XMPTOOLKIT and TestRunner
@@ -20,5 +20,14 @@ endif()
 if(NOT DEFINED COMMON_BUILD_SHARED_DIR)
 	set(COMMON_BUILD_SHARED_DIR ${XMP_ROOT}/build/shared)
 endif()
+
+set(INCLUDE_CPP_DOM_SOURCE TRUE)
+
+if (INCLUDE_CPP_DOM_SOURCE)
+	add_definitions(-DENABLE_CPP_DOM_MODEL=1)
+else (INCLUDE_CPP_DOM_SOURCE)
+	add_definitions(-DENABLE_CPP_DOM_MODEL=0)
+endif(INCLUDE_CPP_DOM_SOURCE)
+
 include(${XMP_ROOT}/build/XMP_ConfigCommon.cmake)
 

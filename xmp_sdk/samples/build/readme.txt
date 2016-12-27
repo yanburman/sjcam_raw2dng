@@ -4,13 +4,13 @@ Windows:
 
 1. Double Click "GenerateSamples_win.bat" or run it through command prompt.
 2. Enter the type of project to create
-3. The project files will be created in vc11\windows or vc11\windows_x64 folder
+3. The project files will be created in vc14\windows or vc14\windows_x64 folder
 
 Mac:
 
 1. Run the shell script GenerateSamples_mac.sh.
 2. Enter the type of project to create
-3. The project files will be created in xcode\intel or xcode\intel_64 folder
+3. The project files will be created in xcode\intel_64 folder
 
 Linux:
 

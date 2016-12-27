@@ -1,0 +1,25 @@
+// =================================================================================================
+// ADOBE SYSTEMS INCORPORATED
+// Copyright 2014 Adobe Systems Incorporated
+// All Rights Reserved
+//
+// NOTICE:  Adobe permits you to use, modify, and distribute this file in accordance with the terms
+// of the Adobe license agreement accompanying it.
+// =================================================================================================
+
+
+#define IMPLEMENTATION_HEADERS_CAN_BE_INCLUDED 1
+	#include "XMPCommon/ImplHeaders/DefaultErrorNotifierImpl.h"
+#undef IMPLEMENTATION_HEADERS_CAN_BE_INCLUDED
+
+#include "XMPCommon/Interfaces/IError.h"
+
+namespace XMP_COMPONENT_INT_NAMESPACE {
+
+	bool APICALL DefaultErrorNotifierImpl::Notify( const spcIError & error ) {
+		if ( error->GetSeverity() > IError_v1::kESWarning )
+			return false;
+		return true;
+	}
+
+}

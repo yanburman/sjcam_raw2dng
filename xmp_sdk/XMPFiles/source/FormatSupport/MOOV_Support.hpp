@@ -44,7 +44,11 @@ public:
 		XMP_Uns32 childCount;		// ! A 'meta' box has both content (version/flags) and children!
 		XMP_Uns32 contentSize;		// Does not include the size of nested boxes.
 		const XMP_Uns8 * content;	// Null if contentSize is zero.
-		BoxInfo() : boxType(0), childCount(0), contentSize(0), content(0) {};
+		XMP_Uns8 idUUID[16];		// ID of the uuid atom if present
+		BoxInfo() : boxType(0), childCount(0), contentSize(0), content(0) 
+		{
+			memset ( idUUID ,0, 16 );
+		};
 	};
 
 	// ---------------------------------------------------------------------------------------------
@@ -73,10 +77,10 @@ public:
 
 	void NoteChange();
 
-	void SetBox ( BoxRef theBox, const void* dataPtr, XMP_Uns32 size );
-	void SetBox ( const char * boxPath, const void* dataPtr, XMP_Uns32 size );
+	void SetBox ( BoxRef theBox, const void* dataPtr, XMP_Uns32 size , const XMP_Uns8 * idUUID = 0 );
+	void SetBox ( const char * boxPath, const void* dataPtr, XMP_Uns32 size , const XMP_Uns8 * idUUID = 0 );
 
-	BoxRef AddChildBox ( BoxRef parentRef, XMP_Uns32 childType, const void * dataPtr, XMP_Uns32 size );
+	BoxRef AddChildBox ( BoxRef parentRef, XMP_Uns32 childType, const void * dataPtr, XMP_Uns32 size , const XMP_Uns8 * idUUID = 0 );
 
 	// ---------------------------------------------------------------------------------------------
 	// DeleteNthChild - Delete the overall n-th child, return true if there was one.
@@ -195,15 +199,26 @@ private:
 		XMP_Uns32 offset;		// The offset in the fullSubtree, 0 if not in the parse.
 		XMP_Uns32 boxType;
 		XMP_Uns32 headerSize;	// The actual header size in the fullSubtree, 0 if not in the parse.
-		XMP_Uns32 contentSize;	// The current content size, does not include nested boxes.
+		XMP_Uns32 contentSize;	// The current content size, does not include nested boxes or id.
 		BoxList   children;
+		XMP_Uns8 idUUID[16];
 		RawDataBlock changedContent;	// Might be empty even if changed is true.
 		bool changed;	// If true, the content is in changedContent, else in fullSubtree.
 
-		BoxNode() : offset(0), boxType(0), headerSize(0), contentSize(0), changed(false) {};
+		BoxNode() : offset(0), boxType(0), headerSize(0), contentSize(0), changed(false) 
+		{
+			memset ( idUUID, 0, 16 );
+		};
 		BoxNode ( XMP_Uns32 _offset, XMP_Uns32 _boxType, XMP_Uns32 _headerSize, XMP_Uns32 _contentSize )
-			: offset(_offset), boxType(_boxType), headerSize(_headerSize), contentSize(_contentSize), changed(false) {};
-
+			: offset(_offset), boxType(_boxType), headerSize(_headerSize), contentSize(_contentSize), changed(false) 
+		{
+			memset ( idUUID, 0, 16 );
+		};
+		BoxNode ( XMP_Uns32 _offset, XMP_Uns32 _boxType, XMP_Uns32 _headerSize, const XMP_Uns8 * _idUUID, XMP_Uns32 _contentSize )
+			: offset(_offset), boxType(_boxType), headerSize(_headerSize), contentSize(_contentSize), changed(false) 
+		{
+			memcpy ( idUUID, _idUUID, 16 );
+		};
 	};
 
 	XMP_Uns8 fileMode;

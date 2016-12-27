@@ -24,9 +24,9 @@
 
 #include "third-party/zuid/interfaces/MD5.h"
 
-using namespace std;
-
 #include <algorithm>
+
+using namespace std;
 
 // =================================================================================================
 /// \file JPEG_Handler.cpp
@@ -653,8 +653,7 @@ void JPEG_MetaHandler::ProcessXMP()
 	// Process the legacy metadata.
 
 	if ( haveIPTC && (! haveXMP) && (iptcDigestState == kDigestMatches) ) iptcDigestState = kDigestMissing;
-	bool parseIPTC = (iptcDigestState != kDigestMatches) || (! readOnly);
-	if ( parseIPTC ) iptc.ParseMemoryDataSets ( iptcInfo.dataPtr, iptcInfo.dataLen );
+	if (iptcInfo.dataLen) iptc.ParseMemoryDataSets ( iptcInfo.dataPtr, iptcInfo.dataLen );
 	ImportPhotoData ( exif, iptc, psir, iptcDigestState, &this->xmpObj, options );
 
 	this->containsXMP = true;	// Assume we had something for the XMP.
@@ -963,7 +962,7 @@ void JPEG_MetaHandler::WriteTempFile ( XMP_IO* tempRef )
 			}
 			
 			if ( copySegment && (signatureLen == kExtXMPSignatureLength) &&
-				 CheckBytes ( &buffer[0], kExtXMPSignatureString, kExtXMPPrefixLength ) ) {
+				CheckBytes ( &buffer[0], kExtXMPSignatureString, kExtXMPSignatureLength ) ) {
 				copySegment = false;
 			}
 			

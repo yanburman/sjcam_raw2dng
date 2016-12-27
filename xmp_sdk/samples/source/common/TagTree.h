@@ -107,6 +107,9 @@ public:
 	//sets a key-value pair and optinal comment. value is also optional and may be set at a later time
 	//can also be used to set pure, standalone comments (using key==value=="")
 	void setKeyValue(const std::string key,const std::string value="", const std::string comment="");
+
+	//updates the value of key without creating new key, value pairs.
+	void updateKeyValue ( const std::string key, const std::string value, const std::string comment = "" );
 	
 	// convenience functions //////////////////////////////////////////////////////////////////
 	// these functions read bytes (assert in file-length), dump them to screen (as hex or as number)

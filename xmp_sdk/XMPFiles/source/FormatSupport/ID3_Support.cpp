@@ -447,50 +447,53 @@ void ID3v2Frame::release()
 
 // =================================================================================================
 
-void ID3v2Frame::setFrameValue ( const std::string& rawvalue, bool needDescriptor,
-											  bool utf16, bool isXMPPRIVFrame, bool needEncodingByte )
+void ID3v2Frame::setFrameValue( const std::string& rawvalue, bool needDescriptor,
+								bool utf16, bool isXMPPRIVFrame, bool needEncodingByte, bool isAlreadyEncoded /* = false */ )
 {
 
 	std::string value;
 
 	if ( isXMPPRIVFrame ) {
 
-		XMP_Assert ( (! needDescriptor) && (! utf16) );
+		XMP_Assert( ( !needDescriptor ) && ( !utf16 ) );
 
-		value.append ( "XMP\0", 4 );
-		value.append ( rawvalue );
-		value.append ( "\0", 1  ); // final zero byte
+		value.append( "XMP\0", 4 );
+		value.append( rawvalue );
+		value.append( "\0", 1 ); // final zero byte
 
-	} else {
+	}
+	else if ( !isAlreadyEncoded ) {
 
 		if ( needEncodingByte ) {
 			if ( utf16 ) {
-				value.append ( "\x1", 1  );
-			} else {
-				value.append ( "\x0", 1  );
+				value.append( "\x1", 1 );
+			}
+			else {
+				value.append( "\x0", 1 );
 			}
 		}
 
-		if ( needDescriptor ) value.append ( "eng", 3 );
+		if ( needDescriptor ) value.append( "eng", 3 );
 
 		if ( utf16 ) {
 
-			if ( needDescriptor ) value.append ( "\xFF\xFE\0\0", 4 );
+			if ( needDescriptor ) value.append( "\xFF\xFE\0\0", 4 );
 
-			value.append ( "\xFF\xFE", 2 );
+			value.append( "\xFF\xFE", 2 );
 			std::string utf16str;
-			ToUTF16 ( (XMP_Uns8*) rawvalue.c_str(), rawvalue.size(), &utf16str, false );
-			value.append ( utf16str );
-			value.append ( "\0\0", 2 );
+			ToUTF16( ( XMP_Uns8* ) rawvalue.c_str(), rawvalue.size(), &utf16str, false );
+			value.append( utf16str );
+			value.append( "\0\0", 2 );
 
-		} else {
+		}
+		else {
 
 			std::string convertedValue;
-			ReconcileUtils::UTF8ToLatin1 ( rawvalue.c_str(), rawvalue.size(), &convertedValue );
+			ReconcileUtils::UTF8ToLatin1( rawvalue.c_str(), rawvalue.size(), &convertedValue );
 
-			if ( needDescriptor ) value.append ( "\0", 1 );
-			value.append ( convertedValue );
-			value.append ( "\0", 1  );
+			if ( needDescriptor ) value.append( "\0", 1 );
+			value.append( convertedValue );
+			value.append( "\0", 1 );
 
 		}
 
@@ -499,10 +502,19 @@ void ID3v2Frame::setFrameValue ( const std::string& rawvalue, bool needDescripto
 	this->changed = true;
 	this->release();
 
-	this->contentSize = (XMP_Int32) value.size();
-	XMP_Validate ( (this->contentSize < 20*1024*1024), "XMP Property exceeds 20MB in size", kXMPErr_InternalFailure );
-	this->content = new char [ this->contentSize ];
-	memcpy ( this->content, value.c_str(), this->contentSize );
+	if ( isAlreadyEncoded )
+	{
+		XMP_Assert( ( !needDescriptor ) && ( !utf16 ) && value.empty() );
+		this->contentSize = ( XMP_Int32 ) rawvalue.size();
+	}
+	else
+		this->contentSize = ( XMP_Int32 ) value.size();
+	XMP_Validate( ( this->contentSize < 20 * 1024 * 1024 ), "XMP Property exceeds 20MB in size", kXMPErr_InternalFailure );
+	this->content = new char[ this->contentSize ];
+	if ( isAlreadyEncoded )
+		memcpy( this->content, rawvalue.c_str(), this->contentSize );
+	else
+		memcpy( this->content, value.c_str(), this->contentSize );
 
 }	// ID3v2Frame::setFrameValue
 
@@ -850,7 +862,7 @@ void ID3v1Tag::write ( XMP_IO* file, SXMPMeta* meta )
 
 	}
 
-	if ( meta->GetProperty ( kXMP_NS_DM, "trackNumber", &utf8, kXMP_NoOptions ) ) {
+	if ( meta->GetProperty ( kXMP_NS_DM, "trackNumber", &utf8, (XMP_OptionBits *) kXMP_NoOptions ) ) {
 
 		XMP_Uns8 trackNo = 0;
 		try {

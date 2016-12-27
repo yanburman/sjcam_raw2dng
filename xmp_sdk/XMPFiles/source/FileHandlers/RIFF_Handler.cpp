@@ -71,10 +71,11 @@ RIFF_MetaHandler::RIFF_MetaHandler ( XMPFiles * _parent )
 
 	this->oldFileSize = this->newFileSize = this->trailingGarbageSize = 0;
 	this->level = 0;
-	this->listInfoChunk = this->listTdatChunk = 0;
+	this->listInfoChunk = this->listTdatChunk = this->listHdlrChunk = 0;
 	this->dispChunk = this->bextChunk = this->cr8rChunk = this->prmlChunk = 0;
 	this->xmpChunk = 0;
 	this->lastChunk = 0;
+	this->iditChunk = 0;
 	this->hasListInfoINAM = false;
 }
 

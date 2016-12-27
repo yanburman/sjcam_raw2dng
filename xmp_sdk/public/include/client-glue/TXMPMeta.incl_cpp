@@ -17,14 +17,13 @@
 
 #include "client-glue/WXMPMeta.hpp"
 
-#if INCLUDE_XMP_NEW_DOM_MODEL
-	#include "XMPCore/XMPCore_Defines.h"
 
-	#if ENABLE_NEW_DOM_MODEL
-		#include "XMPCore/XMPCore_Defines.h"
-		#include "XMPCore/Interfaces/IXMPDOMFactory.h"
-	#endif
+#include "XMPCore/XMPCoreDefines.h"
+#if ENABLE_CPP_DOM_MODEL
+	#include "XMPCore/Interfaces/IMetadata.h"
+	#include "XMPCore/Interfaces/ICoreObjectFactory.h"
 #endif
+
 
 // =================================================================================================
 // Implementation Guidelines
@@ -126,8 +125,8 @@ Initialize()
 
 	WrapCheckBool ( ok, zXMPMeta_Initialize_1() );
 
-	#if ENABLE_NEW_DOM_MODEL
-		NS_XMPCOMMON::IXMPDOMFactory_latest::CreateInstance();
+	#if ENABLE_CPP_DOM_MODEL
+			AdobeXMPCore::ICoreObjectFactory::SetupCoreObjectFactory();
 	#endif
 
 	return ok;
@@ -138,6 +137,11 @@ Initialize()
 XMP_MethodIntro(TXMPMeta,void)::
 Terminate()
 {
+	
+	#if ENABLE_CPP_DOM_MODEL
+		AdobeXMPCore::ICoreObjectFactory::DestroyCoreObjectFactory();
+	#endif
+
 	WrapNoCheckVoid ( zXMPMeta_Terminate_1() );
 
 	#if XMP_TraceClientCallsToFile
@@ -180,7 +184,6 @@ TXMPMeta ( const TXMPMeta<tStringObj> & original ) : xmpRef(original.xmpRef)
 }
 
 // -------------------------------------------------------------------------------------------------
-
 XMP_MethodIntro(TXMPMeta,void)::
 operator= ( const TXMPMeta<tStringObj> & rhs )
 {

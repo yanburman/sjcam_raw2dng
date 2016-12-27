@@ -19,6 +19,19 @@
 #include "source/UnicodeInlines.incl_cpp"
 #include "source/UnicodeConversions.hpp"
 
+
+#include "XMPCore/XMPCoreDefines.h"
+#if ENABLE_CPP_DOM_MODEL
+	#include "XMPCommon/XMPCommon_I.h"
+	#include "XMPCore/Interfaces/ICoreConfigurationManager_I.h"
+	#include "XMPCommon/Interfaces/IMemoryAllocator.h"
+	#include "XMPCore/Interfaces/INameSpacePrefixMap_I.h"
+	#include "XMPCommon/ImplHeaders/SharedObjectImpl.h"
+	#include "XMPCore/Interfaces/ICoreObjectFactory_I.h"
+	#include "XMPCore/Interfaces/IDOMImplementationRegistry_I.h"
+#endif
+
+
 #include <algorithm>	// For sort and stable_sort.
 #include <cstdio>		// For snprintf.
 
@@ -34,6 +47,41 @@ using namespace std;
 	#pragma warning ( disable : 4800 )	// forcing value to bool 'true' or 'false' (performance warning)
 	#pragma warning ( disable : 4996 )	// '...' was declared deprecated
 #endif
+
+
+	#if ENABLE_CPP_DOM_MODEL
+		#if !XMP_StaticBuild
+
+		#if XMP_WinBuild
+			#pragma warning( push )
+			#pragma warning( disable : 4250 )
+		#endif
+		class InternalClientAllocator
+			: public AdobeXMPCommon::IMemoryAllocator
+		{
+		public:
+			virtual void * APICALL allocate( AdobeXMPCommon::sizet size ) __NOTHROW__ {
+				return sXMP_MemAlloc( size );
+			}
+
+			virtual void APICALL deallocate( void * ptr ) __NOTHROW__ {
+				sXMP_MemFree( ptr );
+			}
+
+			virtual void * APICALL reallocate( void * ptr, AdobeXMPCommon::sizet size ) __NOTHROW__ {
+				return NULL;
+			}
+			
+			virtual ~InternalClientAllocator(){}
+
+		};
+		static InternalClientAllocator * sInternalClientAllocator( NULL );
+		#if XMP_WinBuild
+			#pragma warning( pop )
+		#endif
+
+		#endif  // !XMP_StaticBuild
+	#endif  // ENABLE_CPP_DOM_MODEL
 
 
 // *** Use the XMP_PropIsXyz (Schema, Simple, Struct, Array, ...) macros
@@ -68,7 +116,7 @@ const char * kXMPCore_EmbeddedCopyright = kXMPCoreName " " kXMP_CopyrightStr;
 // DumpNodeOptions
 // ---------------
 
-static void
+void
 DumpNodeOptions	( XMP_OptionBits	 options,
 				  XMP_TextOutputProc outProc,
 				  void *			 refCon )
@@ -618,7 +666,7 @@ RegisterStandardAliases()
 	RegisterAlias ( kXMP_NS_TIFF, "Copyright",         kXMP_NS_DC,  "rights", 0 );
 	RegisterAlias ( kXMP_NS_TIFF, "DateTime",          kXMP_NS_XMP, "ModifyDate", 0 );
 	RegisterAlias ( kXMP_NS_EXIF, "DateTimeDigitized", kXMP_NS_XMP, "CreateDate", 0 );
-	RegisterAlias ( kXMP_NS_TIFF, "ImageDescription",  kXMP_NS_DC,  "description", 0 );
+	RegisterAlias ( kXMP_NS_TIFF, "ImageDescription",  kXMP_NS_DC,  "description", kXMP_PropArrayIsAltText );
 	RegisterAlias ( kXMP_NS_TIFF, "Software",          kXMP_NS_XMP, "CreatorTool", 0 );
 
 	// Aliases from PNG to DC and XMP.
@@ -725,11 +773,25 @@ XMPMeta::Initialize()
 	#endif
 
 	if ( ! Initialize_LibUtils() ) return false;
+
+	#if ENABLE_CPP_DOM_MODEL
+		try {
+			AdobeXMPCore_Int::InitializeXMPCommonFramework();
+	
+		} catch ( ... ) {
+			return false;
+		}
+		AdobeXMPCore_Int::INameSpacePrefixMap_I::CreateDefaultNameSpacePrefixMap();
+		sDefaultNamespacePrefixMapLock = new XMP_ReadWriteLock;
+
+		// Explicitly setting sUseNewCoreAPIs as false (default value)
+		sUseNewCoreAPIs = false;
+	#endif
+	
 	xdefaultName = new XMP_VarString ( "x-default" );
 
 	sRegisteredNamespaces = new XMP_NamespaceTable;
 	sRegisteredAliasMap   = new XMP_AliasMap;
-
 	InitializeUnicodeConversions();
 
 
@@ -802,6 +864,8 @@ XMPMeta::Initialize()
 
 	(void) RegisterNamespace ( "adobe:ns:meta/", "x", &voidPtr, &voidLen );
 	(void) RegisterNamespace ( "http://ns.adobe.com/iX/1.0/", "iX", &voidPtr, &voidLen );
+
+	(void) RegisterNamespace( kXMP_NS_iXML, "iXML", &voidPtr, &voidLen );
 
 	RegisterStandardAliases();
 
@@ -892,10 +956,20 @@ XMPMeta::Terminate() RELEASE_NO_THROW
 
 	XMPIterator::Terminate();
 	XMPUtils::Terminate();
-#if ENABLE_NEW_DOM_MODEL
-	NS_XMPCOMMON::ITSingleton< NS_INT_XMPCORE::IXMPCoreObjectFactory >::DestroyInstance();
-	NS_INT_XMPCOMMON::TerminateXMPCommonFramework();
+#if ENABLE_CPP_DOM_MODEL
+		AdobeXMPCore_Int::INameSpacePrefixMap_I::DestroyDefaultNameSapcePrefixMap();
+		AdobeXMPCore_Int::IDOMImplementationRegistry_I::DestoryDOMImplementationRegistry();
+		AdobeXMPCore_Int::ICoreObjectFactory_I::DestroyCoreObjectFactory();
+		AdobeXMPCore_Int::ICoreConfigurationManager_I::DestroyCoreConfigurationManager();
+		AdobeXMPCore_Int::TerminateXMPCommonFramework();
+		EliminateGlobal( sDefaultNamespacePrefixMapLock );
+		// Explicitly setting sUseNewCoreAPIs as false (default value)
+		sUseNewCoreAPIs = false;
+		#if !XMP_StaticBuild
+			EliminateGlobal( sInternalClientAllocator );
+		#endif
 #endif
+
 
 	EliminateGlobal ( sRegisteredNamespaces );
 	EliminateGlobal ( sRegisteredAliasMap );
@@ -959,8 +1033,8 @@ XMPMeta::GetGlobalOptions()
 XMPMeta::SetGlobalOptions ( XMP_OptionBits options )
 {
 
-	XMP_Throw ( "Unimplemented method XMPMeta::SetGlobalOptions", kXMPErr_Unimplemented );
-		void * p; p = &options;	// Avoid unused param warnings.
+	void * p; p = &options;	// Avoid unused param warnings.
+	XMP_Throw("Unimplemented method XMPMeta::SetGlobalOptions", kXMPErr_Unimplemented);
 
 }	// SetGlobalOptions
 
@@ -976,8 +1050,18 @@ XMPMeta::RegisterNamespace ( XMP_StringPtr	 namespaceURI,
 							 XMP_StringLen * prefixSize )
 {
 
-	return sRegisteredNamespaces->Define ( namespaceURI, suggestedPrefix, registeredPrefix, prefixSize );
-
+	bool returnValue = sRegisteredNamespaces->Define ( namespaceURI, suggestedPrefix, registeredPrefix, prefixSize );
+#if ENABLE_CPP_DOM_MODEL
+	const char * prefix = NULL;
+	XMP_StringLen len = 0;
+	sRegisteredNamespaces->GetPrefix( namespaceURI, &prefix, &len );
+	XMP_VarString prefixWithoutColon( prefix, len - 1 );
+	{
+		XMP_AutoLock aLock( sDefaultNamespacePrefixMapLock, true );
+		AdobeXMPCore_Int::INameSpacePrefixMap_I::InsertInDefaultNameSpacePrefixMap( prefixWithoutColon.c_str(), prefixWithoutColon.size(), namespaceURI, AdobeXMPCommon::npos );
+	}
+#endif
+	return returnValue;
 }	// RegisterNamespace
 
 
@@ -1131,7 +1215,7 @@ XMPMeta::CountArrayItems ( XMP_StringPtr schemaNS,
 
 	if ( arrayNode == 0 ) return 0;
 	if ( ! (arrayNode->options & kXMP_PropValueIsArray) ) XMP_Throw ( "The named property is not an array", kXMPErr_BadXPath );
-	return arrayNode->children.size();
+	return static_cast<XMP_Index>( arrayNode->children.size() );
 
 }	// CountArrayItems
 
@@ -1146,7 +1230,7 @@ XMPMeta::GetObjectName ( XMP_StringPtr * namePtr,
 {
 
 	*namePtr = tree.name.c_str();
-	*nameLen = tree.name.size();
+	*nameLen = static_cast<XMP_Index>( tree.name.size() );
 
 }	// GetObjectName
 
@@ -1185,9 +1269,9 @@ XMPMeta::GetObjectOptions() const
 void
 XMPMeta::SetObjectOptions ( XMP_OptionBits options )
 {
-
+	void * p; p = &options;	// Avoid unused param warnings.
 	XMP_Throw ( "Unimplemented method XMPMeta::SetObjectOptions", kXMPErr_Unimplemented );
-		void * p; p = &options;	// Avoid unused param warnings.
+		
 
 }	// SetObjectOptions
 
@@ -1282,7 +1366,7 @@ void XMP_Node::GetLocalURI ( XMP_StringPtr * uriStr, XMP_StringLen * uriSize ) c
 	if ( XMP_NodeIsSchema ( this->options ) ) {
 
 		if ( uriStr != 0 ) *uriStr = this->name.c_str();
-		if ( uriSize != 0 ) *uriSize = this->name.size();
+		if ( uriSize != 0 ) *uriSize = static_cast<XMP_StringLen>( this->name.size() );
 
 	} else {
 
@@ -1294,6 +1378,34 @@ void XMP_Node::GetLocalURI ( XMP_StringPtr * uriStr, XMP_StringLen * uriSize ) c
 
 	}
 
+}
+
+void XMP_Node::GetFullQualifiedName( XMP_StringPtr * uriStr, XMP_StringLen * uriSize, XMP_StringPtr * nameStr, XMP_StringLen * nameSize ) const
+{
+	if ( uriStr != 0 ) *uriStr = "";	// Set up empty defaults.
+	if ( uriSize != 0 ) *uriSize = 0;
+	if ( nameStr != 0 ) *nameStr = "";
+	if ( nameSize != 0 ) *nameSize = 0;
+
+	if ( this->name.empty() ) return;
+
+	if ( XMP_NodeIsSchema ( this->options ) ) {
+
+		if ( uriStr != 0 ) *uriStr = this->name.c_str();
+		if ( uriSize != 0 ) *uriSize = static_cast<XMP_StringLen>( this->name.size() );
+		if ( nameStr != 0 ) *nameStr = this->value.c_str();
+		if ( nameSize != 0 ) *nameSize = static_cast<XMP_StringLen>( this->value.size() );
+
+	} else {
+
+		size_t colonPos = this->name.find_first_of(':');
+		if ( colonPos == XMP_VarString::npos ) return;	// ! Name of array items is "[]".
+
+		XMP_VarString prefix ( this->name, 0, colonPos );
+		XMPMeta::GetNamespaceURI ( prefix.c_str(), uriStr, uriSize );
+		*nameStr = this->name.c_str() + colonPos + 1;
+		*nameSize = static_cast<XMP_StringLen>( this->name.size() - colonPos - 1 );
+	}
 }
 
 // =================================================================================================

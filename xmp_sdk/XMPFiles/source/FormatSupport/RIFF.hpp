@@ -70,6 +70,7 @@ namespace RIFF {
 
 	// other relevant chunks
 	const XMP_Uns32 kChunk_XMP  = 0x584D505F; // "_PMX"
+	const XMP_Uns32 kChunk_IDIT = 0x54494449; // "TIDI"
 
 	// relevant for Index Correction
 	// LIST:

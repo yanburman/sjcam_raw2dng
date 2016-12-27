@@ -156,6 +156,8 @@ public:
 		XMP_Uns32  dataLen;
 		XMP_Uns8 * dataPtr;	// ! The data is read-only. Raw data pointer, beware of character encoding.
 		DataSetInfo() : recNum(0), dsNum(0), dataLen(0), dataPtr(0) {};
+		DataSetInfo( XMP_Uns8 _recNum, XMP_Uns8 _dsNum, XMP_Uns32 _dataLen )
+			: recNum( _recNum ), dsNum( _dsNum ), dataLen( _dataLen ), dataPtr( 0 ) {};
 		DataSetInfo ( XMP_Uns8 _recNum, XMP_Uns8 _dsNum, XMP_Uns32 _dataLen, XMP_Uns8 * _dataPtr )
 			: recNum(_recNum), dsNum(_dsNum), dataLen(_dataLen), dataPtr(_dataPtr) {};
 	};

@@ -9,7 +9,7 @@
   
 # ==============================================================================
 # define minimum cmake version
-cmake_minimum_required(VERSION 2.8.6)
+cmake_minimum_required(VERSION 3.5.1)
 
 
 # Enable folder grouping of projects in IDEs
@@ -71,9 +71,8 @@ include(${XMP_ROOT}/build/XMP_Config.cmake)
 # Sub projects
 # ==============================================================================
 add_subdirectory(${XMP_ROOT}/XMPCore/build ${XMP_ROOT}/XMPCore/build/${XMP_CMAKEFOLDER_NAME})
-if (NOT APPLE_IOS)
-	add_subdirectory(${XMP_ROOT}/XMPFiles/build ${XMP_ROOT}/XMPFiles/build/${XMP_CMAKEFOLDER_NAME})
-endif()
+add_subdirectory(${XMP_ROOT}/XMPFiles/build ${XMP_ROOT}/XMPFiles/build/${XMP_CMAKEFOLDER_NAME})
+
 
 # ==============================================================================
 # configuration feedback

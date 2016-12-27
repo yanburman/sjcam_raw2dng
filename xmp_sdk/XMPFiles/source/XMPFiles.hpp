@@ -173,6 +173,12 @@ public:
 		XMP_FileFormat * format = 0,
 		XMP_OptionBits options = 0);
 
+	static bool GetFileModDate(
+		const Common::XMPFileHandlerInfo& hdlInfo,
+		XMP_StringPtr    clientPath,
+		XMP_DateTime *   modDate,
+		XMP_OptionBits   options = 0 );
+
 	static XMP_FileFormat CheckFileFormat(XMP_StringPtr filePath);
 	static XMP_FileFormat CheckPackageFormat(XMP_StringPtr folderPath);
 
@@ -182,10 +188,22 @@ public:
         XMP_FileFormat             format  = kXMP_UnknownFile , 
         XMP_OptionBits             options  = 0 );
 
+	static bool GetAssociatedResources (
+		const Common::XMPFileHandlerInfo& hdlInfo,
+		XMP_StringPtr              filePath,
+        std::vector<std::string> * resourceList,
+        XMP_OptionBits             options  = 0 );
+
 	static bool IsMetadataWritable ( 
 		XMP_StringPtr  filePath,
         XMP_Bool *     writable,    
         XMP_FileFormat format  = kXMP_UnknownFile ,
+        XMP_OptionBits options  = 0 );
+
+	static bool IsMetadataWritable (
+		const Common::XMPFileHandlerInfo& hdlInfo,
+		XMP_StringPtr  filePath,
+        XMP_Bool *     writable,    
         XMP_OptionBits options  = 0 );
 
 	static void SetDefaultProgressCallback(const XMP_ProgressTracker::CallbackInfo & cbInfo);
@@ -225,7 +243,6 @@ public:
 
 	bool CanPutXMP(const SXMPMeta & xmpObj);
 	bool CanPutXMP(XMP_StringPtr xmpPacket, XMP_StringLen xmpPacketLen = kXMP_UseNullTermination);
-
 	void SetAbortProc(XMP_AbortProc abortProc, void * abortArg);
 
 	void SetProgressCallback(const XMP_ProgressTracker::CallbackInfo & cbInfo);

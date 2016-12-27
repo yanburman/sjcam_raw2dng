@@ -13,6 +13,11 @@
 
 #include "XMPCore/source/XMPCore_Impl.hpp"
 #include "XMPCore/source/XMPMeta.hpp"
+#include "XMPCore/source/XMPMeta2.hpp"
+#include "XMPCore/XMPCoreDefines.h"
+#if ENABLE_CPP_DOM_MODEL
+	#include "XMPCore/Interfaces/IMetadata_I.h"
+#endif
 
 #if XMP_WinBuild
 	#pragma warning ( disable : 4101 ) // unreferenced local variable
@@ -76,7 +81,19 @@ WXMPMeta_CTor_1 ( WXMP_Result * wResult )
 {
 	XMP_ENTER_Static ( "WXMPMeta_CTor_1" )	// No lib object yet, use the static entry.
 
-		XMPMeta * xmpObj = new XMPMeta();
+		XMPMeta * xmpObj( NULL );
+        XMP_Bool isCreated = false;
+
+#if ENABLE_CPP_DOM_MODEL
+        if ( sUseNewCoreAPIs ) {
+			 xmpObj = new XMPMeta2();
+             isCreated = true;
+        }
+#endif 
+
+		if(!isCreated)
+			xmpObj = new XMPMeta();
+
 		++xmpObj->clientRefs;
 		XMP_Assert ( xmpObj->clientRefs == 1 );
 		wResult->ptrResult = XMPMetaRef ( xmpObj );
@@ -1005,11 +1022,56 @@ WXMPMeta_Clone_1 ( XMPMetaRef	  xmpObjRef,
 {
 	XMP_ENTER_ObjRead ( XMPMeta, "WXMPMeta_Clone_1" )
 
-		XMPMeta * xClone = new XMPMeta;	// ! Don't need an output lock, final ref assignment in client glue.
+		XMPMeta * xClone ( NULL );
+        XMP_Bool isCloned = false;
+#if ENABLE_CPP_DOM_MODEL
+    if(sUseNewCoreAPIs) {
+        isCloned = true;
+		try {
+			const XMPMeta2 & temp = dynamic_cast< const XMPMeta2 & >( thiz );
+			xClone = new XMPMeta2;
+		}
+        catch ( ... ) {
+			xClone = new XMPMeta;
+		}
+     }
+#endif
+    if(!isCloned) {
+       xClone = new XMPMeta;
+    }
+
+
 		thiz.Clone ( xClone, options );
 		XMP_Assert ( xClone->clientRefs == 0 );	// ! Gets incremented in TXMPMeta::Clone.
 		wResult->ptrResult = xClone;
-		
+
+	XMP_EXIT
+}
+
+void
+WXMPMeta_GetIXMPMetadata_1(XMPMetaRef	  xmpObjRef,
+								  WXMP_Result *  wResult )
+{
+	XMP_ENTER_ObjRead( XMPMeta, "WXMPMeta_GetIXMPMetadata_1" )
+    XMP_Bool haveResult = false;
+#if ENABLE_CPP_DOM_MODEL
+    if(sUseNewCoreAPIs){
+        haveResult = true;
+		try {
+			const XMPMeta2 & temp = dynamic_cast< const XMPMeta2 & >( thiz );
+			auto ptr = temp.mDOM.get();
+			wResult->ptrResult = ptr;
+		} catch ( ... ) {
+			wResult->ptrResult = NULL;
+			wResult->errMessage = "Not Available";
+		}
+    }
+#endif
+    if(!haveResult) {
+        wResult->ptrResult = NULL;
+        wResult->errMessage = "Not Available";
+    }
+
 	XMP_EXIT
 }
 
@@ -1132,7 +1194,7 @@ WXMPMeta_SerializeToBuffer_1 ( XMPMetaRef	  xmpObjRef,
 		if ( indent == 0 ) indent = "";
 		
 		thiz.SerializeToBuffer ( &localStr, options, padding, newline, indent, baseIndent );
-		if ( pktString != 0 ) (*SetClientString) ( pktString, localStr.c_str(), localStr.size() );
+		if ( pktString != 0 ) (*SetClientString) ( pktString, localStr.c_str(), static_cast< XMP_StringLen >( localStr.size() ) );
 
 	XMP_EXIT
 }
@@ -1184,8 +1246,17 @@ WXMPMeta_ResetErrorCallbackLimit_1 ( XMPMetaRef    xmpObjRef,
 	XMP_EXIT
 }
 
-// =================================================================================================
+void WXMPMeta_Use_CPP_DOM_APIs_1(XMP_Bool useNewCoreAPIs,
+								 WXMP_Result * wResult )
+{
+#if ENABLE_CPP_DOM_MODEL
+	XMP_ENTER_Static ( "WXMPMeta_Use_CPP_DOM_APIs_1" )
+		sUseNewCoreAPIs = useNewCoreAPIs;
+	XMP_EXIT
+#endif
 
+}
+// =================================================================================================
 #if __cplusplus
 } /* extern "C" */
 #endif

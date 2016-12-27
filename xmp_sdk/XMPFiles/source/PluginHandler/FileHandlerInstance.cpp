@@ -49,70 +49,116 @@ void FileHandlerInstance::CacheFileData()
 	if( error.mErrorID != kXMPErr_NoError )
 	{
 		if ( xmpStr != 0 ) free( (void*) xmpStr );
-		throw XMP_Error( kXMPErr_InternalFailure, error.mErrorMsg );
+		if ( error.mErrorID == kXMPErr_FilePermission )
+			throw XMP_Error( kXMPErr_FilePermission, error.mErrorMsg );
+		else
+			throw XMP_Error( kXMPErr_InternalFailure, error.mErrorMsg );
 	}
 
 	if( xmpStr != NULL )
 	{
 		this->xmpPacket.assign( xmpStr );
 		free( (void*) xmpStr ); // It should be freed as documentation of mCacheFileDataProc says so.
+		this->containsXMP = true;
 	}
-	this->containsXMP = true;
+	else
+		this->containsXMP = false;
 }
 
 void FileHandlerInstance::ProcessXMP()
 {
-	if( !this->containsXMP || this->processedXMP ) return;
+	if( this->processedXMP ) return;
 	this->processedXMP = true;
 
 	SXMPUtils::RemoveProperties ( &this->xmpObj, 0, 0, kXMPUtil_DoAllProperties );
-	this->xmpObj.ParseFromBuffer ( this->xmpPacket.c_str(), (XMP_StringLen)this->xmpPacket.size() );
+	if ( this->xmpPacket.size() != 0 )
+		this->xmpObj.ParseFromBuffer ( this->xmpPacket.c_str(), (XMP_StringLen)this->xmpPacket.size() );
 
 	WXMP_Error error;
-	if( mHandler->getModule()->getPluginAPIs()->mImportToXMPStringProc )
+	if ( mHandler->getModule()->getPluginAPIs()->mVersion >= 4 && mHandler->getModule()->getPluginAPIs()->mImportToXMPStringWithPacketProc )
 	{
-		std::string xmp;
-		this->xmpObj.SerializeToBuffer(&xmp, kXMP_NoOptions, 0);
-		XMP_StringPtr xmpStr=xmp.c_str();
-		mHandler->getModule()->getPluginAPIs()->mImportToXMPStringProc( this->mObject, &xmpStr, &error );
-		if( xmpStr!= NULL && xmpStr != xmp.c_str() )
+		XMP_StringPtr xmpStr = this->xmpPacket.c_str();
+		XMP_StringPtr oldPacketPtr = NULL;
+		XMP_PacketInfo packetInfo;
+		mHandler->getModule()->getPluginAPIs()->mImportToXMPStringWithPacketProc( this->mObject, &xmpStr, &error, &oldPacketPtr, &packetInfo );
+		
+		if( xmpStr != NULL && xmpStr != this->xmpPacket.c_str() )
 		{
-			xmp.resize(0);
-			xmp.assign(xmpStr);
-			SXMPMeta newMeta(xmp.c_str(),xmp.length());
-			this->xmpObj=newMeta;
-			free( (void*) xmpStr ); // It should be freed as documentation of mImportToXMPStringProc says so.
+			XMP_StringLen newLen = static_cast<XMP_StringLen>(strlen( xmpStr ));
+			this->xmpObj.Erase();
+			this->xmpObj.ParseFromBuffer( xmpStr, newLen, 0 );
+			
+			// Note: Freeing memory would not create any problem as plugin would have allocated memory using Host library function
+			free( ( void * ) xmpStr );
+			this->containsXMP = true;
+		}
+
+		if( oldPacketPtr != NULL )
+		{
+			this->xmpPacket.resize( strlen( oldPacketPtr ) );
+			this->xmpPacket.assign( oldPacketPtr );
+			this->packetInfo = packetInfo;
+			
+			// Note: Freeing memory would not create any problem as plugin would have allocated memory using Host library function
+			free( ( void * ) oldPacketPtr );
+			this->containsXMP = true;
+		}
+	}
+	else if( mHandler->getModule()->getPluginAPIs()->mVersion >= 2 && mHandler->getModule()->getPluginAPIs()->mImportToXMPStringProc )
+	{
+		XMP_StringPtr xmpStr = this->xmpPacket.c_str();
+		mHandler->getModule()->getPluginAPIs()->mImportToXMPStringProc( this->mObject, &xmpStr, &error );
+		
+		if( xmpStr != NULL && xmpStr != this->xmpPacket.c_str() )
+		{
+			XMP_StringLen newLen = static_cast<XMP_StringLen>(strlen( xmpStr ));
+			this->xmpObj.Erase();
+			this->xmpObj.ParseFromBuffer( xmpStr, newLen, 0 );
+			
+			// Note: Freeing memory would not create any problem as plugin would have allocated memory using Host library function
+			free( ( void * ) xmpStr );
+			this->containsXMP = true;
 		}
 	}
 	else
 	{
 		if( mHandler->getModule()->getPluginAPIs()->mImportToXMPProc )
 			mHandler->getModule()->getPluginAPIs()->mImportToXMPProc( this->mObject, this->xmpObj.GetInternalRef(), &error );
+		this->containsXMP = true;
 	}
 	CheckError( error );
 }
 
 void FileHandlerInstance::UpdateFile ( bool doSafeUpdate )
 {
-	if ( !this->needsUpdate || this->xmpPacket.size() == 0 ) return;
-
+	bool optimizeFileLayout = XMP_OptionIsSet ( this->parent->openFlags, kXMPFiles_OptimizeFileLayout );
+	this->needsUpdate |= optimizeFileLayout;
+	if( !this->needsUpdate ) return;
 	WXMP_Error error;
-	if( mHandler->getModule()->getPluginAPIs()->mExportFromXMPStringProc )
-	{
-		std::string xmp;
-		this->xmpObj.SerializeToBuffer(&xmp, kXMP_NoOptions, 0);
-		XMP_StringPtr xmpStr=xmp.c_str();
-		mHandler->getModule()->getPluginAPIs()->mExportFromXMPStringProc( this->mObject, xmpStr, &error );
-	}
-	else
-	{
-		if( mHandler->getModule()->getPluginAPIs()->mExportFromXMPProc )
-			mHandler->getModule()->getPluginAPIs()->mExportFromXMPProc( this->mObject, this->xmpObj.GetInternalRef(), &error );
-	}
-	CheckError( error );
 
-	this->xmpObj.SerializeToBuffer ( &this->xmpPacket, mHandler->getSerializeOption() );
-	
+	if ( xmpPacket.size() != 0 )
+	{
+		if( mHandler->getModule()->getPluginAPIs()->mExportFromXMPStringProc )
+		{
+			std::string xmp;
+			this->xmpObj.SerializeToBuffer( &xmp, kXMP_NoOptions, 0 );
+			XMP_StringPtr xmpStr = xmp.c_str();
+			mHandler->getModule()->getPluginAPIs()->mExportFromXMPStringProc( this->mObject, xmpStr, &error );
+			if ( xmpStr != xmp.c_str() )
+				this->xmpObj.SerializeToBuffer ( &this->xmpPacket, mHandler->getSerializeOption() );
+		}
+		else
+		{
+			if( mHandler->getModule()->getPluginAPIs()->mExportFromXMPProc )
+			{
+				mHandler->getModule()->getPluginAPIs()->mExportFromXMPProc( this->mObject, this->xmpObj.GetInternalRef(), &error );
+				this->xmpObj.SerializeToBuffer ( &this->xmpPacket, mHandler->getSerializeOption() );
+			}
+		}
+		CheckError( error );
+
+		
+	}
 	mHandler->getModule()->getPluginAPIs()->mUpdateFileProc( this->mObject, this->parent->ioRef, doSafeUpdate, this->xmpPacket.c_str(), &error );
 	CheckError( error );
 	this->needsUpdate = false;
@@ -140,7 +186,6 @@ static void SetStringVector ( StringVectorRef clientPtr, XMP_StringPtr * arrayPt
 		clientVec->push_back ( nextValue );
 	}
 }
-
 
 void FileHandlerInstance::FillMetadataFiles( std::vector<std::string> * metadataFiles )
 {
@@ -178,6 +223,30 @@ bool FileHandlerInstance::IsMetadataWritable( )
 		XMP_Throw ( "This version of plugin does not support IsMetadataWritable API", kXMPErr_Unimplemented );
 	}
 	return ConvertXMP_BoolToBool( result );
+}
+
+void FileHandlerInstance::SetErrorCallback ( ErrorCallbackBox errorCallbackBox )
+{
+	WXMP_Error error;
+	SetErrorCallbackproc wSetErrorCallbackproc = mHandler->getModule()->getPluginAPIs()->mSetErrorCallbackproc ;
+	if( wSetErrorCallbackproc )	{
+		wSetErrorCallbackproc( this->mObject, errorCallbackBox, &error );
+		CheckError( error );
+	} else {
+		XMP_Throw ( "This version of plugin does not support IsMetadataWritable API", kXMPErr_Unimplemented );
+	}
+}
+
+void FileHandlerInstance::SetProgressCallback ( XMP_ProgressTracker::CallbackInfo * progCBInfoPtr )
+{
+	WXMP_Error error;
+	SetProgressCallbackproc wSetProgressCallbackproc = mHandler->getModule()->getPluginAPIs()->mSetProgressCallbackproc ;
+	if( wSetProgressCallbackproc )	{
+		wSetProgressCallbackproc( this->mObject, progCBInfoPtr, &error );
+		CheckError( error );
+	} else {
+		XMP_Throw ( "This version of plugin does not support IsMetadataWritable API", kXMPErr_Unimplemented );
+	}
 }
 
 } //namespace XMP_PLUGIN

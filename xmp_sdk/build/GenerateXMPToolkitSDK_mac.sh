@@ -93,22 +93,18 @@ Generate
 }
 
 echo "1. Clean All"
-echo "2. Generate XMPToolkitSDK Dynamic 32"
-echo "3. Generate XMPToolkitSDK Static  32"
-echo "4. Generate XMPToolkitSDK Dynamic 64"
-echo "5. Generate XMPToolkitSDK Static  64"
-echo "6. Generate XMPToolkitSDK Static iOS"
-echo "7. Generate All"
+echo "2. Generate XMPToolkitSDK Dynamic 64"
+echo "3. Generate XMPToolkitSDK Static  64"
+echo "4. Generate XMPToolkitSDK Static iOS"
+echo "5. Generate All"
 
 read -p "Enter your choice: " choice
 case $choice in
   1) clean;;
-  2) SDKDynamic32;;
-  3) SDKStatic32;;
-  4) SDKDynamic64;;
-  5) SDKStatic64;;
-  6) SDKStaticIos;;
-  7) SDKDynamic32; SDKStatic32; SDKDynamic64; SDKStatic64; SDKStaticIos;;
+  2) SDKDynamic64;;
+  3) SDKStatic64;;
+  4) SDKStaticIos;;
+  5) SDKDynamic64; SDKStatic64; SDKStaticIos;;
   *) echo "ERROR: Invalid Choice, Exiting"; exit 1;;
 esac
 

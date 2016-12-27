@@ -42,13 +42,13 @@ void PluginRegistry::registerHandler( const PluginCreatorBase* inCreator )
 // ============================================================================
 
 /*static*/
-PluginBase* PluginRegistry::create( const std::string& uid, const std::string& filePath, XMP_Uns32 openFlags, XMP_Uns32 format, XMP_Uns32 handlerFlags )
+PluginBase* PluginRegistry::create( const std::string& uid, const std::string& filePath, XMP_Uns32 openFlags, XMP_Uns32 format, XMP_Uns32 handlerFlags, ErrorCallbackBox * errorCallbackbox /* = 0*/, XMP_ProgressTracker::CallbackInfo * progCBInfo /*= 0*/ )
 {
 	if( msRegistry != NULL )
 	{
-		RegistryEntryMap::const_iterator iter = msRegistry->mRegistryEntries.find(uid);
+		RegistryEntryMap::const_iterator iter = msRegistry->mRegistryEntries.find( uid );
 		if( iter != msRegistry->mRegistryEntries.end() )
-			return iter->second->create(filePath, openFlags, format, handlerFlags);
+			return iter->second->create( filePath, openFlags, format, handlerFlags, errorCallbackbox, progCBInfo );
 	}
 	
 	return NULL;

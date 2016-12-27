@@ -624,12 +624,18 @@ void XDCAMEX_MetaHandler::GetTakeDuration ( const std::string & takeURI, std::st
 
 	std::string takeDir ( takeURI );
 	takeDir.erase ( 0, 1 );	// Change the leading "//" to "/", then all '/' to kDirChar.
+#if XMP_MacBuild
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunreachable-code"
+#endif
 	if ( kDirChar != '/' ) {
 		for ( size_t i = 0, limit = takeDir.size(); i < limit; ++i ) {
 			if ( takeDir[i] == '/' ) takeDir[i] = kDirChar;
 		}
 	}
-
+#if XMP_MacBuild
+#pragma clang diagnostic pop
+#endif 
 	std::string takePath ( this->rootPath );
 	takePath += kDirChar;
 	takePath += "BPAV";

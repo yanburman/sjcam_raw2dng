@@ -118,6 +118,25 @@ void TagTree::setKeyValue(const std::string key,const std::string value, const s
 		Log::info( "    setKeyValue( %s |-> %s) [%s]", key.c_str(), value.c_str(), _comment.c_str() );
 }
 
+void TagTree::updateKeyValue ( const std::string key, const std::string value, const std::string _comment )
+{
+	Node* pCurNode = *nodeStack.rbegin ( ); //current Node
+	pCurNode->children.push_back ( Node ( key, value, _comment ) );
+
+	if ( key.size ( ) == 0 ) {		 // standalone comment?
+		if ( value.size ( ) != 0 ) // must have no value
+			Log::error ( "no key but value found." );
+		return;				// ==> do not add to tag-map
+	}
+
+	//add to Map -----------------------------------
+	lastNode = &*(pCurNode->children.rbegin ( ));
+	tagMap[key] = lastNode;
+
+	if ( verbose )
+		Log::info ( "    setKeyValue( %s |-> %s) [%s]", key.c_str ( ), value.c_str ( ), _comment.c_str ( ) );
+}
+
 void TagTree::digest(LFA_FileRef file,const std::string key /*=NULL*/,
 					   void* returnValue /*=""*/,
 					   XMP_Int32 numOfBytes /*=0*/ )

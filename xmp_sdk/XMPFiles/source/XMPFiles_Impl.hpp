@@ -279,7 +279,7 @@ public:
 
 #define DefaultCTorPresets							\
 	handlerFlags(0), stdCharForm(kXMP_CharUnknown),	\
-	containsXMP(false), processedXMP(false), needsUpdate(false)
+	containsXMP(false), processedXMP(false), needsUpdate(false), needsArtUpdate (false)
 
 	XMPFileHandler() : parent(0), DefaultCTorPresets {};
 	XMPFileHandler (XMPFiles * _parent) : parent(_parent), DefaultCTorPresets
@@ -287,7 +287,7 @@ public:
 		xmpObj.SetErrorCallback(ErrorCallbackForXMPMeta, &parent->errorCallback);
 	};
 
-	virtual ~XMPFileHandler() {};	// ! The specific handler is responsible for tnailInfo.tnailImage.
+	virtual ~XMPFileHandler() {};	// ! The specific handler is responsible for tnailInfo.tnailImage or AlbumArt.
 	
 	virtual bool GetFileModDate ( XMP_DateTime * modDate );	// The default implementation is for embedding handlers.
 	virtual void FillMetadataFiles ( std::vector<std::string> * metadataFiles );
@@ -296,11 +296,16 @@ public:
 
 	virtual void CacheFileData() = 0;
 	virtual void ProcessXMP();		// The default implementation just parses the XMP.
-
 	virtual XMP_OptionBits GetSerializeOptions();	// The default is compact.
 
 	virtual void UpdateFile ( bool doSafeUpdate ) = 0;
 	virtual void WriteTempFile ( XMP_IO* tempRef ) = 0;
+
+	// Currently, FileHandleInstance needs to implement Error and progress callback because of plugins,
+	// Rest handlers need not to implement them because handlers can access them parent
+	virtual void SetErrorCallback ( ErrorCallbackBox errorCallbackBox ) {}		
+	virtual void SetProgressCallback ( XMP_ProgressTracker::CallbackInfo * progCBInfoPtr ) {}
+
 
 	static void NotifyClient(GenericErrorCallback * errCBptr, XMP_ErrorSeverity severity, XMP_Error & error);
 
@@ -313,11 +318,12 @@ public:
 	bool containsXMP;		// True if the file has XMP or PutXMP has been called.
 	bool processedXMP;		// True if the XMP is parsed and reconciled.
 	bool needsUpdate;		// True if the file needs to be updated.
+	
+	bool needsArtUpdate;	// True if Album arts need to be updated.
 
-	XMP_PacketInfo packetInfo;	// ! This is always info about the packet in the file, if any!
-	std::string    xmpPacket;	// ! This is the current XMP, updated by XMPFiles::PutXMP.
-	SXMPMeta       xmpObj;
-
+	XMP_PacketInfo			packetInfo;	// ! This is always info about the packet in the file, if any!
+	std::string				xmpPacket;	// ! This is the current XMP, updated by XMPFiles::PutXMP.
+	SXMPMeta				xmpObj;
 };	// XMPFileHandler
 
 typedef XMPFileHandler * (* XMPFileHandlerCTor) ( XMPFiles * parent );

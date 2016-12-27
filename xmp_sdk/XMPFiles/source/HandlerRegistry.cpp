@@ -22,6 +22,7 @@
 	#include "XMPFiles/source/FileHandlers/JPEG_Handler.hpp"
 	#include "XMPFiles/source/FileHandlers/PSD_Handler.hpp"
 	#include "XMPFiles/source/FileHandlers/TIFF_Handler.hpp"
+	#include "XMPFiles/source/FileHandlers/GIF_Handler.hpp"
 #endif
 
 #if EnableDynamicMediaHandlers
@@ -36,8 +37,9 @@
 	#include "XMPFiles/source/FileHandlers/RIFF_Handler.hpp"
 	#include "XMPFiles/source/FileHandlers/SonyHDV_Handler.hpp"
 	#include "XMPFiles/source/FileHandlers/SWF_Handler.hpp"
-	#include "XMPFiles/source/FileHandlers/XDCAM_Handler.hpp"
 	#include "XMPFiles/source/FileHandlers/XDCAMEX_Handler.hpp"
+	#include "XMPFiles/source/FileHandlers/XDCAMFAM_Handler.hpp"
+	#include "XMPFiles/source/FileHandlers/XDCAMSAM_Handler.hpp"
 #endif
 
 #if EnableMiscHandlers
@@ -45,6 +47,7 @@
 	#include "XMPFiles/source/FileHandlers/PNG_Handler.hpp"
 	#include "XMPFiles/source/FileHandlers/PostScript_Handler.hpp"
 	#include "XMPFiles/source/FileHandlers/UCF_Handler.hpp"
+	#include "XMPFiles/source/FileHandlers/SVG_Handler.hpp"
 #endif
 
 //#if EnablePacketScanning
@@ -121,8 +124,8 @@ void HandlerRegistry::initialize()
 #if EnableDynamicMediaHandlers
 	allOK &= this->registerFolderHandler ( kXMP_P2File, kP2_HandlerFlags, P2_CheckFormat, P2_MetaHandlerCTor );
 	allOK &= this->registerFolderHandler ( kXMP_SonyHDVFile, kSonyHDV_HandlerFlags, SonyHDV_CheckFormat, SonyHDV_MetaHandlerCTor );
-	allOK &= this->registerFolderHandler ( kXMP_XDCAM_FAMFile, kXDCAM_HandlerFlags, XDCAM_CheckFormat, XDCAM_MetaHandlerCTor );
-	allOK &= this->registerFolderHandler ( kXMP_XDCAM_SAMFile, kXDCAM_HandlerFlags, XDCAM_CheckFormat, XDCAM_MetaHandlerCTor );
+	allOK &= this->registerFolderHandler ( kXMP_XDCAM_FAMFile, kXDCAMFAM_HandlerFlags, XDCAMFAM_CheckFormat, XDCAMFAM_MetaHandlerCTor );
+	allOK &= this->registerFolderHandler ( kXMP_XDCAM_SAMFile, kXDCAMSAM_HandlerFlags, XDCAMSAM_CheckFormat, XDCAMSAM_MetaHandlerCTor );
 	allOK &= this->registerFolderHandler ( kXMP_XDCAM_EXFile, kXDCAMEX_HandlerFlags, XDCAMEX_CheckFormat, XDCAMEX_MetaHandlerCTor );
 #endif
 
@@ -133,6 +136,7 @@ void HandlerRegistry::initialize()
 	allOK &= this->registerNormalHandler ( kXMP_JPEGFile, kJPEG_HandlerFlags, JPEG_CheckFormat, JPEG_MetaHandlerCTor );
 	allOK &= this->registerNormalHandler ( kXMP_PhotoshopFile, kPSD_HandlerFlags, PSD_CheckFormat, PSD_MetaHandlerCTor );
 	allOK &= this->registerNormalHandler ( kXMP_TIFFFile, kTIFF_HandlerFlags, TIFF_CheckFormat, TIFF_MetaHandlerCTor );
+	allOK &= this->registerNormalHandler( kXMP_GIFFile, kGIF_HandlerFlags, GIF_CheckFormat, GIF_MetaHandlerCTor );
 #endif
 
 #if EnableDynamicMediaHandlers
@@ -154,6 +158,7 @@ void HandlerRegistry::initialize()
 	// ! EPS and PostScript have the same handler, EPS is a proper subset of PostScript.
 	allOK &= this->registerNormalHandler ( kXMP_EPSFile, kPostScript_HandlerFlags, PostScript_CheckFormat, PostScript_MetaHandlerCTor );
 	allOK &= this->registerNormalHandler ( kXMP_PostScriptFile, kPostScript_HandlerFlags, PostScript_CheckFormat, PostScript_MetaHandlerCTor );
+	allOK &= this->registerNormalHandler ( kXMP_SVGFile, kSVG_HandlerFlags, SVG_CheckFormat, SVG_MetaHandlerCTor );
 #endif
 
 	// ------------------------------------------------------------------------------------

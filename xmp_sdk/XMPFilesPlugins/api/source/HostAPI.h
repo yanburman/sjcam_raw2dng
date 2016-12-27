@@ -315,6 +315,112 @@ struct StandardHandler_API_V2
 	 */
 	typedef XMPErrorID (*GetXMPStandardHandler)( SessionRef session, XMP_FileFormat format, StringPtr path, XMP_StringPtr* xmpStr, XMP_Bool * containsXMP, WXMP_Error* wError );
 	GetXMPStandardHandler	mGetXMPStandardHandler;
+
+	StandardHandler_API_V2( CheckFormatStandardHandler checkFormatStandardHandler, GetXMPStandardHandler getXMPStandardHandler)
+		: mCheckFormatStandardHandler( checkFormatStandardHandler )
+		, mGetXMPStandardHandler( getXMPStandardHandler ) {}
+};
+
+typedef void (* SetClientStringVectorProc) ( void * clientPtr, XMP_StringPtr * arrayPtr, XMP_Uns32 stringCount );
+typedef void * ClientStringVectorRef;
+
+struct StandardHandler_API_V3 : public StandardHandler_API_V2
+{
+
+	/** @brief Get XMP from standard file handler
+	 *
+	 * Call the standard file handler in order to retrieve XMP from it.
+	 *
+	 * @param session		File handler session (referring to replacement handler)
+	 * @param format		The file format identifier
+	 * @param path			Path to the file that should be proceeded
+	 * @param xmpStr		Will on success contain serialized XMP Packet from the standard Handler
+	 * @param containsXMP	Returns true if the standard handler detected XMP
+	 * @param wError		WXMP_Error structure which will be filled by the API if any error occurs
+	 * @param flags			OpenFlags passed during opening if present
+	 * @param packet		Returns XMP packet already present in the file, if available
+	 * @param packetInfo	Returns already present XMP packet information in the file, if available
+	 * @param errorCallback Points to error callback information
+	 * @param progCBInfoPtr	Points to the progress callback information
+	 * @return				kXMPErr_NoError on success otherwise error id of the failure.
+	 */
+	typedef XMPErrorID (*GetXMPwithPacketStandardHandlerWOptions)( SessionRef session, XMP_FileFormat format, StringPtr path, XMP_StringPtr* xmpStr, XMP_Bool * containsXMP, WXMP_Error* wError, XMP_OptionBits flags, XMP_StringPtr *packet, XMP_PacketInfo *packetInfo, ErrorCallbackBox * errorCallback, XMP_ProgressTracker::CallbackInfo * progCBInfoPtr );
+	GetXMPwithPacketStandardHandlerWOptions	mGetXMPwithPacketStandardHandlerWOptions;
+
+	/** @brief Put XMP into standard file handler
+	 *
+	 * Call the standard file handler in order to put XMP into it.
+	 *
+	 * @param session		File handler session (referring to replacement handler)
+	 * @param format		The file format identifier
+	 * @param path			Path to the file that should be proceeded
+	 * @param xmpStr		Contains serialized XMP Packet present into the standard Handler
+	 * @param wError		WXMP_Error structure which will be filled by the API if any error occurs.
+	 * @param flags			OpenFlags passed during opening a file
+	 * @param errorCallback Pointer to error callback info
+	 * @param progCBInfoPtr	Points to the progress callback notification information
+	 * @return				kXMPErr_NoError on success otherwise error id of the failure.
+	 */
+	typedef XMPErrorID (*PutXMPStandardHandler)( SessionRef session, XMP_FileFormat format, StringPtr path, const XMP_StringPtr xmpStr, WXMP_Error* wError, XMP_OptionBits flags, ErrorCallbackBox * errorCallback, XMP_ProgressTracker::CallbackInfo * progCBInfoPtr );
+	PutXMPStandardHandler	mPutXMPStandardHandler;
+
+	/** @brief Getting file modification date from standard file handler
+	 *
+	 * Call the standard file handler in order to retrieve file modification date from it.
+	 *
+	 * @param session		File handler session (referring to replacement handler)
+	 * @param format		The file format identifier
+	 * @param path			Path to the file that should be proceeded
+	 * @param modDate		will contain modification date of file obtained from the standard Handler
+	 * @param isSuccess		Returns true if the standard handler detected file modification date 
+	 * @param wError		WXMP_Error structure which will be filled by the API if any error occurs
+	 * @param flags			OpenFlags passed to XMPFile while opening a file
+	 * @return				kXMPErr_NoError on success otherwise error id of the failure.
+	 */
+	typedef XMPErrorID (*GetFileModDateStandardHandler)( SessionRef session, XMP_FileFormat format, StringPtr path, XMP_DateTime * modDate, XMP_Bool * isSuccess, WXMP_Error* wError, XMP_OptionBits flags );
+	GetFileModDateStandardHandler	mGetFileModDateStandardHandler;
+
+	/** @brief Getting associated resources from standard file handler
+	 *
+	 * Call the standard file handler in order to retrieve all the associated resources with a file
+	 *
+	 * @param session				File handler session (referring to replacement handler)
+	 * @param format				The file format identifier
+	 * @param path					Path to the file that should be proceeded
+	 * @param resourceList			will contain resources associated with the file obtained from the standard Handler
+	 * @param SetClientStringVector	pointer to the plugin provided function of setting vector of strings
+	 * @param wError				WXMP_Error structure which will be filled by the API if any error occurs
+	 * @param flags					OpenFlags passed during opening a file
+	 * @return						kXMPErr_NoError on success otherwise error id of the failure.
+	 */
+	typedef XMPErrorID( *GetAssociatedResourcesStandardHandler )( SessionRef session, XMP_FileFormat format, StringPtr path, ClientStringVectorRef resourceList, SetClientStringVectorProc SetClientStringVector, WXMP_Error* wError, XMP_OptionBits flags );
+	GetAssociatedResourcesStandardHandler	mGetAssociatedResourcesStandardHandler;
+
+	/** @brief Checking whether metadata is writable or not into the file from standard file handler
+	 *
+	 * Call the standard file handler in order to check whether the metadata is writable or not into the file.
+	 *
+	 * @param session		File handler session (referring to replacement handler)
+	 * @param format		The file format identifier
+	 * @param path			Path to the file that should be proceeded
+	 * @param isWritable	Returns true if the standard handler can write on the file.
+	 * @param wError		WXMP_Error structure which will be filled by the API if any error occurs
+	 * @param flags			OpenFlags passed during opening a file
+	 * @return				kXMPErr_NoError on success otherwise error id of the failure.
+	 */
+	typedef XMPErrorID (*IsMetadataWritableStandardHandler)( SessionRef session, XMP_FileFormat format, StringPtr path, XMP_Bool * isWritable, WXMP_Error* wError, XMP_OptionBits flags );
+	IsMetadataWritableStandardHandler	mIsMetadataWritableStandardHandler;
+
+	StandardHandler_API_V3( CheckFormatStandardHandler checkFormatStandardHandler, GetXMPStandardHandler getXMPStandardHandler,
+		GetXMPwithPacketStandardHandlerWOptions getXMPwithPacketStandardHandlerWOptions, PutXMPStandardHandler putXMPStandardHandler,
+		GetFileModDateStandardHandler getFileModDateStandardHandler, GetAssociatedResourcesStandardHandler getAssociatedResourcesStandardHandler,
+		IsMetadataWritableStandardHandler isMetadataWritableStandardHandler )
+		: StandardHandler_API_V2( checkFormatStandardHandler, getXMPStandardHandler )
+		, mGetXMPwithPacketStandardHandlerWOptions( getXMPwithPacketStandardHandlerWOptions )
+		, mPutXMPStandardHandler( putXMPStandardHandler )
+		, mGetFileModDateStandardHandler( getFileModDateStandardHandler )
+		, mGetAssociatedResourcesStandardHandler( getAssociatedResourcesStandardHandler )
+		, mIsMetadataWritableStandardHandler( isMetadataWritableStandardHandler ) { }
 };
 
 

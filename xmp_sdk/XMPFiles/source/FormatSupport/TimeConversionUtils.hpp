@@ -12,7 +12,10 @@
 
 #include "public/include/XMP_Environment.h"	// ! XMP_Environment.h must be the first included header.
 #include "public/include/XMP_Const.h"
-
+#include <string>
+#include <sstream>
+#include <iomanip>
+#include <cmath>
 #include "XMPFiles/source/XMPFiles_Impl.hpp"
 
 namespace TimeConversionUtils {

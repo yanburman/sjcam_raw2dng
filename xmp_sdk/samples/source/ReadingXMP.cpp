@@ -17,6 +17,8 @@
 #include <string>
 #include <cstring>
 
+//#define ENABLE_XMP_CPP_INTERFACE 1
+
 // Must be defined to instantiate template classes
 #define TXMP_STRING_TYPE std::string 
 
@@ -33,6 +35,7 @@
 #include <fstream>
 
 using namespace std; 
+
 
 /**
 * Client defined callback function to dump XMP to a file.  In this case an output file stream is used
@@ -179,6 +182,8 @@ int main ( int argc, const char * argv[] )
 
 				cout << "Flash Used = " << flash << endl;
 			}
+
+
 
 			// Dump the current xmp object to a file
 			ofstream dumpFile;

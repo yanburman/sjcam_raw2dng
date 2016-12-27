@@ -18,6 +18,8 @@
 #include "source/UnicodeInlines.incl_cpp"
 #include "source/UnicodeConversions.hpp"
 #include "source/ExpatAdapter.hpp"
+#define  STATIC_SAFE_API
+#include "source/SafeStringAPIs.h"
 
 #if XMP_DebugBuild
 	#include <iostream>
@@ -178,7 +180,7 @@ static const XML_Node * FindRootNode ( const XMLParserAdapter & xmlParser, XMP_O
 
 // *** This depends on the dc: namespace prefix.
 
-static void
+void
 NormalizeDCArrays ( XMP_Node * xmpTree )
 {
 	XMP_Node * dcSchema = FindSchemaNode ( xmpTree, kXMP_NS_DC, kXMP_ExistingOnly );
@@ -347,7 +349,7 @@ TransplantNamedAlias ( XMP_Node * oldParent, size_t oldNum, XMP_Node * newParent
 // MoveExplicitAliases
 // -------------------
 
-static void
+void
 MoveExplicitAliases ( XMP_Node * tree, XMP_OptionBits parseOptions, XMPMeta::ErrorCallbackInfo & errorCallback )
 {
 	tree->options ^= kXMP_PropHasAliases;
@@ -534,7 +536,7 @@ MigrateAudioCopyright ( XMPMeta * xmp, XMP_Node * dmCopyright )
 			// 3. Look for a double linefeed in the x-default value.
 			XMP_Assert ( xdIndex == 0 );
 			std::string & defaultValue = dcRightsArray->children[xdIndex]->value;
-			XMP_Index lfPos = defaultValue.find ( kDoubleLF );
+			XMP_Index lfPos = static_cast<XMP_Index>( defaultValue.find ( kDoubleLF ));
 			
 			if ( lfPos < 0 ) {
 			
@@ -588,7 +590,7 @@ RepairAltText ( XMP_Node & tree, XMP_StringPtr schemaNS, XMP_StringPtr arrayName
 	
 	arrayNode->options |= (kXMP_PropArrayIsOrdered | kXMP_PropArrayIsAlternate | kXMP_PropArrayIsAltText);
 	
-	for ( int i = arrayNode->children.size()-1; i >= 0; --i ) {	// ! Need a signed index type.
+	for ( int i = static_cast<int>( arrayNode->children.size()-1 ); i >= 0; --i ) {	// ! Need a signed index type.
 
 		XMP_Node * currChild = arrayNode->children[i];
 
@@ -630,7 +632,7 @@ RepairAltText ( XMP_Node & tree, XMP_StringPtr schemaNS, XMP_StringPtr arrayName
 // TouchUpDataModel
 // ----------------
 
-static void
+void
 TouchUpDataModel ( XMPMeta * xmp, XMPMeta::ErrorCallbackInfo & errorCallback )
 {
 	XMP_Node & tree = xmp->tree;
@@ -907,7 +909,7 @@ CountControlEscape ( const XMP_Uns8 * escStart, const XMP_Uns8 * bufEnd )
 	
 	if ( (escValue == kTab) || (escValue == kLF) || (escValue == kCR) ) return 0;	// An allowed escape.
 	
-	return escLen;	// Found a full "prohibited" numeric escape.
+	return static_cast<int>(escLen);	// Found a full "prohibited" numeric escape.
 	
 }	// CountControlEscape
 
@@ -975,7 +977,7 @@ ProcessUTF8Portion ( XMLParserAdapter * xmlParser,
 				// Not a valid UTF-8 sequence. Replace the first byte with the Latin-1 equivalent.
 				xmlParser->ParseBuffer ( spanStart, (spanEnd - spanStart), false );
 				const char * replacement = kReplaceLatin1 [ *spanEnd - 0x80 ];
-				xmlParser->ParseBuffer ( replacement, strlen ( replacement ), false );
+				xmlParser->ParseBuffer(replacement, strnlen_safe(replacement, Max_XMP_Uns32), false);
 				spanStart = spanEnd + 1;	// ! The loop increment will do "spanEnd = spanStart".
 
 			}
@@ -1242,7 +1244,7 @@ XMPMeta::ParseFromBuffer ( XMP_StringPtr  buffer,
 						   XMP_OptionBits options )
 {
 	if ( (buffer == 0) && (xmpSize != 0) ) XMP_Throw ( "Null parse buffer", kXMPErr_BadParam );
-	if ( xmpSize == kXMP_UseNullTermination ) xmpSize = strlen ( buffer );
+	if (xmpSize == kXMP_UseNullTermination) xmpSize = static_cast<XMP_Index>(strnlen_safe(buffer, Max_XMP_Uns32));
 	
 	const bool lastClientCall = ((options & kXMP_ParseMoreBuffers) == 0);	// *** Could use FlagIsSet & FlagIsClear macros.
 	

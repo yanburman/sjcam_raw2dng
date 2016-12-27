@@ -59,6 +59,7 @@ _WXMPMeta_SerializeToBuffer_1
 _WXMPMeta_SetDefaultErrorCallback_1
 _WXMPMeta_SetErrorCallback_1
 _WXMPMeta_ResetErrorCallbackLimit_1
+_WXMPMeta_GetXMPDOMFactoryInstance_1
 
 _WXMPIterator_PropCTor_1
 _WXMPIterator_TableCTor_1

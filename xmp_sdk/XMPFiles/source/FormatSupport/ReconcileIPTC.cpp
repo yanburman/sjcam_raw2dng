@@ -193,7 +193,7 @@ void PhotoDataUtils::ImportIPTC_Date ( XMP_Uns8 dateID, const IPTC_Manager & ipt
 
 	IPTC_Manager::DataSetInfo dsInfo;
 	size_t count = iptc.GetDataSet ( dateID, &dsInfo );
-	if ( count == 0 ) return;
+	if ( count == 0 || dsInfo.dataLen == 0 ) return;
 
 	size_t chPos, digits;
 	XMP_DateTime xmpDate;
@@ -205,7 +205,7 @@ void PhotoDataUtils::ImportIPTC_Date ( XMP_Uns8 dateID, const IPTC_Manager & ipt
 		xmpDate.year = (xmpDate.year * 10) + (dsInfo.dataPtr[chPos] - '0');
 	}
 
-	if ( dsInfo.dataPtr[chPos] == '-' ) ++chPos;
+	if ( ( chPos < dsInfo.dataLen ) && dsInfo.dataPtr[chPos] == '-' ) ++chPos;
 	for ( digits = 0; digits < 2; ++digits, ++chPos ) {
 		if ( (chPos >= dsInfo.dataLen) || (dsInfo.dataPtr[chPos] < '0') || (dsInfo.dataPtr[chPos] > '9') ) break;
 		xmpDate.month = (xmpDate.month * 10) + (dsInfo.dataPtr[chPos] - '0');
@@ -213,7 +213,7 @@ void PhotoDataUtils::ImportIPTC_Date ( XMP_Uns8 dateID, const IPTC_Manager & ipt
 	if ( xmpDate.month < 1 ) xmpDate.month = 1;
 	if ( xmpDate.month > 12 ) xmpDate.month = 12;
 
-	if ( dsInfo.dataPtr[chPos] == '-' ) ++chPos;
+	if ( ( chPos < dsInfo.dataLen ) && dsInfo.dataPtr[chPos] == '-' ) ++chPos;
 	for ( digits = 0; digits < 2; ++digits, ++chPos ) {
 		if ( (chPos >= dsInfo.dataLen) || (dsInfo.dataPtr[chPos] < '0') || (dsInfo.dataPtr[chPos] > '9') ) break;
 		xmpDate.day = (xmpDate.day * 10) + (dsInfo.dataPtr[chPos] - '0');
@@ -227,7 +227,7 @@ void PhotoDataUtils::ImportIPTC_Date ( XMP_Uns8 dateID, const IPTC_Manager & ipt
 	// Now add the time portion if present.
 
 	count = iptc.GetDataSet ( timeID, &dsInfo );
-	if ( count != 0 ) {
+	if ( count != 0 && dsInfo.dataLen > 0 ) {
 
 		chPos = 0;
 		for ( digits = 0; digits < 2; ++digits, ++chPos ) {
@@ -237,7 +237,7 @@ void PhotoDataUtils::ImportIPTC_Date ( XMP_Uns8 dateID, const IPTC_Manager & ipt
 		if ( xmpDate.hour < 0 ) xmpDate.hour = 0;
 		if ( xmpDate.hour > 23 ) xmpDate.hour = 23;
 
-		if ( dsInfo.dataPtr[chPos] == ':' ) ++chPos;
+		if ( ( chPos < dsInfo.dataLen ) && dsInfo.dataPtr[chPos] == ':' ) ++chPos;
 		for ( digits = 0; digits < 2; ++digits, ++chPos ) {
 			if ( (chPos >= dsInfo.dataLen) || (dsInfo.dataPtr[chPos] < '0') || (dsInfo.dataPtr[chPos] > '9') ) break;
 			xmpDate.minute = (xmpDate.minute * 10) + (dsInfo.dataPtr[chPos] - '0');
@@ -245,7 +245,7 @@ void PhotoDataUtils::ImportIPTC_Date ( XMP_Uns8 dateID, const IPTC_Manager & ipt
 		if ( xmpDate.minute < 0 ) xmpDate.minute = 0;
 		if ( xmpDate.minute > 59 ) xmpDate.minute = 59;
 
-		if ( dsInfo.dataPtr[chPos] == ':' ) ++chPos;
+		if ( ( chPos < dsInfo.dataLen ) && dsInfo.dataPtr[chPos] == ':' ) ++chPos;
 		for ( digits = 0; digits < 2; ++digits, ++chPos ) {
 			if ( (chPos >= dsInfo.dataLen) || (dsInfo.dataPtr[chPos] < '0') || (dsInfo.dataPtr[chPos] > '9') ) break;
 			xmpDate.second = (xmpDate.second * 10) + (dsInfo.dataPtr[chPos] - '0');
@@ -255,11 +255,11 @@ void PhotoDataUtils::ImportIPTC_Date ( XMP_Uns8 dateID, const IPTC_Manager & ipt
 
 		xmpDate.hasTime = true;
 
-		if ( (dsInfo.dataPtr[chPos] != ' ') && (dsInfo.dataPtr[chPos] != 0) ) {	// Tolerate a missing TZ.
+		if ( ( chPos < dsInfo.dataLen ) && (dsInfo.dataPtr[chPos] != ' ') && (dsInfo.dataPtr[chPos] != 0) ) {	// Tolerate a missing TZ.
 		
-			if ( dsInfo.dataPtr[chPos] == '+' ) {
+			if ( ( chPos < dsInfo.dataLen ) && ( dsInfo.dataPtr[chPos] == '+' ) ) {
 				xmpDate.tzSign = kXMP_TimeEastOfUTC;
-			} else if ( dsInfo.dataPtr[chPos] == '-' ) {
+			} else if ( ( chPos < dsInfo.dataLen ) && dsInfo.dataPtr[chPos] == '-' ) {
 				xmpDate.tzSign = kXMP_TimeWestOfUTC;
 			} else if ( chPos != dsInfo.dataLen ) {
 				return;	// The DataSet is ill-formed.
@@ -273,7 +273,7 @@ void PhotoDataUtils::ImportIPTC_Date ( XMP_Uns8 dateID, const IPTC_Manager & ipt
 			if ( xmpDate.tzHour < 0 ) xmpDate.tzHour = 0;
 			if ( xmpDate.tzHour > 23 ) xmpDate.tzHour = 23;
 	
-			if ( dsInfo.dataPtr[chPos] == ':' ) ++chPos;
+			if ( ( chPos < dsInfo.dataLen ) && dsInfo.dataPtr[chPos] == ':' ) ++chPos;
 			for ( digits = 0; digits < 2; ++digits, ++chPos ) {
 				if ( (chPos >= dsInfo.dataLen) || (dsInfo.dataPtr[chPos] < '0') || (dsInfo.dataPtr[chPos] > '9') ) break;
 				xmpDate.tzMinute = (xmpDate.tzMinute * 10) + (dsInfo.dataPtr[chPos] - '0');
@@ -367,8 +367,6 @@ static void ImportIPTC_SubjectCode ( const IPTC_Manager & iptc, SXMPMeta * xmp )
 
 void PhotoDataUtils::Import2WayIPTC ( const IPTC_Manager & iptc, SXMPMeta * xmp, int iptcDigestState )
 {
-	if ( iptcDigestState == kDigestMatches ) return;	// Ignore the IPTC if the digest matches.
-
 	std::string oldStr, newStr;
 	IPTC_Writer oldIPTC;
 
@@ -386,9 +384,9 @@ void PhotoDataUtils::Import2WayIPTC ( const IPTC_Manager & iptc, SXMPMeta * xmp,
 		
 		bool haveXMP = xmp->DoesPropertyExist ( thisDS.xmpNS, thisDS.xmpProp );
 		newCount = PhotoDataUtils::GetNativeInfo ( iptc, thisDS.dsNum, iptcDigestState, haveXMP, &newInfo );
-		if ( newCount == 0 ) continue;	// GetNativeInfo returns 0 for ignored local text.
-		
-		if ( iptcDigestState == kDigestMissing ) {
+		if ( ( newCount == 0 ) || ( newInfo.dataLen == 0 ) ) continue;	// GetNativeInfo returns 0 for ignored local text.
+																		// For no data in dataset, don't import or delete anything
+		if ( iptcDigestState == kDigestMissing  || iptcDigestState == kDigestMatches ) {
 			if ( haveXMP ) continue;	// Keep the existing XMP.
 		} else if ( ! PhotoDataUtils::IsValueDifferent ( iptc, oldIPTC, thisDS.dsNum ) ) {
 			continue;	// Don't import values that match the previous export.

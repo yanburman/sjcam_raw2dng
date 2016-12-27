@@ -12,23 +12,39 @@
 #include "PluginHandler.h"
 #include "ModuleUtils.h"
 
-#if (XMP_WinBuild && _MSC_VER >= 1700) || __MAC_OS_X_VERSION_MAX_ALLOWED >= 1090
-	// Visual Studio 2012 or newer supports C++11 (mostly)
+#include "XMPCommon/XMPCommonDefines.h"
+
+
+#if SUPPORT_SHARED_POINTERS_IN_STD
 	#include <memory>
 	#include <functional>
-	#define XMP_SHARED_PTR std::shared_ptr
+#elif SUPPORT_SHARED_POINTERS_IN_TR1
+	#if XMP_WinBuild
+		#include <memory>
+		#include <functional>
+	#else
+		#include <tr1/memory>
+		#include <tr1/functional>
+	#endif
 #else
-	#define XMP_SHARED_PTR std::tr1::shared_ptr
+	#error "location of shared pointer stuff is unknown"
 #endif
+
 
 namespace XMP_PLUGIN
 {
 
+#if SUPPORT_SHARED_POINTERS_IN_STD
+	using std::shared_ptr;
+#elif SUPPORT_SHARED_POINTERS_IN_TR1
+	using std::tr1::shared_ptr;
+#endif
+	
 typedef XMP_Uns32 XMPAtom;
 typedef XMPAtom FileHandlerType;
 
-typedef XMP_SHARED_PTR<class Module>						ModuleSharedPtr;
-typedef XMP_SHARED_PTR<class FileHandler>					FileHandlerSharedPtr;
+typedef shared_ptr<class Module>							ModuleSharedPtr;
+typedef shared_ptr<class FileHandler>						FileHandlerSharedPtr;
 
 class FileHandlerInstance;
 typedef FileHandlerInstance*								FileHandlerInstancePtr;

@@ -11,7 +11,7 @@
 
 #include "XMP_Environment.h"
 
-   #include <stddef.h>
+	#include <stddef.h>
 
 #if XMP_MacBuild | XMP_iOSBuild	// ! No stdint.h on Windows and some UNIXes.
     #include <stdint.h>
@@ -20,6 +20,9 @@
 		#include <inttypes.h>
 #endif
 
+#ifndef XMP_MARKER_EXTENSIBILITY_BACKWARD_COMPATIBILITY
+	#define XMP_MARKER_EXTENSIBILITY_BACKWARD_COMPATIBILITY 1
+#endif
 
 #if __cplusplus
 extern "C" {
@@ -122,19 +125,19 @@ static const XMP_Int64 Min_XMP_Int64	= ( (XMP_Int64) 0x8000000000000000LL );
 static const XMP_Int64 Max_XMP_Int64	= ( (XMP_Int64) 0x7FFFFFFFFFFFFFFFLL );
 
 
-/// An "ABI safe" pointer to the internal part of an XMP object. Use to pass an XMP object across
-/// client DLL boundaries. See \c TXMPMeta::GetInternalRef().
+/// @brief An "ABI safe" pointer to the internal part of an XMP object. Use to pass an XMP object across
+///        client DLL boundaries. See \c TXMPMeta::GetInternalRef().
 typedef struct __XMPMeta__ *        XMPMetaRef;
 
-/// An "ABI safe" pointer to the internal part of an XMP iteration object. Use to pass an XMP
+/// @brief An "ABI safe" pointer to the internal part of an XMP iteration object. Use to pass an XMP
 /// iteration object across client DLL boundaries. See \c TXMPIterator.
 typedef struct __XMPIterator__ *    XMPIteratorRef;
 
-/// An "ABI safe" pointer to the internal part of an XMP document operations object. Use to pass an
+/// @brief An "ABI safe" pointer to the internal part of an XMP document operations object. Use to pass an
 /// XMP document operations object across client DLL boundaries. See \c TXMPDocOps.
 typedef struct __XMPDocOps__ *    XMPDocOpsRef;
 
-/// An "ABI safe" pointer to the internal part of an XMP file-handling object. Use to pass an XMP
+/// @brief An "ABI safe" pointer to the internal part of an XMP file-handling object. Use to pass an XMP
 /// file-handling object across  client DLL boundaries. See \c TXMPFiles.
 typedef struct __XMPFiles__ *       XMPFilesRef;
 
@@ -156,9 +159,10 @@ typedef struct __XMPFiles__ *       XMPFilesRef;
 /// loop termination.
 
 /// \typedef XMP_OptionBits
-/// \brief The type for a collection of 32 flag bits. Individual flags are defined as enum value bit
-/// masks; see \c #kXMP_PropValueIsURI and following. A number of macros provide common set or set
-/// operations, such as \c XMP_PropIsSimple. For other tests use an expression like <code>options &
+/// \brief The type for a collection of 32 flag bits. 
+///	@details Individual flags are defined as enum value bit
+///  masks; see \c #kXMP_PropValueIsURI and following. A number of macros provide common set or set
+///  operations, such as \c XMP_PropIsSimple. For other tests use an expression like <code>options &
 /// kXMP_<theOption></code>. When passing multiple option flags use the bitwise-OR operator. '|',
 /// not the arithmatic plus, '+'.
 
@@ -180,8 +184,8 @@ typedef XMP_Uns32    XMP_OptionBits; // Used as 32 individual bits.
 #define kXMP_TrueStr  "True"  // Serialized XMP spellings, not for the type bool.
 #define kXMP_FalseStr "False"
 
-/// Type for yes/no/maybe answers. The values are picked to allow Boolean-like usage. The yes and
-/// values are true (non-zero), the no value is false (zero).
+///@brief Type for yes/no/maybe answers. The values are picked to allow Boolean-like usage. The yes 
+///values are true (non-zero), the no value is false (zero).
 enum {
 	/// The part or parts have definitely changed.
 	kXMPTS_Yes = 1,
@@ -343,7 +347,7 @@ enum {
 #define kXMP_NS_BWF        "http://ns.adobe.com/bwf/bext/1.0/"
 #define kXMP_NS_AEScart    "http://ns.adobe.com/aes/cart/"
 #define kXMP_NS_RIFFINFO   "http://ns.adobe.com/riff/info/"
-
+#define kXMP_NS_iXML       "http://ns.adobe.com/ixml/1.0/"
 #define kXMP_NS_XMP_Note   "http://ns.adobe.com/xmp/note/"
 
 #define kXMP_NS_AdobeStockPhoto "http://ns.adobe.com/StockPhoto/1.0/"
@@ -569,7 +573,7 @@ enum {
 
 // -------------------------------------------------------------------------------------------------
 
-/// Option bit flags for the \c TXMPMeta property accessor functions.
+/// @brief Option bit flags for the \c TXMPMeta property accessor functions.
 enum {
 
 	/// The XML string form of the property value is a URI, use rdf:resource attribute. DISCOURAGED
@@ -662,8 +666,8 @@ enum {
 
 #define kXMP_SchemaNode ((XMP_OptionBits)0x80000000UL)
 
-/// Option bit flags for the \c TXMPMeta property setting functions. These option bits are shared
-/// with the accessor functions:
+/// @brief Option bit flags for the \c TXMPMeta property setting functions. 
+/// @details These option bits are shared with the accessor functions:
 ///   \li \c #kXMP_PropValueIsURI
 ///   \li \c #kXMP_PropValueIsStruct
 ///   \li \c #kXMP_PropValueIsArray
@@ -691,7 +695,7 @@ enum {
 
 // -------------------------------------------------------------------------------------------------
 
-/// Option bit flags for \c TXMPMeta::ParseFromBuffer().
+/// @brief Option bit flags for \c TXMPMeta::ParseFromBuffer().
 enum {
 
 	/// Require a surrounding \c x:xmpmeta element.
@@ -705,7 +709,7 @@ enum {
 
 };
 
-/// Option bit flags for \c TXMPMeta::SerializeToBuffer().
+/// @brief Option bit flags for \c TXMPMeta::SerializeToBuffer().
 enum {
 
     // *** Option to remove empty struct/array, or leaf with empty value?
@@ -763,7 +767,7 @@ enum {
 
 // -------------------------------------------------------------------------------------------------
 
-/// Option bit flags for \c TXMPIterator construction.
+/// @brief Option bit flags for \c TXMPIterator construction.
 enum {
 
 	/// The low 8 bits are an enum of what data structure to iterate.
@@ -792,7 +796,7 @@ enum {
 
 };
 
-/// Option bit flags for \c TXMPIterator::Skip().
+/// @brief Option bit flags for \c TXMPIterator::Skip().
 enum {
 
 	/// Skip the subtree below the current node.
@@ -805,8 +809,8 @@ enum {
 
 // -------------------------------------------------------------------------------------------------
 
-/// Option bit flags for \c TXMPUtils::CatenateArrayItems() and \c TXMPUtils::SeparateArrayItems().
-/// These option bits are shared with the accessor functions:
+/// @brief Option bit flags for \c TXMPUtils::CatenateArrayItems() and \c TXMPUtils::SeparateArrayItems().
+/// @details These option bits are shared with the accessor functions:
 ///   \li \c #kXMP_PropValueIsArray,
 ///   \li \c #kXMP_PropArrayIsOrdered,
 ///   \li \c #kXMP_PropArrayIsAlternate,
@@ -818,7 +822,7 @@ enum {
 
 };
 
-/// Option bit flags for \c TXMPUtils::ApplyTemplate().
+/// @brief Option bit flags for \c TXMPUtils::ApplyTemplate().
 enum {
 
 	 /// Do all properties, default is just external properties.
@@ -838,7 +842,7 @@ enum {
 
 };
 
-/// Option bit flags for \c TXMPUtils::RemoveProperties() and \c TXMPUtils::AppendProperties().
+/// @brief Option bit flags for \c TXMPUtils::RemoveProperties() and \c TXMPUtils::AppendProperties().
 enum {
 
 	 /// Do all properties, default is just external properties.
@@ -859,10 +863,10 @@ enum {
 // Types and Constants for XMPFiles
 // ================================
 
-/// Seek mode constants for use with XMP_IO and inside XMPFiles library code.
+/// @brief Seek mode constants for use with XMP_IO and inside XMPFiles library code.
 enum SeekMode { kXMP_SeekFromStart, kXMP_SeekFromCurrent, kXMP_SeekFromEnd };
 
-/// File format constants for use with XMPFiles.
+/// @brief File format constants for use with XMPFiles.
 enum {
 
     // ! Hex used to avoid gcc warnings. Leave the constants so the text reads big endian. There
@@ -939,6 +943,8 @@ enum {
     kXMP_SonyHDVFile         = 0x53484456UL,
 	/// Public file format constant:  'CNXF', a collection not really a single file
     kXMP_CanonXFFile         = 0x434E5846UL,
+	/// Public file format constant:  'AVCU', a collection not really a single file
+	kXMP_AVCUltraFile		 = 0x41564355UL,
 
 	/// Public file format constant: 'HTML'
     kXMP_HTMLFile            = 0x48544D4CUL,
@@ -946,6 +952,8 @@ enum {
     kXMP_XMLFile             = 0x584D4C20UL,
 	/// Public file format constant:  'text'
     kXMP_TextFile            = 0x74657874UL,
+	/// Public file format constant:  'SVG '
+	kXMP_SVGFile			 = 0x53564720UL,
 
 	// -------------------------------
     // Adobe application file formats.
@@ -984,14 +992,14 @@ typedef XMP_Uns32 XMP_FileFormat;
 
 // -------------------------------------------------------------------------------------------------
 
-/// Byte-order masks, do not use directly
+/// @brief Byte-order masks, do not use directly
 enum {
     kXMP_CharLittleEndianMask = 1,
     kXMP_Char16BitMask        = 2,
     kXMP_Char32BitMask        = 4
 };
 
-/// Constants to allow easy testing for 16/32 bit and big/little endian.
+/// @brief Constants to allow easy testing for 16/32 bit and big/little endian.
 enum {
 	/// 8-bit
     kXMP_Char8Bit        = 0,
@@ -1056,7 +1064,7 @@ enum {
 /// \brief Constant for an unknown packet length within a file.
 #define kXMPFiles_UnknownLength	((XMP_Int32)-1)
 
-/// XMP packet description
+/// @brief XMP packet description
 struct XMP_PacketInfo {
 
 	/// Packet offset in the file in bytes, -1 if unknown.
@@ -1082,7 +1090,7 @@ struct XMP_PacketInfo {
 
 };
 
-/// Version of the XMP_PacketInfo type
+/// @brief Version of the XMP_PacketInfo type
 enum {
 	/// Version of the XMP_PacketInfo type
 	kXMP_PacketInfoVersion = 3
@@ -1090,7 +1098,7 @@ enum {
 
 // -------------------------------------------------------------------------------------------------
 
-/// Option bit flags for \c TXMPFiles::Initialize().
+/// @brief Option bit flags for \c TXMPFiles::Initialize().
 enum {
     /// Ignore non-XMP text that uses an undefined "local" encoding.
     kXMPFiles_IgnoreLocalText = 0x0002,
@@ -1098,7 +1106,7 @@ enum {
     kXMPFiles_ServerMode      = kXMPFiles_IgnoreLocalText
 };
 
-/// Option bit flags for \c TXMPFiles::GetFormatInfo().
+/// @brief Option bit flags for \c TXMPFiles::GetFormatInfo().
 enum {
 
 	/// Can inject first-time XMP into an existing file.
@@ -1141,11 +1149,11 @@ enum {
     kXMPFiles_CanNotifyProgress   = 0x00002000,
 
 	/// The plugin handler is not capable for delay loading
-	kXMPFiles_NeedsPreloading      = 0x00004000
+	kXMPFiles_NeedsPreloading      = 0x00004000,
 
 };
 
-/// Option bit flags for \c TXMPFiles::OpenFile().
+/// @brief Option bit flags for \c TXMPFiles::OpenFile().
 enum {
 
 	/// Open for read-only access.
@@ -1180,11 +1188,12 @@ enum {
 
 };
 
-/// Option bit flags for \c TXMPFiles::CloseFile().
+/// @brief Option bit flags for \c TXMPFiles::CloseFile().
 enum {
 	/// Write into a temporary file and swap for crash safety.
     kXMPFiles_UpdateSafely = 0x0001
 };
+
 
 // =================================================================================================
 // Error notification and Exceptions
@@ -1193,7 +1202,7 @@ enum {
 /// \name Error notification and Exceptions
 /// @{
 ///
-/// From the beginning through version 5.5, XMP Tookit errors result in throwing an \c XMP_Error
+/// @details From the beginning through version 5.5, XMP Tookit errors result in throwing an \c XMP_Error
 /// exception. For the most part exceptions were thrown early and thus API calls aborted as soon as
 /// an error was detected. Starting in version 5.5, support has been added for notifications of
 /// errors arising in calls to \c TXMPMeta and \c TXMPFiles functions.
@@ -1216,7 +1225,7 @@ enum {
 
 typedef XMP_Uns8 XMP_ErrorSeverity;
 
-/// Severity codes for error notifications
+/// @brief Severity codes for error notifications
 enum {
     /// Partial recovery and continuation is possible.
     kXMPErrSev_Recoverable    = 0,
@@ -1229,7 +1238,7 @@ enum {
 };
 
 // -------------------------------------------------------------------------------------------------
-/// The signature of a client-defined callback for TXMPMeta error notifications.
+/// @brief The signature of a client-defined callback for TXMPMeta error notifications.
 ///
 /// @param context A pointer used to carry client-private context.
 ///
@@ -1256,7 +1265,7 @@ enum {
 typedef bool (* XMPMeta_ErrorCallbackProc) ( void* context, XMP_ErrorSeverity severity, XMP_Int32 cause, XMP_StringPtr message );
 
 // -------------------------------------------------------------------------------------------------
-/// The signature of a client-defined callback for TXMPFiles error notifications.
+/// @brief The signature of a client-defined callback for TXMPFiles error notifications.
 ///
 /// @param context A pointer used to carry client-private context.
 ///
@@ -1335,7 +1344,7 @@ private:
 	XMP_Bool notified;
 };
 
-/// XMP_Error exception code constants
+/// @brief XMP_Error exception code constants
 enum {
 
 	//  --------------------
@@ -1457,7 +1466,7 @@ enum {
 /// \name Special purpose callback functions
 /// @{
 
-/// A signed 32-bit integer used as a status result for the output callback routine,
+/// @brief A signed 32-bit integer used as a status result for the output callback routine,
 /// \c XMP_TextOutputProc. Zero means no error, all other values except -1 are private to the callback.
 /// The callback is wrapped to prevent exceptions being thrown across DLL boundaries. Any exceptions
 /// thrown out of the callback cause a return status of -1.
@@ -1465,8 +1474,9 @@ enum {
 typedef XMP_Int32 XMP_Status;
 
 // -------------------------------------------------------------------------------------------------
-/// The signature of a client-defined callback for text output from XMP Toolkit debugging
-/// operations. The callback is invoked one or more times for each line of output. The end of a line
+/// @brief The signature of a client-defined callback for text output from XMP Toolkit debugging
+/// operations. 
+/// @details The callback is invoked one or more times for each line of output. The end of a line
 /// is signaled by a '\\n' character at the end of the buffer. Formatting newlines are never present
 /// in the middle of a buffer, but values of properties might contain any UTF-8 characters.
 ///
@@ -1485,7 +1495,7 @@ typedef XMP_Status (* XMP_TextOutputProc) ( void *        refCon,
                                             XMP_StringLen bufferSize );
 
 // -------------------------------------------------------------------------------------------------
-/// The signature of a client-defined callback to check for a user request to abort a time-consuming
+/// @brief The signature of a client-defined callback to check for a user request to abort a time-consuming
 /// operation within XMPFiles.
 ///
 /// @param arg A pointer to caller-defined data passed from the registration call.
@@ -1497,7 +1507,7 @@ typedef XMP_Status (* XMP_TextOutputProc) ( void *        refCon,
 typedef bool (* XMP_AbortProc) ( void * arg );
 
 // -------------------------------------------------------------------------------------------------
-/// The signature of a client-defined callback for progress report notifications.
+/// @brief The signature of a client-defined callback for progress report notifications.
 ///
 /// @param context A pointer used to carry client-private context.
 ///
@@ -1556,5 +1566,4 @@ typedef struct XMP_VersionInfo {
 #endif
 
 #include <vector>
-
 #endif  // __XMP_Const_h__

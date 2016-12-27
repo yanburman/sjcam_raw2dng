@@ -24,8 +24,10 @@
 #include <vector>
 #include <string>
 #include "HostAPIAccess.h"
+#include "PluginUtils.h"
 #define TXMP_STRING_TYPE std::string
 #include "XMP.hpp"
+#include "source/XMP_ProgressTracker.hpp"
 
 namespace XMP_PLUGIN
 {
@@ -36,7 +38,7 @@ namespace XMP_PLUGIN
 	virtual void cacheFileData( const IOAdapter& file, std::string& xmpStr );
 	virtual void updateFile( const IOAdapter& file, bool doSafeUpdate, const std::string& xmpStr );
 	virtual void writeTempFile( const IOAdapter& srcFile, const IOAdapter& tmpFile, const std::string& xmpStr ) ;
-	virtual void importToXMP( XMP_StringPtr* xmpStr  );
+	virtual void importToXMP( XMP_StringPtr* xmpStr, XMP_StringPtr* oldPtr = 0, XMP_PacketInfo * packetInfo = 0 );
 	virtual void exportFromXMP( XMP_StringPtr xmpStr  );
 
     First two functions are pure virtual functions so these should be implemented for sure. 
@@ -64,8 +66,9 @@ namespace XMP_PLUGIN
 class PluginBase
 {
 public:
+
 	PluginBase( const std::string& filePath, XMP_Uns32 openFlags, XMP_Uns32 format = 0, XMP_Uns32 handlerFlags = 0 ) 
-		: mPath( filePath ),mHandlerFlags(handlerFlags), mOpenFlags( openFlags ), mFormat( format ) {}
+		: mPath( filePath ),mHandlerFlags(handlerFlags), mOpenFlags( openFlags ), mFormat( format ), mErrorCallback()	{}
 	virtual ~PluginBase(){};
 
 	/** @brief Delegator functions which will eventually call the corresponding virtual function.
@@ -102,6 +105,77 @@ public:
 	 */
 	bool getXMPStandard( std::string& xmpStr, const std::string* path = NULL, bool* containsXMP = NULL );
 
+	/** @brief Get metadata from standard file handler
+	 *
+	 * Call the standard file handler in order to retrieve XMP from it.
+	 * This call expects that session refers to a replacement file handler. Otherwise
+	 * this call fails with an exception.
+	 * Calls checkFormatStandard internally before calling the actual standard handler.
+	 *
+	 * @param xmpStr			Serialized to XMP packet. Will be populated with XMP read from standard handler.
+ 	 * @param flags				OpenFlags passed during opening a file
+	 * @param path				Pointer to the path string of the file to be checked. Pass NULL to check the
+	 *							file passed in during initialization (see PluginBase::getPath() )
+	 * @param containsXMP		Returns true if the standard handler detected XMP
+	 * @param packet			Returns existed XMP packet present in the file, if available
+	 * @param packetInfo		Returns packet information of existed XMP packet in the file, if available
+	 * @param errorCallback		Contains pointer to ErrorCallbackInfo
+	 * @param progCBInfoPtr		Contains pointer to the CallbackInfo provided by user if any
+	 * @return					true on success
+	 */
+	bool getXMPStandard( std::string& xmpStr, XMP_OptionBits flags, const std::string* path = NULL, bool* containsXMP = NULL, std::string *packet = NULL, XMP_PacketInfo* packetInfo = NULL, ErrorCallbackInfo * errorCallback = NULL, XMP_ProgressTracker::CallbackInfo * progCBInfoPtr = NULL ); 
+
+	/** @brief Putting metadata into file using standard file handler
+	 *
+	 * Call the standard file handler in order to put XMP into it.
+	 * This call expects that session refers to a replacement file handler. Otherwise
+	 * this call fails with an exception.
+	 * Calls checkFormatStandard internally before calling the actual standard handler.
+	 *
+	 * @param xmpStr			Serialized to XMP packet. Will be put into file using standard handler.
+  	 * @param flags				OpenFlags passed during opening a file
+	 * @param path				Pointer to the path string of the file to be checked. Pass NULL to check the
+	 *							file passed in during initialization (see PluginBase::getPath() )
+	 * @param errorCallback		Contains pointer to ErrorCallbackInfo
+	 * @param progCBInfoPtr		Contains pointer to the CallbackInfo provided by user if any
+	 * @return					true on success
+	 */
+	bool putXMPStandard( const XMP_StringPtr xmpStr, XMP_OptionBits flags = NULL, const std::string* path = NULL, ErrorCallbackInfo * errorCallback = NULL, XMP_ProgressTracker::CallbackInfo * progCBInfoPtr = NULL );
+
+	/** @brief Getting file modification date from standard file handler
+	 *
+	 * Call the standard file handler in order to retrieve file modification date from it.
+	 *
+	 * @param modDate		will contain modification date of file obtained from the standard Handler
+	 * @param isSuccess		Returns true if the standard handler detected file modification date 
+	 * @param flags			OpenFlags passed during opening a file
+	 * @param path			Path to the file that should be proceeded
+	 * @return				true on success
+	 */
+	bool getFileModDateStandardHandler( XMP_DateTime * modDate, XMP_Bool * isSuccess, XMP_OptionBits flags = NULL, const std::string* path = NULL );
+	
+	/** @brief Getting associated resources from standard file handler
+	 *
+	 * Call the standard file handler in order to retrieve file associated resources from it.
+	 *
+	 * @param resourceList	will contain resources associated with the file obtained from the standard Handler
+	 * @param flags			OpenFlags passed during opening a file
+	 * @param path			Path to the file that should be proceeded
+	 * @return				true on success
+	 */
+	bool getAssociatedResourcesStandardHandler( std::vector<std::string> * resourceList, XMP_OptionBits flags = NULL, const std::string* path = NULL );
+
+	/** @brief Checking whether metadata is writable or not into the file from standard file handler
+	 *
+	 * Call the standard file handler in order to check whether the metadata is writable or not into the file.
+	 *
+	 * @param isWritable	Returns true if the standard handler can write on the file.
+	 * @param flags			OpenFlags passed during opening a file
+	 * @param path			Path to the file that should be proceeded
+	 * @return				true on success
+	 */
+	bool isMetadataWritableStandardHandler( XMP_Bool * isWritable, XMP_OptionBits flags = NULL, const std::string* path = NULL );
+
 	/** @brief Get file format
 	 *
 	 * Get the file format of this handler. 
@@ -115,7 +189,6 @@ public:
 	 * The flags are defined in the plugin manifest.
 	 */
 	inline XMP_OptionBits getHandlerFlags() const			{ return mHandlerFlags; }
-
 
 	/** @brief Return the path to the input file/folder
 	 *
@@ -131,6 +204,8 @@ public:
 	 *  @return flags
 	 */
 	inline XMP_OptionBits getOpenFlags() const { return mOpenFlags; }
+
+	inline ErrorCallbackInfo * getErrorCallbackInfo() { return &mErrorCallback;	}
 
 	/** @brief Ask XMPFiles if current operation should be aborted.
 	 *
@@ -195,13 +270,18 @@ public:
 	virtual void cacheFileData( const IOAdapter& file, std::string& xmpStr ) = 0;
 	virtual void updateFile( const IOAdapter& file, bool doSafeUpdate, const std::string& xmpStr ) = 0;
 	virtual void writeTempFile( const IOAdapter& srcFile, const IOAdapter& tmpFile, const std::string& xmpStr ) {}
-	virtual void importToXMP( XMP_StringPtr* xmpStr );
+	virtual void importToXMP( XMP_StringPtr* xmpStr, XMP_StringPtr* oldPtr , XMP_PacketInfo * packetInfo );
 	virtual void exportFromXMP( XMP_StringPtr xmpStr );
+	virtual void importToXMP( XMP_StringPtr* xmpStr );
+	virtual void SetErrorCallback( XMPFiles_ErrorCallbackWrapper wrapperProc, XMPFiles_ErrorCallbackProc clientProc, void * context, XMP_Uns32 limit );
+	virtual void SetProgressCallback( XMP_ProgressTracker::CallbackInfo * progCBInfoPtr ) {}
+	
 private:
 	std::string		mPath;
 	XMP_OptionBits	mHandlerFlags;
 	XMP_OptionBits	mOpenFlags;
 	XMP_FileFormat	mFormat;
+	ErrorCallbackInfo mErrorCallback;
 };
 
 

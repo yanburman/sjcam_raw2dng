@@ -11,6 +11,8 @@
 #include <cerrno>
 #include <stdexcept>
 
+//#define ENABLE_XMP_CPP_INTERFACE 1;
+
 using namespace std;
 
 #if WIN_ENV

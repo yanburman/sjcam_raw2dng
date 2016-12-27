@@ -11,7 +11,7 @@
 // =================================================================================================
 */
 
-#define kXMP_Copyright Copyright (c) 2013
-#define kXMP_CopyrightStr "Copyright (c) 2013"
+#define kXMP_Copyright Copyright (c) 2016
+#define kXMP_CopyrightStr "Copyright (c) 2016"
 
 #endif	/* __XMP_BuildInfo_h__ */

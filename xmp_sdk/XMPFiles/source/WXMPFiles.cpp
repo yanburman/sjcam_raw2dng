@@ -201,7 +201,7 @@ void WXMPFiles_GetAssociatedResources_1 ( XMP_StringPtr             filePath,
 			std::vector<XMP_StringPtr> ptrArray;
 			ptrArray.reserve ( fileCount );
 			for ( size_t i = 0; i < fileCount; ++i ) ptrArray.push_back ( resList[i].c_str() );
-			(*SetClientStringVector) ( resourceList, ptrArray.data(), fileCount );
+			(*SetClientStringVector) ( resourceList, ptrArray.data(), static_cast<XMP_Uns32>(fileCount ));
 		}
 	XMP_EXIT
 }
@@ -218,7 +218,6 @@ void WXMPFiles_IsMetadataWritable_1 ( XMP_StringPtr    filePath,
 		wResult->int32Result = XMPFiles::IsMetadataWritable ( filePath, writable, format, options );
 	XMP_EXIT
 }
-
 
 // =================================================================================================
 

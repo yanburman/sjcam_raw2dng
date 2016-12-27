@@ -21,6 +21,8 @@
 #include <stdexcept>
 #include <cerrno>
 
+//#define ENABLE_XMP_CPP_INTERFACE 1;
+
 #if XMP_WinBuild
 	#pragma warning ( disable : 4127 )	// conditional expression is constant
 	#pragma warning ( disable : 4996 )	// '...' was declared deprecated
@@ -31,7 +33,11 @@
 #include "public/include/XMP.hpp"
 #include "public/include/XMP.incl_cpp"
 
-#include "samples/source/common/XMPScanner.hpp"
+
+#include "XMPFiles/source/FormatSupport/XMPScanner.hpp"
+#include "XMPFiles/source/FormatSupport/XMPScanner.cpp"
+
+
 using namespace std;
 
 // =================================================================================================

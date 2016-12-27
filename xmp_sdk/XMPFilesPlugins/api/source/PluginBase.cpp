@@ -8,7 +8,7 @@
 // =================================================================================================
 
 #include "PluginBase.h"
-#include "source/XMP_LibUtils.hpp"
+#include "PluginUtils.h"
 #include "source/Host_IO.hpp"
 #include "XMP.incl_cpp"
 
@@ -82,7 +82,7 @@ void PluginBase::FillMetadataFiles( StringVectorRef metadataFiles, SetStringVect
 		for ( size_t i = 0; i < fileCount; ++i ) {
 			ptrArray.push_back ( fileList[i].c_str() );
 		}
-		(*SetStringVector) ( metadataFiles, ptrArray.data(), fileCount );
+		(*SetStringVector) ( metadataFiles, ptrArray.data(), (XMP_Uns32)fileCount );
 	}
 }
 
@@ -114,7 +114,7 @@ void PluginBase::FillAssociatedResources( StringVectorRef resourceList, SetStrin
 		for ( size_t i = 0; i < fileCount; ++i ) {
 			ptrArray.push_back ( resList[i].c_str() );
 		}
-		(*SetStringVector) ( resourceList, ptrArray.data(), fileCount );
+		(*SetStringVector) ( resourceList, ptrArray.data(), (XMP_Uns32)fileCount );
 	}
 }
 
@@ -134,6 +134,12 @@ void PluginBase::FillAssociatedResources( std::vector<std::string> * resourceLis
 // ============================================================================
 // ============================================================================
 
+void PluginBase::importToXMP( XMP_StringPtr* xmpStr, XMP_StringPtr* packetPtr , XMP_PacketInfo * packetInfo ) 
+{
+	this->importToXMP( xmpStr );
+}
+
+// ============================================================================
 
 void PluginBase::importToXMP( XMP_StringPtr* xmpStr ) 
 {
@@ -231,6 +237,76 @@ bool PluginBase::getXMPStandard( std::string& xmpStr, const std::string* path /*
 	bool ret = GetXMPStandard( this, this->getFormat(), _path, xmpStr, containsXMP );
 
 	return ret;
+}
+
+// ============================================================================
+
+bool PluginBase::getXMPStandard( std::string& xmpStr, XMP_OptionBits flags, const std::string* path /*= NULL*/, bool* containsXMP /*= NULL*/, std::string *packet /*= NULL*/, XMP_PacketInfo *packetInfo /*= NULL*/, ErrorCallbackInfo * errorCallback /*= NULL*/, XMP_ProgressTracker::CallbackInfo * progCBInfoPtr /*= NULL*/ )
+{
+	const StringPtr _path	= (const StringPtr)( path == NULL ? this->getPath().c_str() : path->c_str() );
+
+	bool ret = GetXMPStandard( this, this->getFormat(), _path, xmpStr, containsXMP, flags, packet, packetInfo, errorCallback, progCBInfoPtr );
+
+	return ret;
+}
+
+// ============================================================================
+
+bool PluginBase::putXMPStandard( const XMP_StringPtr xmpStr, XMP_OptionBits flags /*= NULL */, const std::string* path /*= NULL*/, ErrorCallbackInfo * errorCallback /*= NULL*/ , XMP_ProgressTracker::CallbackInfo * progCBInfoPtr /*= NULL*/ )
+{
+	const StringPtr _path	= (const StringPtr)( path == NULL ? this->getPath().c_str() : path->c_str() );
+
+	bool ret = PutXMPStandard( this, this->getFormat(), _path, xmpStr, flags, errorCallback, progCBInfoPtr );
+
+	return ret;
+}
+
+// ============================================================================
+
+bool PluginBase::getFileModDateStandardHandler( XMP_DateTime * modDate, XMP_Bool * isSuccess, XMP_OptionBits flags /*= NULL */, const std::string* path /*= NULL*/ )
+{
+	const StringPtr _path	= (const StringPtr)( path == NULL ? this->getPath().c_str() : path->c_str() );
+
+	bool ret = GetFileModDateStandardHandler( this, this->getFormat(), _path, modDate, isSuccess, flags );
+
+	return ret;
+}
+
+// ============================================================================
+
+bool PluginBase::getAssociatedResourcesStandardHandler( std::vector<std::string> * resourceList, XMP_OptionBits flags /*= NULL */, const std::string* path /*= NULL*/ )
+{
+	const StringPtr _path	= (const StringPtr)( path == NULL ? this->getPath().c_str() : path->c_str() );
+
+	bool ret = GetAssociatedResourcesStandardHandler( this, this->getFormat(), _path, resourceList, flags );
+
+	return ret;
+}
+
+// ============================================================================
+
+bool PluginBase::isMetadataWritableStandardHandler( XMP_Bool * isWritable, XMP_OptionBits flags /*= NULL */, const std::string* path /*= NULL*/ )
+{
+	const StringPtr _path	= (const StringPtr)( path == NULL ? this->getPath().c_str() : path->c_str() );
+
+	bool ret = IsMetadataWritableStandardHandler( this, this->getFormat(), _path, isWritable, flags );
+
+	return ret;
+}
+
+// ============================================================================
+
+void PluginBase::SetErrorCallback ( XMPFiles_ErrorCallbackWrapper wrapperProc,
+		XMPFiles_ErrorCallbackProc clientProc,
+		void * context,
+		XMP_Uns32 limit )
+{
+	this->mErrorCallback.Clear();
+	this->mErrorCallback.wrapperProc = wrapperProc;
+	this->mErrorCallback.clientProc = clientProc;
+	this->mErrorCallback.context = context;
+	this->mErrorCallback.limit = limit;
+	this->mErrorCallback.filePath = mPath;
 }
 
 // ============================================================================

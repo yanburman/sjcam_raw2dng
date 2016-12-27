@@ -407,8 +407,8 @@ CONDITIONAL_STATIC SafeInt32 makepath_safe(char* path, size_t size, const char* 
 
 static char *reverse_string_safe(char *str, size_t size)
 {
-	int head = 0;
-	int tail = strnlen_safe(str, size) - 1;
+	size_t head = 0;
+	size_t tail = strnlen_safe(str, size) - 1;
 	while (head < tail)
 	{
 		char temp = str[head];
@@ -607,15 +607,15 @@ CONDITIONAL_STATIC char * gets_safe(char* buffer, size_t size)
 		char* pointer = buffer;
 		char ch;
 		size_t count = size;
-		ch = getchar();
-		while(ch != EOF && ch != '\n')
+		ch = (char)getchar();
+		while(ch != (char)EOF && ch != '\n')
 		{
 			if(count > 0)
 			{
 				count--;
 				*pointer++ = ch;
 			}
-			ch = getchar();
+			ch = (char)getchar();
 		}
 		if(count == 0)
 		{
