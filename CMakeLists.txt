@@ -129,7 +129,11 @@ if (UNIX)
                           XMPCoreStatic
                           dl
                           )
-    set_target_properties(${target} PROPERTIES COMPILE_FLAGS "-DUNIX_ENV=1")
+    if (APPLE)
+        set_target_properties(${target} PROPERTIES COMPILE_FLAGS "-DMAC_ENV=1")
+    else()
+        set_target_properties(${target} PROPERTIES COMPILE_FLAGS "-DUNIX_ENV=1")
+    endif(APPLE)
 endif(UNIX)
 
 if (MSVC)
@@ -137,4 +141,5 @@ if (MSVC)
                           XMPFilesStatic
                           XMPCoreStatic
                           )
+    set_target_properties(${target} PROPERTIES COMPILE_FLAGS "/DWIN_ENV=1")
 endif(MSVC)
