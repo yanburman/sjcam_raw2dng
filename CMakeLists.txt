@@ -115,3 +115,26 @@ add_executable(${target} ${SRC_DIR}/prune_raw.cpp
 
 target_include_directories(${target} PUBLIC ${SRC_DIR})
 
+
+set(target extract_xmp)
+
+add_executable(${target} ${SRC_DIR}/extract_xmp.cpp)
+target_include_directories(${target} PUBLIC ${SRC_DIR}
+                                            ${XMPROOT}/public/include)
+if (UNIX)
+    target_link_libraries(${target}
+                          pthread
+                          dl
+                          XMPFilesStatic
+                          XMPCoreStatic
+                          dl
+                          )
+    set_target_properties(${target} PROPERTIES COMPILE_FLAGS "-DUNIX_ENV=1")
+endif(UNIX)
+
+if (MSVC)
+    target_link_libraries(${target}
+                          XMPFilesStatic
+                          XMPCoreStatic
+                          )
+endif(MSVC)
