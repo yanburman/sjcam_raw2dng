@@ -52,7 +52,7 @@ static XMPFileHandler* Plugin_MetaHandlerCTor ( FileHandlerSharedPtr handler, XM
 	SessionRef object;
 	WXMP_Error error;
 
-	if( (handler == 0) || (! handler->load()) ) 
+	if( (! handler) || (! handler->load()) ) 
 	{
 		XMP_Throw ( "Plugin not loaded", kXMPErr_InternalFailure );
 	}
@@ -85,7 +85,7 @@ static XMPFileHandler* Plugin_MetaHandlerCTor_Replacement( XMPFiles * parent )
 
 static bool Plugin_CheckFileFormat ( FileHandlerSharedPtr handler, XMP_StringPtr filePath, XMP_IO * fileRef, XMPFiles * parent )
 {
-	if ( handler != 0 ) {
+	if ( handler ) {
 
 		// call into plugin if owning handler or if manifest has no CheckFormat entry
 		if ( fileRef == 0 || handler->getCheckFormatSize() == 0) {
@@ -190,7 +190,7 @@ static bool Plugin_CheckFolderFormat( FileHandlerSharedPtr handler,
 {
 	XMP_Bool result = false;
 
-	if ( handler != 0 ) 
+	if ( handler ) 
 	{
 		WXMP_Error error;
 		CheckSessionFolderFormatProc checkProc = handler->getModule()->getPluginAPIs()->mCheckFolderFormatProc;
@@ -401,12 +401,12 @@ void PluginManager::initialize( const std::string& pluginDir, const std::string&
 			XMP_FileFormat format = it->first;
 			FileHandlerPair handlers = it->second;
 
-			if( handlers.mStandardHandler != NULL )
+			if( handlers.mStandardHandler )
 			{
 				registerHandler( format, handlers.mStandardHandler );
 			}
 
-			if( handlers.mReplacementHandler != NULL )
+			if( handlers.mReplacementHandler )
 			{
 				registerHandler( format, handlers.mReplacementHandler );
 			}
