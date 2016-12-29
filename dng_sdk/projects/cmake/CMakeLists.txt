@@ -12,6 +12,9 @@ endif()
 project(dng_sdk)
 
 
+set(XMP_BUILD_STATIC "1")
+
+
 if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /DNOMINMAX")
 endif (MSVC)
