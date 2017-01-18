@@ -1,0 +1,8 @@
+In order to find the correct value for BaselineNoise tag, follow the following steps in Lightroom/ACR:
+
+1. Set sharpening to 0
+2. Set the Luminance noise reduction slider all the way to the right (100) and set the detail slider all to the left (0). The image should be totally smooth at this point.
+3. While looking at an area of the image with no detail, increase the detail slider until the noise starts to be visible. At that point, slightly decrease the detail slider until no noise is visible. That is the optimum point for the detail slider.
+4. If you are unable to find a setting with no noise, it means that you need higher BaselineNoise value
+
+
