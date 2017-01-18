@@ -55,6 +55,7 @@
 #include "helpers.h"
 #include "CFAReader.h"
 #include "StopWatch.h"
+#include "utils.h"
 
 // Enable this for some profiling
 // #define TIME_PROFILE
@@ -327,7 +328,11 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
       szBaseFilename = szBaseFilename.substr(unIndex + 1, szBaseFilename.length());
   }
 
-  std::string m_szOutputFile = m_oConfig.m_szPathPrefixOutput + szBaseFilename + ".dng";
+  std::string m_szOutputFile;
+  m_szOutputFile.reserve(m_oConfig.m_szPathPrefixOutput.size() + szBaseFilename.size() + dng_suffix.size());
+  m_szOutputFile = m_oConfig.m_szPathPrefixOutput;
+  m_szOutputFile += szBaseFilename;
+  m_szOutputFile += dng_suffix;
 
   // Create DNG
   try {
@@ -780,7 +785,11 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
       // Write TIFF file
       // -------------------------------------------------------------
 
-      std::string m_szRenderFile = m_oConfig.m_szPathPrefixOutput + szBaseFilename + ".tiff";
+      std::string m_szRenderFile;
+      m_szRenderFile.reserve(m_oConfig.m_szPathPrefixOutput.size() + szBaseFilename.size() + tiff_suffix.size());
+      m_szRenderFile = m_oConfig.m_szPathPrefixOutput;
+      m_szRenderFile += szBaseFilename;
+      m_szRenderFile += tiff_suffix;
 
       // Create stream writer for output file
       dng_file_stream oTIFFStream(m_szRenderFile.c_str(), true);

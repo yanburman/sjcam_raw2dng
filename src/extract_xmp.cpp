@@ -57,7 +57,10 @@ static int process_file(const string &szInputFile)
       } else {
         szBaseFilename = szInputFile.substr(0, unIndex);
       }
-      string szOutputFile = szBaseFilename + ".xmp";
+      string szOutputFile;
+      szOutputFile.reserve(szBaseFilename.size() + sizeof(".xmp"));
+      szOutputFile = szBaseFilename;
+      szOutputFile.append(".xmp");
 
       cout << szStatus << endl;
       cout << szInputFile << " is opened successfully" << endl;

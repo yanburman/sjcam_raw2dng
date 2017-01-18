@@ -47,7 +47,10 @@ int FileFinder::find_files(std::string &dir)
         res = dir + *it;
       }
 
-      std::string fname = dir + *found_it;
+      std::string fname;
+      fname.reserve(dir.size() + found_it->size());
+      fname = dir;
+      fname += *found_it;
 
       add_work_item(fname, res);
       found = false;
@@ -57,7 +60,10 @@ int FileFinder::find_files(std::string &dir)
     if (has_suffix(*it, raw_suffix)) {
       size_t suffix_idx = it->find_last_of('_');
       if (suffix_idx == std::string::npos) {
-        std::string fname = dir + *it;
+        std::string fname;
+        fname.reserve(dir.size() + it->size());
+        fname = dir;
+        fname += *it;
 
         add_work_item(fname, res);
         found = false;
@@ -68,7 +74,10 @@ int FileFinder::find_files(std::string &dir)
       std::string suffix = it->substr(suffix_idx + 1, it->length());
       int pic_num = atoi(suffix.c_str());
       if (pic_num < 1) {
-        std::string fname = dir + *it;
+        std::string fname;
+        fname.reserve(dir.size() + it->size());
+        fname = dir;
+        fname += *it;
 
         add_work_item(fname, res);
         found = false;
@@ -85,7 +94,10 @@ int FileFinder::find_files(std::string &dir)
   }
 
   if (found) {
-    std::string fname = dir + *found_it;
+    std::string fname;
+    fname.reserve(dir.size() + found_it->size());
+    fname = dir;
+    fname += *found_it;
     add_work_item(fname, empty_string);
   }
 

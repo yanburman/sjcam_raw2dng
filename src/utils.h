@@ -16,6 +16,7 @@ int list_dir(const std::string &dir, std::list<std::string> &files, const std::l
 extern const std::string jpeg_suffix;
 extern const std::string raw_suffix;
 extern const std::string dng_suffix;
+extern const std::string tiff_suffix;
 
 size_t get_num_cpus(void);
 

@@ -18,6 +18,7 @@
 const std::string jpeg_suffix(".JPG");
 const std::string raw_suffix(".RAW");
 const std::string dng_suffix(".dng");
+const std::string tiff_suffix(".tiff");
 
 int list_dir(const std::string &dir, std::list<std::string> &files, const std::list<std::string> &filter)
 #if defined(_WIN32) || defined(_WIN64)
