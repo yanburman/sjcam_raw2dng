@@ -154,6 +154,11 @@ int DNGConverter::ParseMetadata(const std::string &metadata, Exif &oExif)
 
   oExif.m_unISO = (uint16_t)res;
 
+  exists = meta.GetProperty(kXMP_NS_TIFF, "Model", &propValue, NULL);
+  if (!exists)
+    return -1;
+  oExif.m_szCameraModel = propValue;
+
   XMP_DateTime myDate;
   exists = meta.GetProperty_Date(kXMP_NS_EXIF, "DateTimeOriginal", &myDate, NULL);
   if (!exists)
@@ -307,6 +312,11 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 #endif
     if (ret)
       return dng_error_unknown;
+
+    if (exif.m_szCameraModel != oCamProfile->m_szCameraModel) {
+      fprintf(stderr, "%s: Unsupported camera\n", m_szInputFile.c_str());
+      return dng_error_bad_format;
+    }
   }
 
   // SETTINGS: Names
@@ -342,7 +352,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // Print settings
     // -------------------------------------------------------------
 
-    printf("RAW: %s [%s]\n", m_szInputFile.c_str(), m_szMetadataFile.c_str());
+    printf("RAW: %s [%s] (%s)\n", m_szInputFile.c_str(), m_szMetadataFile.c_str(), szProfileName.c_str());
 
     // -------------------------------------------------------------
     // BAYER input file settings

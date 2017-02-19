@@ -43,6 +43,7 @@ struct Exif {
   dng_srational m_oExposureBias;
   std::string m_szCreatorTool;
   dng_date_time_info m_oOrigDate;
+  std::string m_szCameraModel;
 };
 
 class DNGConverter
