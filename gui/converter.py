@@ -11,6 +11,7 @@ import gettext
 # end wxGlade
 
 # begin wxGlade: extracode
+from images import Images
 # end wxGlade
 
 from threading import Thread
@@ -104,6 +105,7 @@ class MainFrame(wx.Frame):
         self.main_frame_menubar.Append(self.Help, _("&Help"))
         self.SetMenuBar(self.main_frame_menubar)
         # Menu Bar end
+        self.logo_bitmap = wx.StaticBitmap(self, wx.ID_ANY, wx.NullBitmap)
         self.src_dir_text_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_READONLY)
         self.src_dir_button = wx.Button(self, wx.ID_ANY, _("Source folder"))
         self.dest_dir_text_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_READONLY)
@@ -124,6 +126,8 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.OnConvert, self.convert_button)
         self.Bind(wx.EVT_BUTTON, self.OnAbort, self.abort_button)
         # end wxGlade
+        self.images = Images()
+        self.logo_bitmap.SetBitmap(self.images.bmp_logo)
         self.proc = None
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -140,8 +144,10 @@ class MainFrame(wx.Frame):
 
     def __do_layout(self):
         # begin wxGlade: MainFrame.__do_layout
-        grid_sizer_1 = wx.FlexGridSizer(4, 2, 0, 0)
+        grid_sizer_1 = wx.FlexGridSizer(5, 2, 0, 0)
         grid_sizer_2 = wx.GridSizer(1, 2, 0, 0)
+        grid_sizer_1.Add((20, 20), 0, 0, 0)
+        grid_sizer_1.Add(self.logo_bitmap, 0, wx.ALIGN_CENTER, 0)
         grid_sizer_1.Add(self.src_dir_text_ctrl, 0, wx.EXPAND, 0)
         grid_sizer_1.Add(self.src_dir_button, 0, wx.ALIGN_RIGHT | wx.EXPAND, 0)
         grid_sizer_1.Add(self.dest_dir_text_ctrl, 0, wx.EXPAND, 0)
@@ -153,7 +159,7 @@ class MainFrame(wx.Frame):
         grid_sizer_1.Add(self.status_text_ctrl, 0, wx.EXPAND, 0)
         grid_sizer_1.Add(self.abort_button, 0, wx.EXPAND, 0)
         self.SetSizer(grid_sizer_1)
-        grid_sizer_1.AddGrowableRow(3)
+        grid_sizer_1.AddGrowableRow(4)
         grid_sizer_1.AddGrowableCol(0)
         self.Layout()
         self.Centre()
