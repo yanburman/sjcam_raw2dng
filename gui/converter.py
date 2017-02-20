@@ -131,6 +131,7 @@ class MainFrame(wx.Frame):
         self.logo_bitmap.SetBitmap(self.images.bmp_logo)
         self.proc = None
         self.Bind(wx.EVT_CLOSE, self.OnClose)
+        self.SetMinSize(self.GetSize())
 
     def __set_properties(self):
         # begin wxGlade: MainFrame.__set_properties
