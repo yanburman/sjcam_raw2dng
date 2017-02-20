@@ -34,7 +34,6 @@ class HtmlWindow(wx.html.HtmlWindow):
 aboutText = """<p>SJCAM RAW to DNG/TIFF converter %(converter)s. <br/>
 Written by Yan Burman<br/>
 See <a href="http://yanburman.github.io/sjcam_raw2dng">sjcam_raw2dng</a><br/>
-It is running on version %(wxpy)s of <b>wxPython</b> and %(python)s of <b>Python</b>.
 </p>"""
 
 
@@ -44,8 +43,6 @@ class AboutBox(wx.Dialog):
              style=wx.DEFAULT_DIALOG_STYLE|wx.THICK_FRAME|wx.RESIZE_BORDER|wx.TAB_TRAVERSAL)
         hwin = HtmlWindow(self, -1, size=(400, 200))
         vers = dict()
-        vers['python'] = sys.version.split()[0]
-        vers['wxpy'] = wx.VERSION_STRING
         vers['converter'] = subprocess.check_output(['./sjcam_raw2dng', '-v']).strip()
         hwin.SetPage(aboutText % vers)
         btn = hwin.FindWindowById(wx.ID_OK)
