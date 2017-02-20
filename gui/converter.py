@@ -38,8 +38,8 @@ See <a href="http://yanburman.github.io/sjcam_raw2dng">sjcam_raw2dng</a><br/>
 
 
 class AboutBox(wx.Dialog):
-    def __init__(self):
-        wx.Dialog.__init__(self, None, -1, _("About"),
+    def __init__(self, parent):
+        wx.Dialog.__init__(self, parent, -1, _("About"),
              style=wx.DEFAULT_DIALOG_STYLE|wx.THICK_FRAME|wx.RESIZE_BORDER|wx.TAB_TRAVERSAL)
         hwin = HtmlWindow(self, -1, size=(400, 200))
         vers = dict()
@@ -224,7 +224,7 @@ class MainFrame(wx.Frame):
         event.Skip()
 
     def OnMenuAbout(self, event):  # wxGlade: MainFrame.<event_handler>
-        dlg = AboutBox()
+        dlg = AboutBox(self)
         dlg.ShowModal()
         dlg.Destroy()
         event.Skip()
