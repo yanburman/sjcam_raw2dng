@@ -1,0 +1,38 @@
+<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="Adobe XMP Core 5.6-c128 79.159124, 2017/02/20-17:01:52        ">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about=""
+    xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/"
+    xmlns:stCamera="http://ns.adobe.com/photoshop/1.0/camera-profile">
+   <photoshop:CameraProfiles>
+    <rdf:Seq>
+     <rdf:li>
+      <rdf:Description
+       stCamera:Author="Adobe (www.adobe.com)"
+       stCamera:Make="SJCAM"
+       stCamera:CameraRawProfile="True"
+       stCamera:CameraPrettyName="SJCAM"
+       stCamera:LensPrettyName="GP43520"
+       stCamera:ProfileName="GP43520"
+       stCamera:SensorFormatFactor="5.6"
+       stCamera:Lens="GP43520"
+       stCamera:LensID="GP43520"
+       stCamera:FocalLength="3"
+       stCamera:FocusDistance="0.946169"
+       stCamera:ApertureValue="2.970854">
+      <stCamera:FisheyeModel
+       stCamera:Version="2"
+       stCamera:FocalLengthX="0.439114"
+       stCamera:FocalLengthY="0.439114"
+       stCamera:ImageXCenter="0.493463"
+       stCamera:ImageYCenter="0.491274"
+       stCamera:ResidualMeanError="0.000183"
+       stCamera:ResidualStandardDeviation="0.000133"
+       stCamera:RadialDistortParam1="0.056324"
+       stCamera:RadialDistortParam2="0.003075"/>
+      </rdf:Description>
+     </rdf:li>
+    </rdf:Seq>
+   </photoshop:CameraProfiles>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>
