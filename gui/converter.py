@@ -42,8 +42,24 @@ class AboutBox(wx.Dialog):
         wx.Dialog.__init__(self, parent, -1, _("About"),
              style=wx.DEFAULT_DIALOG_STYLE|wx.THICK_FRAME|wx.RESIZE_BORDER|wx.TAB_TRAVERSAL)
         hwin = HtmlWindow(self, -1, size=(400, 200))
+
+        # The following is true only on Windows.
+        if hasattr(subprocess, 'STARTUPINFO'):
+            # On Windows, subprocess calls will pop up a command window by default
+            # when run from Pyinstaller with the ``--noconsole`` option. Avoid this
+            # distraction.
+            si = subprocess.STARTUPINFO()
+            si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            # Windows doesn't search the path by default. Pass it an environment so
+            # it will.
+            env = os.environ
+        else:
+            si = None
+            env = None
+
         vers = dict()
-        vers['converter'] = subprocess.check_output(['./sjcam_raw2dng', '-v']).strip()
+        conv_path = os.path.join(os.path.dirname(sys.argv[0]), 'sjcam_raw2dng')
+        vers['converter'] = subprocess.check_output([conv_path, '-v'], stdin=subprocess.PIPE, stderr=subprocess.PIPE, startupinfo=si, env=env).strip()
         hwin.SetPage(aboutText % vers)
         btn = hwin.FindWindowById(wx.ID_OK)
         irep = hwin.GetInternalRepresentation()
