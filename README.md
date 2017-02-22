@@ -11,6 +11,7 @@ Features:
 - Using official Adobe SDK for maximum compatibility and extendability
 - Parallel conversion speeding up batch conversion
 - Adobe camera profile
+- Adobe lens profile
 - Support for Linux, Windows and Mac (on Mac only CLI was tested on 10.11, although GUI should work as well)
 - Best possible quality
 - EXIF embedding from original JPEG files
@@ -24,6 +25,12 @@ C:\Users\\{you}\AppData\Roaming\Adobe\CameraRaw\CameraProfiles
 After that you will need to restart Lightroom in order to be able to use the profile.
 Now you can choose the new profile (SJ5000x Recipe) in Camera Calibration
 
+Lens profile usage:
+---------------------
+In order to be able to utilize lens profiles, you will need to put them in
+C:\Users\\{you}\AppData\Roaming\Adobe\CameraRaw\LensProfiles\1.0
+After that you will need to restart Lightroom in order to be able to use the profile.
+Now you can select "Enable Profile Corrections" under lens correction and have LR/ACR correct geometric distortions
 
 GUI:
 ---------------------

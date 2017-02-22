@@ -1,3 +1,4 @@
+* Added lens profile
 * Update to XMP toolkit 201607
 * Added extract_xmp utility to get xmp data embedded in the file (DNG or JPG)
 * Improved noise threshold setting for both SJ5000x and M20
