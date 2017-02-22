@@ -3,7 +3,7 @@ Convert SJCAM raw files to Adobe DNG and TIFF while also getting metadata
 such as date and ISO from JPEGs that correlate to the RAW files
 
 Currently supported cameras:
-- SJ5000X Elite (with Adobe camera profile for professional level color calibration)
+- SJ5000X Elite (with Adobe camera and lens profile for professional level color calibration)
 - M20
 
 Features:

@@ -1,3 +1,4 @@
+v1.1.0
 * Added lens profile
 * Update to XMP toolkit 201607
 * Added extract_xmp utility to get xmp data embedded in the file (DNG or JPG)
