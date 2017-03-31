@@ -250,7 +250,7 @@ struct SJ5000xProfile : public CameraProfile {
 };
 
 struct M20Profile : public CameraProfile {
-  M20Profile() : CameraProfile(4608, 3456, 200, 0.51, 1, 0.64, 4, "M20")
+  M20Profile(uint32 w, uint32 h) : CameraProfile(w, h, 200, 0.51, 1, 0.64, 4, "M20")
   {
   }
 };
@@ -258,7 +258,7 @@ struct M20Profile : public CameraProfile {
 const static CameraProfile gRawSizes[] = {SJ5000xProfile(4000, 3000),
                                           SJ5000xProfile(3032, 2272),
                                           SJ5000xProfile(2640, 1980),
-                                          M20Profile()};
+                                          M20Profile(4608, 3456)};
 
 static const CameraProfile *get_CameraProfile(size_t sz)
 {
