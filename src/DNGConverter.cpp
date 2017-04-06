@@ -250,7 +250,7 @@ struct SJ5000xProfile : public CameraProfile {
 };
 
 struct M20Profile : public CameraProfile {
-  M20Profile(uint32 w, uint32 h) : CameraProfile(w, h, 200, 0.51, 1, 0.64, 4, "M20")
+  M20Profile(uint32 w, uint32 h) : CameraProfile(w, h, 200, 0.46, 1, 0.7, 4, "M20")
   {
   }
 };
