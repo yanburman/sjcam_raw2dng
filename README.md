@@ -68,11 +68,15 @@ A: Install wxPython and put sjcam_raw2dng in the same folder as the GUI
 
 Q: On Mac OSX running the executable results in "permission denied"<br/>
 A: Type "cd" [drag sjcam_raw2dng_v1.0.1_macosx folder here]</br>
-Type "ls –l"</br>
+Type "ls -l"</br>
 Hit return.</br>
 Then type "chmod 755" [Drag the sjcam_raw2dng here]</br>
 Hit return.</br>
 
 Now you will be able to etither run the sjcam_raw2dng binary from console</br>
 or drag and drop files/folders into the sjcam_raw2dng binary
+
+Q: Why does a cropped FOV raw have lower resolution while jpeg has higher resolution?<br/>
+A: Cropped FOV resolution uses only part of the sensor. While JPEG engine inside the camera</br>
+extrapolates to a higher resolution, raw format has only the pixels taken from the sensor
 
