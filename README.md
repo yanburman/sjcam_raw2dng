@@ -37,6 +37,8 @@ GUI:
 Enables selecting source and optionally destination directories and convert
 Also optional is ability to convert to TIFF as well as DNG
 
+![Image](https://github.com/yanburman/sjcam_raw2dng/blob/master/resources/gui.png)
+
 
 CLI:
 ---------------------
