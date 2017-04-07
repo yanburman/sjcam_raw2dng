@@ -18,7 +18,7 @@
 #include <dng_string.h>
 #include <dng_pthread.h>
 
-#define VERSION_STR "v1.1.0"
+#define VERSION_STR "v1.1.1"
 
 static FileFinder g_Files;
 
