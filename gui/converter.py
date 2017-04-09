@@ -260,7 +260,8 @@ class MyApp(wx.App):
 # end of class MyApp
 
 if __name__ == "__main__":
-    gettext.install("converter", './locale', True)
+    locale_path = os.path.join(os.path.dirname(sys.argv[0]), 'locale')
+    gettext.install("converter", locale_path, True)
 
     converter = MyApp(0)
     converter.MainLoop()
