@@ -6,3 +6,5 @@ In order to find the correct value for BaselineNoise tag, follow the following s
 4. If you are unable to find a setting with no noise, it means that you need higher BaselineNoise value
 
 
+In order to edit translations need poedit
+

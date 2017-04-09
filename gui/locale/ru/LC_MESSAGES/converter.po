@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2016-11-09 15:09+0200\n"
-"PO-Revision-Date: 2016-11-09 15:15+0200\n"
+"PO-Revision-Date: 2017-04-09 08:25+0300\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: ru\n"
@@ -21,15 +21,15 @@ msgstr ""
 
 #: converter.py:101
 msgid "&About"
-msgstr ""
+msgstr "&О программе"
 
 #: converter.py:99
 msgid "&File"
-msgstr ""
+msgstr "&Фаил"
 
 #: converter.py:103
 msgid "&Help"
-msgstr ""
+msgstr "&Помошь"
 
 #: converter.py:114
 msgid "Abort"
@@ -37,7 +37,7 @@ msgstr "Остановить"
 
 #: converter.py:40 converter.py:101
 msgid "About"
-msgstr ""
+msgstr "О программе"
 
 #: converter.py:169
 msgid "Choose destination folder"
@@ -69,7 +69,7 @@ msgstr "Папка назначения"
 
 #: converter.py:97
 msgid "E&xit\tCtrl-Q"
-msgstr ""
+msgstr "&Выход\tCTRL-Q"
 
 #: converter.py:179 converter.py:198
 msgid "Error!"

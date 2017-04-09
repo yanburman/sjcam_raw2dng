@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2016-11-09 15:06+0200\n"
-"PO-Revision-Date: 2016-11-09 15:09+0200\n"
+"PO-Revision-Date: 2017-04-09 08:21+0300\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: he\n"
@@ -20,15 +20,15 @@ msgstr ""
 
 #: converter.py:101
 msgid "&About"
-msgstr ""
+msgstr "&אודות"
 
 #: converter.py:99
 msgid "&File"
-msgstr ""
+msgstr "&קובץ"
 
 #: converter.py:103
 msgid "&Help"
-msgstr "עזרא"
+msgstr "&עזרא"
 
 #: converter.py:114
 msgid "Abort"
@@ -68,7 +68,7 @@ msgstr "תיקיית יעד"
 
 #: converter.py:97
 msgid "E&xit\tCtrl-Q"
-msgstr ""
+msgstr "&יציאה\tCTRL-Q"
 
 #: converter.py:179 converter.py:198
 msgid "Error!"
