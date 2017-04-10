@@ -4,7 +4,8 @@ such as date and ISO from JPEGs that correlate to the RAW files
 
 Currently supported cameras:
 - SJ5000X Elite (with Adobe camera and lens profile for professional level color calibration)
-- M20
+- SJ6 LEGEND (with Adobe camera and lens profile for professional level color calibration)
+- M20 (with Adobe lens profile only)
 
 Features:
 --------------------
@@ -23,7 +24,7 @@ Camera profile usage:
 In order to be able to utilize camera profiles, you will need to put them in
 C:\Users\\{you}\AppData\Roaming\Adobe\CameraRaw\CameraProfiles
 After that you will need to restart Lightroom in order to be able to use the profile.
-Now you can choose the new profile (SJ5000x Recipe) in Camera Calibration
+Now you can choose the new profile (SJ5000x Recipe or SJ6 LEGEND Recipe) in Camera Calibration
 
 Lens profile usage:
 ---------------------
