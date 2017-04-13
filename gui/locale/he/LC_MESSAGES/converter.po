@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-11-09 15:06+0200\n"
-"PO-Revision-Date: 2017-04-09 08:21+0300\n"
+"POT-Creation-Date: 2017-04-13 17:20+0300\n"
+"PO-Revision-Date: 2017-04-13 17:27+0300\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: he\n"
@@ -18,88 +18,96 @@ msgstr ""
 "X-Generator: Poedit 1.8.7.1\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: converter.py:101
+#: converter.py:117
 msgid "&About"
 msgstr "&אודות"
 
-#: converter.py:99
+#: converter.py:115
 msgid "&File"
 msgstr "&קובץ"
 
-#: converter.py:103
+#: converter.py:119
 msgid "&Help"
 msgstr "&עזרא"
 
-#: converter.py:114
+#: converter.py:132
 msgid "Abort"
 msgstr "הפסק"
 
-#: converter.py:40 converter.py:101
+#: converter.py:42 converter.py:117
 msgid "About"
 msgstr "אודות"
 
-#: converter.py:169
+#: converter.py:194
 msgid "Choose destination folder"
 msgstr "בחר תיקיית יעד"
 
-#: converter.py:162
+#: converter.py:187
 msgid "Choose source folder"
 msgstr "בחר תיקיית מקור"
 
-#: converter.py:112
+#: converter.py:130
 msgid "Convert"
 msgstr "המר"
 
-#: converter.py:135
+#: converter.py:156
 msgid "Convert to DNG"
 msgstr "המר ל-DNG"
 
-#: converter.py:134
+#: converter.py:155
 msgid "Convert to TIFF"
 msgstr "המר ל-TIFF"
 
-#: converter.py:111
+#: converter.py:158
+msgid "Create thumbnail (needed by some editors e.g. darktable)"
+msgstr "ייצר thumbnail (דרוש ע\"י תוכנות מסוימות כגון darktable )"
+
+#: converter.py:128
 msgid "DNG"
 msgstr ""
 
-#: converter.py:109
+#: converter.py:126
 msgid "Destination folder"
 msgstr "תיקיית יעד"
 
-#: converter.py:97
+#: converter.py:113
 msgid "E&xit\tCtrl-Q"
 msgstr "&יציאה\tCTRL-Q"
 
-#: converter.py:179 converter.py:198
+#: converter.py:204 converter.py:226
 msgid "Error!"
 msgstr "שגיאה!"
 
-#: converter.py:97
+#: converter.py:113
 msgid "Exit"
 msgstr "יציאה"
 
-#: converter.py:179
+#: converter.py:204
 msgid "Must select at least one output format (DNG/TIFF)"
 msgstr "יש לבחור לפחות פורמט אחד (DNG/TIFF)"
 
-#: converter.py:198
+#: converter.py:226
 msgid "Must select source folder"
 msgstr "תיקיית מקור לא נבחרה"
 
-#: converter.py:131
+#: converter.py:152
 msgid "SJCAM RAW Converter"
 msgstr "ממיר SJCAM RAW"
 
-#: converter.py:107
+#: converter.py:124
 msgid "Source folder"
 msgstr "תיקיית מקור"
 
-#: converter.py:57
+#: converter.py:73
 msgid "Starting conversion"
 msgstr "מתחיל המרה"
 
-#: converter.py:110
+#: converter.py:127
 msgid "TIFF"
+msgstr ""
+
+#: converter.py:129
+msgid "Thumbnail"
 msgstr ""
 
 #~ msgid "Convert to TIFF as well as DNG"

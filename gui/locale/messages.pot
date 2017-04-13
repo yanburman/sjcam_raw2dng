@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-11-09 15:03+0200\n"
+"POT-Creation-Date: 2017-04-13 17:17+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,86 +17,94 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: converter.py:101
+#: converter.py:117
 msgid "&About"
 msgstr ""
 
-#: converter.py:99
+#: converter.py:115
 msgid "&File"
 msgstr ""
 
-#: converter.py:103
+#: converter.py:119
 msgid "&Help"
 msgstr ""
 
-#: converter.py:114
+#: converter.py:132
 msgid "Abort"
 msgstr ""
 
-#: converter.py:40 converter.py:101
+#: converter.py:42 converter.py:117
 msgid "About"
 msgstr ""
 
-#: converter.py:169
+#: converter.py:194
 msgid "Choose destination folder"
 msgstr ""
 
-#: converter.py:162
+#: converter.py:187
 msgid "Choose source folder"
 msgstr ""
 
-#: converter.py:112
+#: converter.py:130
 msgid "Convert"
 msgstr ""
 
-#: converter.py:135
+#: converter.py:156
 msgid "Convert to DNG"
 msgstr ""
 
-#: converter.py:134
+#: converter.py:155
 msgid "Convert to TIFF"
 msgstr ""
 
-#: converter.py:111
+#: converter.py:158
+msgid "Create thumbnail (needed by some editors e.g. darktable)"
+msgstr ""
+
+#: converter.py:128
 msgid "DNG"
 msgstr ""
 
-#: converter.py:109
+#: converter.py:126
 msgid "Destination folder"
 msgstr ""
 
-#: converter.py:97
+#: converter.py:113
 msgid "E&xit\tCtrl-Q"
 msgstr ""
 
-#: converter.py:179 converter.py:198
+#: converter.py:204 converter.py:226
 msgid "Error!"
 msgstr ""
 
-#: converter.py:97
+#: converter.py:113
 msgid "Exit"
 msgstr ""
 
-#: converter.py:179
+#: converter.py:204
 msgid "Must select at least one output format (DNG/TIFF)"
 msgstr ""
 
-#: converter.py:198
+#: converter.py:226
 msgid "Must select source folder"
 msgstr ""
 
-#: converter.py:131
+#: converter.py:152
 msgid "SJCAM RAW Converter"
 msgstr ""
 
-#: converter.py:107
+#: converter.py:124
 msgid "Source folder"
 msgstr ""
 
-#: converter.py:57
+#: converter.py:73
 msgid "Starting conversion"
 msgstr ""
 
-#: converter.py:110
+#: converter.py:127
 msgid "TIFF"
+msgstr ""
+
+#: converter.py:129
+msgid "Thumbnail"
 msgstr ""
