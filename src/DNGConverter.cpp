@@ -34,7 +34,6 @@
 #include <dng_image.h>
 #include <dng_negative.h>
 #include <dng_rational.h>
-#include <dng_lens_correction.h>
 #include <dng_opcodes.h>
 #include <dng_exif.h>
 #include <dng_image_writer.h>
@@ -52,6 +51,7 @@
 #include <sys/stat.h>
 
 #include "DNGConverter.h"
+#include "CameraProfile.h"
 #include "helpers.h"
 #include "CFAReader.h"
 #include "StopWatch.h"
@@ -68,8 +68,6 @@ const dng_matrix_3by3 DNGConverter::m_oIdentityMatrix(1, 0, 0, 0, 1, 0, 0, 0, 1)
 const static dng_matrix_3by3 g_olsD65Matrix(0.8391, 0.1327, 0.0705, 0.4219, 0.4622, -0.1067, 0.0684, -0.0648, 0.8437);
 
 const static dng_matrix_3by3 g_olsAMatrix(0.8535, 0.2414, -0.0780, 0.4064, 0.6032, -0.2464, 0.0280, -0.0436, 0.8861);
-
-static const dng_point_real64 g_oCenter(0.5, 0.5);
 
 const dng_matrix_3by3 DNGConverter::m_olsD65Matrix(Invert(g_olsD65Matrix));
 const dng_matrix_3by3 DNGConverter::m_olsAMatrix(Invert(g_olsAMatrix));
@@ -192,90 +190,21 @@ int DNGConverter::ParseMetadata(const std::string &metadata, Exif &oExif)
   return 0;
 }
 
-class LensCalibration
-{
-  protected:
-  std::vector<real64> m_oVignetteGainParams;
-
-  public:
-  dng_vignette_radial_params m_oVignetteParams;
-
-  LensCalibration(double val)
-          : m_oVignetteGainParams(dng_vignette_radial_params::kNumTerms),
-            m_oVignetteParams(m_oVignetteGainParams, g_oCenter)
-  {
-    m_oVignetteGainParams[0] = val;
-    m_oVignetteGainParams[1] = val;
-    m_oVignetteGainParams[2] = val;
-    m_oVignetteGainParams[3] = val;
-    m_oVignetteGainParams[4] = val;
-  }
-};
-
-const static LensCalibration SJ5000xCalib(0.2);
-
-struct CameraProfile {
-  CameraProfile(uint32 w,
-                uint32 h,
-                uint32 black_level,
-                double r,
-                double g,
-                double b,
-                double base_noise,
-                const char *name,
-                const LensCalibration *calib = NULL)
-          : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name), m_ulBlackLevel(black_level), m_oNeutralWB(3),
-            m_oCalib(calib), m_fBaselineNoise(base_noise)
-  {
-    m_ulFileSize = (m_ulWidth * m_ulHeight * 12) / 8;
-    m_oNeutralWB[0] = r;
-    m_oNeutralWB[1] = g;
-    m_oNeutralWB[2] = b;
-  }
-
-  uint32 m_ulWidth;
-  uint32 m_ulHeight;
-  std::string m_szCameraModel;
-  uint32 m_ulBlackLevel;
-  double m_fBaselineNoise;
-  size_t m_ulFileSize;
-  dng_vector m_oNeutralWB;
-  const LensCalibration *m_oCalib;
-};
-
-struct SJ5000xProfile : public CameraProfile {
-  SJ5000xProfile(uint32 w, uint32 h) : CameraProfile(w, h, 0, 1, 1.3, 1, 3, "SJ5000X", &SJ5000xCalib)
-  {
-  }
-};
-
-struct M20Profile : public CameraProfile {
-  M20Profile(uint32 w, uint32 h) : CameraProfile(w, h, 200, 0.46, 1, 0.7, 4, "M20")
-  {
-  }
-};
-
-struct SJ6Profile : public CameraProfile {
-  SJ6Profile(uint32 w, uint32 h) : CameraProfile(w, h, 0, 0.5, 1, 0.55, 4, "SJ6 LEGEND")
-  {
-  }
-};
-
-const static CameraProfile gRawSizes[] = {SJ5000xProfile(4000, 3000),
-                                          SJ5000xProfile(3032, 2272),
-                                          SJ5000xProfile(2640, 1980),
-                                          M20Profile(4608, 3456),
-                                          SJ6Profile(4624, 3488),
-                                          SJ6Profile(4024, 3036),
-                                          SJ6Profile(3760, 2832)};
+const static CameraProfile gCamProfiles[] = {SJ5000xProfile(4000, 3000),
+                                             SJ5000xProfile(3032, 2272),
+                                             SJ5000xProfile(2640, 1980),
+                                             M20Profile(4608, 3456),
+                                             SJ6Profile(4624, 3488),
+                                             SJ6Profile(4024, 3036),
+                                             SJ6Profile(3760, 2832)};
 
 static const CameraProfile *get_CameraProfile(size_t sz)
 {
   const CameraProfile *oResult = NULL;
 
-  for (unsigned int i = 0; i < sizeof(gRawSizes) / sizeof(gRawSizes[0]); ++i) {
-    if (gRawSizes[i].m_ulFileSize == sz) {
-      oResult = &gRawSizes[i];
+  for (unsigned int i = 0; i < sizeof(gCamProfiles) / sizeof(gCamProfiles[0]); ++i) {
+    if (gCamProfiles[i].m_ulFileSize == sz) {
+      oResult = &gCamProfiles[i];
       break;
     }
   }
