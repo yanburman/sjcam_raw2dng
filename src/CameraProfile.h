@@ -29,9 +29,10 @@ struct CameraProfile {
                 double b,
                 double base_noise,
                 const char *name,
+                double aperture,
                 const LensCalibration *calib = NULL)
           : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name), m_ulBlackLevel(black_level), m_oNeutralWB(3),
-            m_oCalib(calib), m_fBaselineNoise(base_noise)
+            m_fAperture(aperture), m_oCalib(calib), m_fBaselineNoise(base_noise)
   {
     m_ulFileSize = (m_ulWidth * m_ulHeight * 12) / 8;
     m_oNeutralWB[0] = r;
@@ -46,23 +47,24 @@ struct CameraProfile {
   double m_fBaselineNoise;
   size_t m_ulFileSize;
   dng_vector m_oNeutralWB;
+  double m_fAperture;
   const LensCalibration *m_oCalib;
 };
 
 struct SJ5000xProfile : public CameraProfile {
-  SJ5000xProfile(uint32 w, uint32 h) : CameraProfile(w, h, 0, 1, 1.3, 1, 3, "SJ5000X", &SJ5000xCalib)
+  SJ5000xProfile(uint32 w, uint32 h) : CameraProfile(w, h, 0, 1, 1.3, 1, 3, "SJ5000X", 2.8, &SJ5000xCalib)
   {
   }
 };
 
 struct M20Profile : public CameraProfile {
-  M20Profile(uint32 w, uint32 h) : CameraProfile(w, h, 200, 0.46, 1, 0.7, 4, "M20")
+  M20Profile(uint32 w, uint32 h) : CameraProfile(w, h, 200, 0.46, 1, 0.7, 4, "M20", 2.8)
   {
   }
 };
 
 struct SJ6Profile : public CameraProfile {
-  SJ6Profile(uint32 w, uint32 h) : CameraProfile(w, h, 0, 0.5, 1, 0.55, 4, "SJ6 LEGEND")
+  SJ6Profile(uint32 w, uint32 h) : CameraProfile(w, h, 0, 0.5, 1, 0.55, 4, "SJ6 LEGEND", 2.5)
   {
   }
 };

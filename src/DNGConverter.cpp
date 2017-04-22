@@ -514,7 +514,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set aperture value
     // Remarks: Tag [ApertureValue] / [EXIF]
-    poExif->SetFNumber(exif.m_dLensAperture);
+    poExif->SetFNumber(oCamProfile->m_fAperture);
 
     // Set exposure time
     // Remarks: Tag [ExposureTime] / [EXIF]
@@ -532,8 +532,8 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     // Remarks: Tag [LensInfo] / [EXIF]
     poExif->fLensInfo[0].Set_real64(exif.m_dFocalLength, 10);
     poExif->fLensInfo[1].Set_real64(exif.m_dFocalLength, 10);
-    poExif->fLensInfo[2].Set_real64(exif.m_dLensAperture, 10);
-    poExif->fLensInfo[3].Set_real64(exif.m_dLensAperture, 10);
+    poExif->fLensInfo[2].Set_real64(oCamProfile->m_fAperture, 10);
+    poExif->fLensInfo[3].Set_real64(oCamProfile->m_fAperture, 10);
 
     // Set file source
     // Remarks: Tag [FileSource] / [EXIF]

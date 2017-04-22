@@ -1,3 +1,5 @@
+* Set aperture value based on camera specs
+
 v1.1.1
 * Added thumbnail option to GUI (needed by some applications e.g. darktable)
 * Slightly improved default white balance for SJ5000x and M20
