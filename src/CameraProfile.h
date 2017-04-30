@@ -52,7 +52,7 @@ struct CameraProfile {
 };
 
 struct SJ5000xProfile : public CameraProfile {
-  SJ5000xProfile(uint32 w, uint32 h) : CameraProfile(w, h, 0, 1, 1.3, 1, 3, "SJ5000X", 2.8, &SJ5000xCalib)
+  SJ5000xProfile(uint32 w, uint32 h) : CameraProfile(w, h, 0, 0.87, 1.3, 0.72, 3, "SJ5000X", 2.8, &SJ5000xCalib)
   {
   }
 };

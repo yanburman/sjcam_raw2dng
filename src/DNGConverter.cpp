@@ -485,7 +485,7 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
 
     // Set light source
     // Remarks: Tag [LightSource] / [EXIF]
-    poExif->fLightSource = exif.m_uLightSource;
+    poExif->fLightSource = lsDaylight;
 
     // Set exposure program
     // Remarks: Tag [ExposureProgram] / [EXIF]

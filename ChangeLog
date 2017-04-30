@@ -1,3 +1,4 @@
+* Fix default white balance for SJ5000x
 * Set aperture value based on camera specs
 
 v1.1.1
