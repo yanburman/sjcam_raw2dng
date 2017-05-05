@@ -191,9 +191,12 @@ int DNGConverter::ParseMetadata(const std::string &metadata, Exif &oExif)
 }
 
 const static CameraProfile gCamProfiles[] = {SJ5000xProfile(4000, 3000),
+                                             SJ5000xProfile(3484, 2612),
                                              SJ5000xProfile(3032, 2272),
                                              SJ5000xProfile(2640, 1980),
                                              M20Profile(4608, 3456),
+                                             M20Profile(4012, 3008),
+                                             M20Profile(3492, 2620),
                                              SJ6Profile(4624, 3488),
                                              SJ6Profile(4024, 3036),
                                              SJ6Profile(3760, 2832)};
@@ -309,7 +312,10 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
       oProfiler.reset();
       oProfiler.run();
 #endif
-      reader.read((uint8_t *)oBayerData->Buffer(), ulNumPixels);
+      if (oCamProfile->m_ulStride)
+        reader.read((uint8_t *)oBayerData->Buffer(), oCamProfile->m_ulWidth, oCamProfile->m_ulHeight, oCamProfile->m_ulStride);
+      else
+        reader.read((uint8_t *)oBayerData->Buffer(), ulNumPixels);
 
 #ifdef TIME_PROFILE
       oProfiler.stop();

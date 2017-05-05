@@ -34,7 +34,13 @@ struct CameraProfile {
           : m_ulWidth(w), m_ulHeight(h), m_szCameraModel(name), m_ulBlackLevel(black_level), m_oNeutralWB(3),
             m_fAperture(aperture), m_oCalib(calib), m_fBaselineNoise(base_noise)
   {
-    m_ulFileSize = (m_ulWidth * m_ulHeight * 12) / 8;
+    uint32 ulWidthNoStride = (m_ulWidth * 12) / 8;
+    uint32 ulWidthWithStride = ((((m_ulWidth * 12) / 8 + 3) >> 2) << 2);
+
+    m_ulStride = ulWidthWithStride - ulWidthNoStride;
+
+    m_ulFileSize = m_ulHeight * ulWidthWithStride;
+
     m_oNeutralWB[0] = r;
     m_oNeutralWB[1] = g;
     m_oNeutralWB[2] = b;
@@ -49,6 +55,7 @@ struct CameraProfile {
   dng_vector m_oNeutralWB;
   double m_fAperture;
   const LensCalibration *m_oCalib;
+  uint32 m_ulStride;
 };
 
 struct SJ5000xProfile : public CameraProfile {
