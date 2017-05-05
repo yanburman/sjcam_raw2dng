@@ -89,12 +89,44 @@ int CFAReader::open(const char *fname, size_t expected_size)
   return 0;
 }
 
+void CFAReader::read(uint8_t *out_buf, size_t x, size_t y, size_t stride)
+{
+  uint8_t *bCurrByte = m_buf;
+  bool byteAligned = true;
+
+  for (size_t i = 0; i < y; ++i) {
+    for (size_t j = 0; j < x; ++j, out_buf += 2) {
+      if (byteAligned) {
+        // layout: 22223333 XXXX1111
+        out_buf[1] = bCurrByte[1] & 0x0F;
+        out_buf[0] = bCurrByte[0];
+        ++bCurrByte;
+      } else {
+#if defined(_WIN32) || defined(_WIN64)
+        _mm_prefetch((const CHAR *)bCurrByte + 2, _MM_HINT_T0);
+#endif
+#if defined(__GNUC__)
+        __builtin_prefetch(bCurrByte + 2);
+#endif
+        // layout: 3333XXXX 11112222
+        out_buf[1] = (uint8_t)(bCurrByte[1] >> 4);
+        out_buf[0] = (uint8_t)((bCurrByte[1] << 4) | (bCurrByte[0] >> 4));
+        bCurrByte += 2;
+      }
+      byteAligned = !byteAligned;
+    }
+
+    bCurrByte += stride;
+    byteAligned = true;
+  }
+}
+
 void CFAReader::read(uint8_t *out_buf, size_t total)
 {
   uint8_t *bCurrByte = m_buf;
   bool byteAligned = true;
 
-  for (unsigned int i = 0; i < total; ++i, out_buf += 2) {
+  for (size_t i = 0; i < total; ++i, out_buf += 2) {
     if (byteAligned) {
       // layout: 22223333 XXXX1111
       out_buf[1] = bCurrByte[1] & 0x0F;

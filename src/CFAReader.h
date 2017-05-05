@@ -17,6 +17,8 @@ class CFAReader
 
   void read(uint8_t *out_buf, size_t total);
 
+  void read(uint8_t *out_buf, size_t x, size_t y, size_t stride);
+
   ~CFAReader();
 
   protected:
