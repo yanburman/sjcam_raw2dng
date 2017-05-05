@@ -1,3 +1,4 @@
+* Some slight performance optimizations
 * Fix default white balance for SJ5000x
 * Set aperture value based on camera specs
 
