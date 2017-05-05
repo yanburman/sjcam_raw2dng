@@ -72,11 +72,8 @@ const static dng_matrix_3by3 g_olsAMatrix(0.8535, 0.2414, -0.0780, 0.4064, 0.603
 const dng_matrix_3by3 DNGConverter::m_olsD65Matrix(Invert(g_olsD65Matrix));
 const dng_matrix_3by3 DNGConverter::m_olsAMatrix(Invert(g_olsAMatrix));
 
-// SETTINGS: 12-Bit RGGB BAYER PATTERN
 uint8 DNGConverter::m_unColorPlanes = 3;
-uint16 DNGConverter::m_unBayerType = 1; // RGGB
 
-// SETTINGS: Names
 const std::string DNGConverter::m_szMake = "SJCAM";
 
 // Calculate bit limit
@@ -356,6 +353,13 @@ dng_error_code DNGConverter::ConvertToDNG(const std::string &m_szInputFile, cons
     oBuffer.fData = oBayerData->Buffer();
 
     oImage->Put(oBuffer);
+
+    uint16 m_unBayerType;
+
+    if (m_oConfig.m_bFlipped)
+      m_unBayerType = 2; // BGGR
+    else
+      m_unBayerType = 1; // RGGB
 
     // -------------------------------------------------------------
     // DNG Negative Settings

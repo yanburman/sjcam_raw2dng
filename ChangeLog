@@ -1,3 +1,4 @@
+* Added support for stills taken in rotated orientation
 * Add full support for crop FOV in M20 and SJ5000x
 * Add support for non-zero stride
 * Some slight performance optimizations

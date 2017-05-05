@@ -15,7 +15,7 @@
 struct Config {
   Config()
           : m_bTiff(false), m_bDng(false), m_bLensCorrections(false), m_bNoCalibration(false), m_iThreads(2),
-            m_bGenPreview(false)
+            m_bGenPreview(false), m_bFlipped(false)
   {
   }
 
@@ -25,6 +25,7 @@ struct Config {
   bool m_bNoCalibration;
   int m_iThreads;
   bool m_bGenPreview;
+  bool m_bFlipped;
   std::string m_szPathPrefixOutput;
 };
 
