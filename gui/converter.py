@@ -33,8 +33,8 @@ class HtmlWindow(wx.html.HtmlWindow):
 
 aboutText = """<p>SJCAM RAW to DNG/TIFF converter %(converter)s. <br/>
 Written by Yan Burman<br/>
+See <a href="https://github.com/yanburman/sjcam_raw2dng/releases">sjcam_raw2dng</a><br/>
 </p>"""
-#See <a href="http://yanburman.github.io/sjcam_raw2dng">sjcam_raw2dng</a><br/>
 
 
 class AboutBox(wx.Dialog):
