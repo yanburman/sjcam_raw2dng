@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-04-13 17:20+0300\n"
-"PO-Revision-Date: 2017-04-13 17:27+0300\n"
+"POT-Creation-Date: 2017-05-07 10:27+0300\n"
+"PO-Revision-Date: 2017-05-07 10:29+0300\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: he\n"
@@ -30,7 +30,7 @@ msgstr "&קובץ"
 msgid "&Help"
 msgstr "&עזרא"
 
-#: converter.py:132
+#: converter.py:133
 msgid "Abort"
 msgstr "הפסק"
 
@@ -38,27 +38,31 @@ msgstr "הפסק"
 msgid "About"
 msgstr "אודות"
 
-#: converter.py:194
+#: converter.py:160
+msgid "Check if images were taken with rotation enabled in camera"
+msgstr "יש לבחור אם רוטציה הופעלה במצלמה"
+
+#: converter.py:197
 msgid "Choose destination folder"
 msgstr "בחר תיקיית יעד"
 
-#: converter.py:187
+#: converter.py:190
 msgid "Choose source folder"
 msgstr "בחר תיקיית מקור"
 
-#: converter.py:130
+#: converter.py:131
 msgid "Convert"
 msgstr "המר"
 
-#: converter.py:156
+#: converter.py:157
 msgid "Convert to DNG"
 msgstr "המר ל-DNG"
 
-#: converter.py:155
+#: converter.py:156
 msgid "Convert to TIFF"
 msgstr "המר ל-TIFF"
 
-#: converter.py:158
+#: converter.py:159
 msgid "Create thumbnail (needed by some editors e.g. darktable)"
 msgstr "ייצר thumbnail (דרוש ע\"י תוכנות מסוימות כגון darktable )"
 
@@ -74,7 +78,7 @@ msgstr "תיקיית יעד"
 msgid "E&xit\tCtrl-Q"
 msgstr "&יציאה\tCTRL-Q"
 
-#: converter.py:204 converter.py:226
+#: converter.py:207 converter.py:232
 msgid "Error!"
 msgstr "שגיאה!"
 
@@ -82,15 +86,19 @@ msgstr "שגיאה!"
 msgid "Exit"
 msgstr "יציאה"
 
-#: converter.py:204
+#: converter.py:207
 msgid "Must select at least one output format (DNG/TIFF)"
 msgstr "יש לבחור לפחות פורמט אחד (DNG/TIFF)"
 
-#: converter.py:226
+#: converter.py:232
 msgid "Must select source folder"
 msgstr "תיקיית מקור לא נבחרה"
 
-#: converter.py:152
+#: converter.py:130
+msgid "Rotation"
+msgstr "רוטציה"
+
+#: converter.py:153
 msgid "SJCAM RAW Converter"
 msgstr "ממיר SJCAM RAW"
 
@@ -108,7 +116,7 @@ msgstr ""
 
 #: converter.py:129
 msgid "Thumbnail"
-msgstr ""
+msgstr "תמונה ממוזערת"
 
 #~ msgid "Convert to TIFF as well as DNG"
 #~ msgstr "המר ל-TIFF בנוסף ל-DNG"

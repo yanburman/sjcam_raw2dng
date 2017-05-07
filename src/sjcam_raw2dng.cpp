@@ -87,7 +87,7 @@ static void usage(const char *prog, Config &conf)
           "\t-m, --thumb         Add JPEG thumbnails (disabled by default to save disk space and conversion time)\n"
           "\t-o, --output <DIR>  Output dir (must exist)\n"
           "\t-t, --tiff          Write TIFF image to \"<file>.tiff\" (false by default)\n"
-          "\t-d, --dng           Write DNG image to \"<file>.dng\" (used by default if no output is supplied)\n",
+          "\t-d, --dng           Write DNG image to \"<file>.dng\" (used by default if no output is supplied)\n"
           "\t-r, --rotated       Image was taken in rotated orientation (false by default)\n",
           prog,
           conf.m_iThreads);

@@ -99,7 +99,7 @@
                 <object class="wxGridSizer" name="grid_sizer_2" base="EditGridSizer">
                     <hgap>0</hgap>
                     <rows>1</rows>
-                    <cols>3</cols>
+                    <cols>4</cols>
                     <vgap>0</vgap>
                     <object class="sizeritem">
                         <border>0</border>
@@ -124,6 +124,14 @@
                         <object class="wxCheckBox" name="thumb_checkbox" base="EditCheckBox">
                             <label>Thumbnail</label>
                             <tooltip>Create thumbnail (needed by some editors e.g. darktable)</tooltip>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <border>0</border>
+                        <option>0</option>
+                        <object class="wxCheckBox" name="rotate_checkbox" base="EditCheckBox">
+                            <label>Rotation</label>
+                            <tooltip>Check if images were taken with rotation enabled in camera</tooltip>
                         </object>
                     </object>
                 </object>

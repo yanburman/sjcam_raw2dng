@@ -127,6 +127,7 @@ class MainFrame(wx.Frame):
         self.tiff_checkbox = wx.CheckBox(self, wx.ID_ANY, _("TIFF"))
         self.dng_checkbox = wx.CheckBox(self, wx.ID_ANY, _("DNG"))
         self.thumb_checkbox = wx.CheckBox(self, wx.ID_ANY, _("Thumbnail"))
+        self.rotate_checkbox = wx.CheckBox(self, wx.ID_ANY, _("Rotation"))
         self.convert_button = wx.Button(self, wx.ID_ANY, _("Convert"))
         self.status_text_ctrl = wx.TextCtrl(self, wx.ID_ANY, "", style=wx.TE_MULTILINE | wx.TE_READONLY)
         self.abort_button = wx.Button(self, wx.ID_ANY, _("Abort"))
@@ -156,13 +157,14 @@ class MainFrame(wx.Frame):
         self.dng_checkbox.SetToolTip(wx.ToolTip(_("Convert to DNG")))
         self.dng_checkbox.SetValue(1)
         self.thumb_checkbox.SetToolTip(wx.ToolTip(_("Create thumbnail (needed by some editors e.g. darktable)")))
+        self.rotate_checkbox.SetToolTip(wx.ToolTip(_("Check if images were taken with rotation enabled in camera")))
         self.abort_button.Enable(False)
         # end wxGlade
 
     def __do_layout(self):
         # begin wxGlade: MainFrame.__do_layout
         grid_sizer_1 = wx.FlexGridSizer(5, 2, 0, 0)
-        grid_sizer_2 = wx.GridSizer(1, 3, 0, 0)
+        grid_sizer_2 = wx.GridSizer(1, 4, 0, 0)
         grid_sizer_1.Add((20, 20), 0, 0, 0)
         grid_sizer_1.Add(self.logo_bitmap, 0, wx.ALIGN_CENTER, 0)
         grid_sizer_1.Add(self.src_dir_text_ctrl, 0, wx.EXPAND, 0)
@@ -172,6 +174,7 @@ class MainFrame(wx.Frame):
         grid_sizer_2.Add(self.tiff_checkbox, 0, 0, 0)
         grid_sizer_2.Add(self.dng_checkbox, 0, 0, 0)
         grid_sizer_2.Add(self.thumb_checkbox, 0, 0, 0)
+        grid_sizer_2.Add(self.rotate_checkbox, 0, 0, 0)
         grid_sizer_1.Add(grid_sizer_2, 1, 0, 0)
         grid_sizer_1.Add(self.convert_button, 0, wx.ALL | wx.EXPAND, 2)
         grid_sizer_1.Add(self.status_text_ctrl, 0, wx.EXPAND, 0)
@@ -217,6 +220,9 @@ class MainFrame(wx.Frame):
 
         if self.thumb_checkbox.IsChecked():
             args.append('-m')
+
+        if self.rotate_checkbox.IsChecked():
+            args.append('-r')
 
         if not self.dest_dir_text_ctrl.IsEmpty():
             args.append('-o')
