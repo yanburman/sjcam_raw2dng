@@ -1,4 +1,5 @@
 v1.2.0
+* Make GUI settings persistent between converter restarts
 * Added support for stills taken in rotated orientation (in GUI as well)
 * Add full support for crop FOV in M20 and SJ5000x
 * Add support for non-zero stride

@@ -12,6 +12,7 @@ import gettext
 
 # begin wxGlade: extracode
 from images import Images
+from Preferences import Preferences
 # end wxGlade
 
 from threading import Thread
@@ -139,6 +140,10 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnMenuAbout, self.About)
         self.Bind(wx.EVT_BUTTON, self.OnSrcFolder, self.src_dir_button)
         self.Bind(wx.EVT_BUTTON, self.OnDstFolder, self.dst_folder_button)
+        self.Bind(wx.EVT_CHECKBOX, self.OnTIFFClicked, self.tiff_checkbox)
+        self.Bind(wx.EVT_CHECKBOX, self.OnDNGClicked, self.dng_checkbox)
+        self.Bind(wx.EVT_CHECKBOX, self.OnThumbnailClicked, self.thumb_checkbox)
+        self.Bind(wx.EVT_CHECKBOX, self.OnRotationClicked, self.rotate_checkbox)
         self.Bind(wx.EVT_BUTTON, self.OnConvert, self.convert_button)
         self.Bind(wx.EVT_BUTTON, self.OnAbort, self.abort_button)
         # end wxGlade
@@ -147,6 +152,11 @@ class MainFrame(wx.Frame):
         self.proc = None
         self.Bind(wx.EVT_CLOSE, self.OnClose)
         self.SetMinSize(self.GetSize())
+        self.prefs = Preferences()
+        self.dng_checkbox.SetValue(self.prefs.get_dng())
+        self.tiff_checkbox.SetValue(self.prefs.get_tiff())
+        self.thumb_checkbox.SetValue(self.prefs.get_thumbnail())
+        self.rotate_checkbox.SetValue(self.prefs.get_rotate())
 
     def __set_properties(self):
         # begin wxGlade: MainFrame.__set_properties
@@ -260,6 +270,22 @@ class MainFrame(wx.Frame):
     def OnClose(self, event):  # wxGlade: MainFrame.<event_handler>
         self.OnAbort(event)
         self.Destroy()
+
+    def OnTIFFClicked(self, event):  # wxGlade: MainFrame.<event_handler>
+        self.prefs.set_tiff(str(event.IsChecked()))
+        event.Skip()
+
+    def OnDNGClicked(self, event):  # wxGlade: MainFrame.<event_handler>
+        self.prefs.set_dng(str(event.IsChecked()))
+        event.Skip()
+
+    def OnThumbnailClicked(self, event):  # wxGlade: MainFrame.<event_handler>
+        self.prefs.set_thumbnail(str(event.IsChecked()))
+        event.Skip()
+
+    def OnRotationClicked(self, event):  # wxGlade: MainFrame.<event_handler>
+        self.prefs.set_rotate(str(event.IsChecked()))
+        event.Skip()
 
 # end of class MainFrame
 class MyApp(wx.App):
