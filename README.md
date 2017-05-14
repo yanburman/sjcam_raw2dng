@@ -47,6 +47,16 @@ This is allows most control by supporting list of files/directories to convert.
 Note that if you drag-n-drop directory or file into sjcam_raw2dng.exe on windows, it will do the batch conversion.
 
 
+Lens/Camera profile usage comparison:
+-------------------------------------
+
+All images use the same settings except for the profiles applied
+
+Uncorrected | Lens profile applied | Lens and camera profile applied
+------------|----------------------|--------------------------------
+![Image](https://github.com/yanburman/sjcam_raw2dng/blob/master/resources/not_corrected.jpg) | ![Image](https://github.com/yanburman/sjcam_raw2dng/blob/master/resources/lens_corrected.jpg) | ![Image](https://github.com/yanburman/sjcam_raw2dng/blob/master/resources/lens_color_corrected.jpg)
+
+
 Troubleshooting:
 ---------------------
 Q: I get "unsupported format" error when trying to convert a photo taken with zoom</br>
