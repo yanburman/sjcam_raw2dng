@@ -43,7 +43,7 @@ Also optional is ability to convert to TIFF as well as DNG
 
 CLI:
 ---------------------
-This is allows most control by supporting list of files/directories to convert.
+This allows most control by supporting list of files/directories to convert.
 Note that if you drag-n-drop directory or file into sjcam_raw2dng.exe on windows, it will do the batch conversion.
 
 
